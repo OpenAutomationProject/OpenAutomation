@@ -1,0 +1,16 @@
+Source: russconnectd
+Section: unknown
+Priority: extra
+Maintainer: Michael Markstaller <devel@wiregate.de>
+Build-Depends: debhelper (>= 7.0), autotools-dev
+Standards-Version: 3.9.1
+Homepage: <insert the upstream URL, if relevant>
+#Vcs-Git: git://git.debian.org/collab-maint/russconnectd.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/russconnectd.git;a=summary
+
+Package: russconnectd
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: simple daemon to control Russsound amp from KNX
+ A simple daemon to control Russsound amplifiers with RNET-protocol from KNX
+

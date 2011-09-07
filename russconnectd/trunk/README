@@ -1,0 +1,36 @@
+*** Russound RNET(R) to EIB/KNX bridge
+
+- eibd is needed for KNX communication, either locally or remote
+- uses mainly native Russound-Values
+TODO: document various values for Volume, bass,.. better
+- controllers and zone-numbers are zero based!
+- use socat or Moxa to get serial-data from/to UDP:
+	19200 8N1, No flowctrl, no special stop chars needed
+
+*** INSTALL
+- needs pthread and libeibclient from bcusdk/eibd
+	
+*** Group address structure:
+- given a start-address the next 256 GA are used per 6 Zones, currently pretty hardcoded
+Example: Start-address given 10/1/0
+
+0-9: System/controller-wide
+10/1/1 W Power on/off all zones*1
+10/1/2 WO Actuator powering the controllers (not yet)
+
+10/1/10 W Zone 1 Power on/off 0/1
+... see .ods
+
+W = GA writeable
+RS = GA readable/sends status updates on change
+
+*** TODO:
+- see various TODO/FIXME in source
+- reconnection/error-handling if network-problems occur (mainly eibd?)
+- prettify code
+- fix dependency on uclibc++ on OpenWRT
+
+*** Outlook
+- *maybe* make much more modular and other interfaces (simple UDP/TCP server)
+- don't depend on libeibclient then
+- *maybe* add outgoing interfaces for mpd,vdr,.. to stick multiroom togehter

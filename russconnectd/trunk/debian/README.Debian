@@ -1,0 +1,6 @@
+russconnectd for Debian
+-----------------------
+
+control startup settings through /etc/default/russconnectd
+
+ -- Michael Markstaller <devel@wiregate.de>  Wed, 07 Sep 2011 18:04:18 +0200
