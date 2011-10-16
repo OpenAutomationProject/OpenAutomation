@@ -27,10 +27,14 @@ RS = GA readable/sends status updates on change
 *** TODO:
 - see various TODO/FIXME in source
 - reconnection/error-handling if network-problems occur (mainly eibd?)
-- prettify code
-- fix dependency on uclibc++ on OpenWRT
+- prettify code / split main.c
+- fix dependency on uclibc++ (?) in OpenWRT Makefile
+- change russ UDP-socket to be shared for send/receive with listening (-l) sourceport for outgoing
+    (makes usage with socat udp-recvfrom easier)
+- supply examples for socat
+- directly connect serialport
 
 *** Outlook
-- *maybe* make much more modular and other interfaces (simple UDP/TCP server)
+- *maybe* make much more modular and other interfaces (simple UDP/TCP server like C0 Z1 VolUp?)
 - don't depend on libeibclient then
-- *maybe* add outgoing interfaces for mpd,vdr,.. to stick multiroom togehter
+- *maybe* add outgoing interfaces for KNX-> mpd,vdr,.. to stick multiroom togehter

@@ -1,2 +1,6 @@
+*** 0.2 - 2011-10-15
+- global UDP-socket sending with listen port as source to make socat happy
+- parse partial/fragmented messages from Russound
 
-
+*** 0.1
+- initial release, see README

@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -39,7 +38,7 @@
 
 #define DEBUG 1
 #define DAEMON_NAME "russconnectd"
-#define USAGESTRING	"\n\t-d\tRun as daemon/No debug output\n\t-p <pidfile>\tPID-filename\n\t-i <ip:port>\tIP-Address:Port to send UDP-packets to russound\n\t-l <UDP-port>\tUDP port to listen on\n\t-a <KNX address>\tKNX start-address (see README)\n\t-z <number>\tNumber of Zones to support\n\t-u <eib url>\tURL to conatct eibd like localo:/tmp/eib or ip:192.168.0.101\n"
+#define USAGESTRING "\n\t-d\tRun as daemon/No debug output\n\t-p <pidfile>\tPID-filename\n\t-i <ip:port>\tIP-Address:Port to send UDP-packets to russound\n\t-l <UDP-port>\tUDP port to listen on\n\t-a <KNX address>\tKNX start-address (see README)\n\t-z <number>\tNumber of Zones to support\n\t-u <eib url>\tURL to conatct eibd like localo:/tmp/eib or ip:192.168.0.101\n"
 #define NUM_THREADS 2
 #define MAX_ZONES 31
 #define RETRY_TIME 5
@@ -81,8 +80,14 @@ int numzones = ZONES_PER_CONTROLLER;
 int pidFilehandle;
 char *pidfilename = "/var/run/russconnectd.pid";
 
+//FIXME: also handle serial-port directly?
+struct sockaddr_in si_me, si_other;
+int udpSocket;
+socklen_t slen=sizeof(si_other);
+
 void daemonShutdown() {
 	//FIXME: clean exit pthread_exit(NULL); pthread_cancel(..);
+	close(udpSocket);		
 	syslog(LOG_INFO, "%s daemon exiting", DAEMON_NAME);
     fprintf(stderr, "%s daemon exiting", DAEMON_NAME);	
 	close(pidFilehandle);
@@ -110,6 +115,18 @@ void signal_handler(int sig) {
 }
 
 char *russChecksum(char* buf, int len) {
+	//FIXME: handle invert character
+	/* The Invert Character is used in special cases as part of the Message Body. If the data in an
+	RNETTM message body includes any byte values that have the MSB set to 1 (they have a Hex
+	value greater than 0x7F) the byte will be rejected as only the lower 7 bits are used to hold data.
+	In order to allow values greater than 0x7F to be accepted, the byte must first be bitwise inverted
+	(e.g., 10010101 = 01101010), and the special Invert Character (0xF1) is inserted just prior to
+	the inverted byte. When an RNETTM packet is received, the system must detect the 0xF1 invert
+	character. The 0xF1 character is then discarded and the following byte is inverted back to its
+	original value (e.g., 01101010 = 10010101).
+	F1 = Special Invert Character
+	6A = Inverted Character (actual value 0x95)
+	*/
 	int i,j=0;
 	for (i=0;i<len;i++)
 		j+=buf[i];
@@ -120,52 +137,28 @@ char *russChecksum(char* buf, int len) {
 
 void *sendrussPolling(unsigned char zone) {
 	syslog(LOG_DEBUG, "polling zone %d",zone);
-	struct sockaddr_in si_other;
-	int s, slen=sizeof(si_other);
-	if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1)
-		syslog(LOG_WARNING,"socket failed!");
-	memset((char *) &si_other, 0, sizeof(si_other));
-	si_other.sin_family = AF_INET;
-	si_other.sin_port = htons(russport);
-	if (inet_aton(russipaddr, &si_other.sin_addr)==0) {
-		syslog(LOG_WARNING, "inet_aton() for %s failed", russipaddr);
-		daemonShutdown();
-	}
-
 	char buf_onvol[25] = { 0xF0, 0, 0, 0x7F, 0, 0, RUSS_KEYPAD_ID, 0x01, 0x05, 0x02, 0, 0, 0, 0x04, 0, 0, 0, 0xF7 };
 	buf_onvol[1] = zone/ZONES_PER_CONTROLLER;
 	buf_onvol[11] = zone%ZONES_PER_CONTROLLER;
 	buf_onvol[16] = (int) russChecksum (buf_onvol,18-2);
-	if (sendto(s, buf_onvol, 18, 0, (struct sockaddr *) &si_other, slen)==-1)
+	if (sendto(udpSocket, buf_onvol, 18, 0, (struct sockaddr *) &si_other, slen)==-1)
 		syslog(LOG_WARNING,"sendto failed!");
-	usleep(20*1000); //throttle a little (20ms)
+	usleep(20*1000); //FIXME: throttle a little (20ms)
 
 	char buf_getzone[25] = { 0xF0, 0, 0, 0x7F, 0, 0, RUSS_KEYPAD_ID, 0x01, 0x04, 0x02, 0, 0, 0x07, 0, 0, 0, 0xF7 };
 	buf_getzone[1] = zone/ZONES_PER_CONTROLLER;
 	buf_getzone[11] = zone%ZONES_PER_CONTROLLER;
-	buf_getzone[15] = (int) russChecksum (buf_onvol,17-2);
-	if (sendto(s, buf_getzone, 17, 0, (struct sockaddr *) &si_other, slen)==-1)
+	buf_getzone[15] = (int) russChecksum (buf_getzone,17-2);
+	if (sendto(udpSocket, buf_getzone, 17, 0, (struct sockaddr *) &si_other, slen)==-1)
 		syslog(LOG_WARNING,"sendto failed!");
 
-	usleep(50*1000); //throttle a little (20ms)
-	close(s);
+	usleep(50*1000); //FIXME: throttle a little (50ms)
 	return 0;
 }
 
 void *sendrussFunc(int controller, int zone, int func, int val) {
-	struct sockaddr_in si_other;
-	int s, slen=sizeof(si_other);
 	syslog(LOG_DEBUG,"write ctrl %d zone %d func %d val 0x%02X",controller,zone,func,val);
-	if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1)
-		syslog(LOG_WARNING,"sendrussfunc: socket failed!");
-	memset((char *) &si_other, 0, sizeof(si_other));
-	si_other.sin_family = AF_INET;
-	si_other.sin_port = htons(russport);
-	if (inet_aton(russipaddr, &si_other.sin_addr)==0) {
-		syslog(LOG_WARNING, "sendrussfunc: inet_aton() for %s failed", russipaddr);
-		daemonShutdown();
-	}
-
+	
 	//TODO: send on-telegram to actuator
 	char buf_msg1[25] = { 0, 0, 0, 0x7F, 0, 0, RUSS_KEYPAD_ID, 0x05, 0x02, 0x02, 0, 0, 0xF1, 0x23, 0, 0, 0, 0, 0, 0x01, 0, 0xF7 };
 	buf_msg1[1] = controller;
@@ -258,15 +251,14 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
 		buf_msg2[22] = (int) russChecksum (buf_msg2,24-2);
 
 	if (buf_msg1[0])
-		if (sendto(s, buf_msg1, 22, 0, (struct sockaddr *) &si_other, slen)==-1)
+		if (sendto(udpSocket, buf_msg1, 22, 0, (struct sockaddr *) &si_other, slen)==-1)
 			syslog(LOG_WARNING,"sendrussfunc sendto failed!");
 	if (buf_msg2[0])
-		if (sendto(s, buf_msg2, 24, 0, (struct sockaddr *) &si_other, slen)==-1)
+		if (sendto(udpSocket, buf_msg2, 24, 0, (struct sockaddr *) &si_other, slen)==-1)
 			syslog(LOG_WARNING,"sendrussfunc sendto failed!");
-	usleep(20*1000); //throttle a little (20ms)
+	usleep(20*1000); //FIXME: throttle a little (20ms)
 	if (buf_msg1[0] || buf_msg2[0])
 		sendrussPolling (zone+(controller*ZONES_PER_CONTROLLER)); //fire update of states
-	close(s);
 	return 0;
 }
 
@@ -275,7 +267,7 @@ void *sendKNXdgram(int type, int dpt, eibaddr_t dest, unsigned char val) {
 	EIBConnection *con;
 	unsigned char buf[255] = { 0, 0x80 };
 	buf[1] = type; //0x40 response, 0x80 write
-	syslog(LOG_DEBUG,"send knx dgram t %d d %d dest %d val %d",type,dpt,dest,val);
+        syslog(LOG_DEBUG,"Send KNX dgram Type %d DPT %d dest %d val %d",type,dpt,dest,val);
 	con = EIBSocketURL (eibd_url);
 	if (!con)
 		syslog(LOG_WARNING,"sendknxdgram: Open failed");
@@ -537,77 +529,109 @@ void *updateZone(unsigned char num, unsigned char val, int func) {
 
 void *russhandler()
 {
-	//FIXME: also handle serial-port directly?
-	struct sockaddr_in si_me, si_other;
-	int s, i;
-	socklen_t slen=sizeof(si_other);
+	int i;
 	unsigned char buf[BUFLEN];
+	unsigned char prevbuf[BUFLEN];
+	int prevlen = 0;
 	syslog(LOG_DEBUG, "Russound reader thread started");
 	while (1) {
-		if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) {
-			syslog(LOG_WARNING, "russ: Socket failed");
+		int len = recvfrom(udpSocket, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen);
+		if (len==-1) {
+			syslog(LOG_WARNING, "russ: recvfrom failed");
 			sleep(RETRY_TIME);
+			break;
+		}
+		/* Stick together fragmented telegrams, start is F0, end is F7
+		*/
+		//FIXME: we assume either complete telegrams or fragmented but no overlapping messages in sep. udp dgrams!
+		
+		//DEBUG
+		//for (i=0; i<len; i++)
+		//	printf("PRE-parse: %d:0x%02X ",i,buf[i]);
+		printf( "PRE-Parse: %d -> ",len);
+		for (i=0; i<len; i++)
+			printf( "0x%02X ",buf[i]);
+		printf( "\n");
+		//END DEBUG code
+		if ((len + prevlen) > BUFLEN) {
+			syslog(LOG_INFO, "Message too large: %d + %d !!",len,prevlen);
+			prevlen=0;
 			continue;
 		}
-		memset(&si_me, 0, sizeof(si_me));
-		si_me.sin_family = AF_INET;
-		si_me.sin_port = htons(listenport);
-		si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-		if (bind(s, (struct sockaddr *) &si_me, sizeof(si_me))==-1) {
-			syslog(LOG_WARNING, "russ: Bind failed");
-			sleep(RETRY_TIME);
+		
+		if (buf[0] == 0xF0 && buf[len-1] == 0xF7) { // complete message
+			syslog(LOG_DEBUG, "----> COMPLETE <---- message received, size %d \n", len);
+		} else if (buf[0] == 0xF0) { // start of new message
+			printf("..START..\n");
+			prevlen = len;
+			memcpy(prevbuf,buf,len);
+			continue;
+		} else if (prevlen > 0 && prevbuf[0] == 0xF0 && buf[len-1] == 0xF7) { // message complete
+			printf("..complete..%d %d\n",prevlen,len);
+			memcpy(prevbuf+prevlen,buf,len);
+			len += prevlen;
+			prevlen = 0;
+			memcpy(buf,prevbuf,len);
+		} else if (prevlen > 0 && prevbuf[0] == 0xF0) { //continuation message
+			printf("..continue..%d %d\n",prevlen,len);
+			memcpy(prevbuf+prevlen,buf,len);
+   			prevlen += len;
+			continue;
+		} else { //DUNNO!!
+			syslog(LOG_DEBUG,"---> DUNNO <--- !!! resetting message buffers!");
+			prevlen = 0;
+			prevbuf[0] = 0x0;
 			continue;
 		}
-		while (1) {
-			int len = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen);
-			//TODO: Checksum calculation / check of russound-message
-			if (len==-1) {
-				syslog(LOG_WARNING, "russ: recvfrom failed");
-				sleep(RETRY_TIME);
-				break;
-			} else if ((len==34) && (buf[0]==0xF0) && (buf[9]==0x04)) { //zone-status
-//				syslog(LOG_DEBUG,"russ Controller:%d Zone:%d Status:%d src:%d vol:%d bass:%d treb:%d loud:%d bal:%d sys:%d shrsrc:%d party:%d,DnD:%d\n",
-//				       buf[4],buf[12],buf[20],buf[21],buf[22],buf[23],buf[24],buf[25],buf[26],buf[27],buf[28],buf[29],buf[30]);
-				buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
-				if (buf[20] != zones[buf[12]].zonepower)
-					updateZone(buf[12],buf[20],1);
-				if (buf[21] != zones[buf[12]].srcid)
-					updateZone(buf[12],buf[21],2);
-				if (buf[22] != zones[buf[12]].volume)
-					updateZone(buf[12],buf[22],3);
-				if (buf[23] != zones[buf[12]].bass)
-					updateZone(buf[12],buf[23],4);
-				if (buf[24] != zones[buf[12]].treble)
-					updateZone(buf[12],buf[24],5);
-				if (buf[25] != zones[buf[12]].loudness)
-					updateZone(buf[12],buf[25],6);
-				if (buf[26] != zones[buf[12]].balance)
-					updateZone(buf[12],buf[26],7);
-				if (buf[29] != zones[buf[12]].partymode)
-					updateZone(buf[12],buf[29],8);
-				if (buf[30] != zones[buf[12]].dnd)
-					updateZone(buf[12],buf[30],9);
-				zones[buf[12]].inited = 1;
-			} else if ((len==24) && (buf[0]==0xF0) && (buf[9]==0x05) && (buf[13]==0x00)) { //zone turn-on volume
-				//FIXME: this *might* be wrong andf trigger also on other msgs, as it's written otherwise in the docs, the checked bytes are just a guess!
-//				syslog(LOG_DEBUG,"russ Controller:%d Zone:%d TurnOnVolume:%d",
-//				       buf[4],buf[12],buf[21]);
-				buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
-				if (buf[21] != zones[buf[12]].onvolume)
-					updateZone(buf[12],buf[21],10);
-			} else {
-				//FIXME: just for debugging
-				for (i=0; i<len; i++)
-					printf("%d:0x%02X ",i,buf[i]);
-				printf(" unknown len: %d\n",len);
-				for (i=0; i<len; i++)
-					printf("0x%02X ",buf[i]);
-				printf("\n");
-			}
+		//DEBUG
+		printf( "POST-Parse: %d -> ",len);
+		for (i=0; i<len; i++)
+			printf( "0x%02X ",prevbuf[i]);
+		printf( "\n");
+		//END DEBUG code
+		
+		//TODO: Checksum calculation / check of russound-message
+		if ((len==34) && (buf[0]==0xF0) && (buf[9]==0x04)) { //zone-status
+				syslog(LOG_DEBUG,"russ Controller:%d Zone:%d Status:%d src:%d vol:%d bass:%d treb:%d loud:%d bal:%d sys:%d shrsrc:%d party:%d,DnD:%d\n",
+				       buf[4],buf[12],buf[20],buf[21],buf[22],buf[23],buf[24],buf[25],buf[26],buf[27],buf[28],buf[29],buf[30]);
+			buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
+			if (buf[20] != zones[buf[12]].zonepower)
+				updateZone(buf[12],buf[20],1);
+			if (buf[21] != zones[buf[12]].srcid)
+				updateZone(buf[12],buf[21],2);
+			if (buf[22] != zones[buf[12]].volume)
+				updateZone(buf[12],buf[22],3);
+			if (buf[23] != zones[buf[12]].bass)
+				updateZone(buf[12],buf[23],4);
+			if (buf[24] != zones[buf[12]].treble)
+				updateZone(buf[12],buf[24],5);
+			if (buf[25] != zones[buf[12]].loudness)
+				updateZone(buf[12],buf[25],6);
+			if (buf[26] != zones[buf[12]].balance)
+				updateZone(buf[12],buf[26],7);
+			if (buf[29] != zones[buf[12]].partymode)
+				updateZone(buf[12],buf[29],8);
+			if (buf[30] != zones[buf[12]].dnd)
+				updateZone(buf[12],buf[30],9);
+			zones[buf[12]].inited = 1;
+		} else if ((len==24) && (buf[0]==0xF0) && (buf[9]==0x05) && (buf[13]==0x00)) { //zone turn-on volume
+			//FIXME: this *might* be wrong andf trigger also on other msgs, as it's written otherwise in the docs, the checked bytes are just a guess!
+				syslog(LOG_DEBUG,"russ Controller:%d Zone:%d TurnOnVolume:%d",
+				       buf[4],buf[12],buf[21]);
+			buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
+			if (buf[21] != zones[buf[12]].onvolume)
+				updateZone(buf[12],buf[21],10);
+		} else {
+			//FIXME: just for debugging
+			for (i=0; i<len; i++)
+				printf("%d:0x%02X ",i,buf[i]);
+			printf(" unknown len: %d\n",len);
+			for (i=0; i<len; i++)
+				printf("0x%02X ",buf[i]);
+			printf("\n");
 		}
-		syslog(LOG_WARNING,"russ: closed socket"); //break in read-loop
-		close(s);		
 	}
+	syslog(LOG_WARNING,"russ: closed socket"); //break in read-loop
 	pthread_exit(NULL);
 }
 
@@ -621,6 +645,34 @@ eibaddr_t readgaddr (const char *addr) {
 		return a & 0xffff;
 	syslog(LOG_WARNING,"invalid group address format %s", addr);
 	daemonShutdown();
+	return 0;
+}
+
+int openUDPsocket() {
+	if ((udpSocket=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1) {
+		syslog(LOG_WARNING, "openUDPsock: Socket failed");
+		//TODO: handle error;
+		return 1;
+	}
+	memset(&si_me, 0, sizeof(si_me));
+	si_me.sin_family = AF_INET;
+	si_me.sin_port = htons(listenport);
+	si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	memset((char *) &si_other, 0, sizeof(si_other));
+	si_other.sin_family = AF_INET;
+	si_other.sin_port = htons(russport);
+	if (inet_aton(russipaddr, &si_other.sin_addr)==0) {
+		syslog(LOG_WARNING, "inet_aton() for %s failed", russipaddr);
+		daemonShutdown();
+	}
+
+	if (bind(udpSocket, (struct sockaddr *) &si_me, sizeof(si_me))==-1) {
+		syslog(LOG_WARNING, "russ: Bind failed");
+		//sleep(RETRY_TIME);
+		//TODO: handle error;
+		return 2;
+	}
 	return 0;
 }
 
@@ -721,6 +773,10 @@ int main(int argc, char **argv) {
 	sprintf(pidstr,"%d\n",getpid());
 	c = write(pidFilehandle, pidstr, strlen(pidstr));
 
+	if (openUDPsocket() != 0) {
+		syslog(LOG_INFO, "Failed to create UDP socket, exiting");
+		exit(EXIT_FAILURE);
+	}
 	int knxthread,russthread;
 	pthread_t threads[NUM_THREADS];
 	// PTHREAD_CREATE_DETACHED?
