@@ -38,17 +38,18 @@
 
 #define DEBUG 1
 #define DAEMON_NAME "russconnectd"
-#define USAGESTRING "\n\t-d\tRun as daemon/No debug output\n\t-p <pidfile>\tPID-filename\n\t-i <ip:port>\tIP-Address:Port to send UDP-packets to russound\n\t-l <UDP-port>\tUDP port to listen on\n\t-a <KNX address>\tKNX start-address (see README)\n\t-z <number>\tNumber of Zones to support\n\t-u <eib url>\tURL to conatct eibd like localo:/tmp/eib or ip:192.168.0.101\n"
+#define USAGESTRING "\n\t-d\tRun as daemon/No debug output\n\t-p <pidfile>\tPID-filename\n\t-i <ip:port>\tIP-Address:Port to send UDP-packets to russound\n\t-l <UDP-port>\tUDP port to listen on\n\t-a <KNX address>\tKNX start-address (see README)\n\t-z <number>\tNumber of Zones to support\n\t-u <eib url>\tURL to conatct eibd like localo:/tmp/eib or ip:192.168.0.101\n\t-s\t(Optional) send all values to KNX on startup of daemon\n"
 #define NUM_THREADS 2
 #define MAX_ZONES 31
 #define RETRY_TIME 5
 #define BUFLEN 1024
-#define POLLING_INTERVAL 60
+#define POLLING_INTERVAL 10
 #define ZONES_PER_CONTROLLER 6
 #define RUSS_KEYPAD_ID 0x70
 
 pthread_mutex_t zonelock = PTHREAD_MUTEX_INITIALIZER; 
 pthread_mutex_t initlock = PTHREAD_MUTEX_INITIALIZER; 
+pthread_mutex_t standbylock = PTHREAD_MUTEX_INITIALIZER; 
 
 //FIXME:make struct zone dynamic
 typedef struct Zone_t {
@@ -79,6 +80,7 @@ int knxstartaddress = 50000;
 int numzones = ZONES_PER_CONTROLLER;
 int pidFilehandle;
 char *pidfilename = "/var/run/russconnectd.pid";
+int sendOnStart = 0;
 
 //FIXME: also handle serial-port directly?
 struct sockaddr_in si_me, si_other;
@@ -137,6 +139,7 @@ char *russChecksum(char* buf, int len) {
 
 void *sendrussPolling(unsigned char zone) {
 	syslog(LOG_DEBUG, "polling zone %d",zone);
+	pthread_mutex_trylock(&standbylock);
 	char buf_onvol[25] = { 0xF0, 0, 0, 0x7F, 0, 0, RUSS_KEYPAD_ID, 0x01, 0x05, 0x02, 0, 0, 0, 0x04, 0, 0, 0, 0xF7 };
 	buf_onvol[1] = zone/ZONES_PER_CONTROLLER;
 	buf_onvol[11] = zone%ZONES_PER_CONTROLLER;
@@ -158,8 +161,12 @@ void *sendrussPolling(unsigned char zone) {
 
 void *sendrussFunc(int controller, int zone, int func, int val) {
 	syslog(LOG_DEBUG,"write ctrl %d zone %d func %d val 0x%02X",controller,zone,func,val);
-	
+
 	//TODO: send on-telegram to actuator
+
+	//block here until something is received from russound (it's turned off)
+	pthread_mutex_lock(&standbylock);
+	pthread_mutex_unlock(&standbylock);
 	char buf_msg1[25] = { 0, 0, 0, 0x7F, 0, 0, RUSS_KEYPAD_ID, 0x05, 0x02, 0x02, 0, 0, 0xF1, 0x23, 0, 0, 0, 0, 0, 0x01, 0, 0xF7 };
 	buf_msg1[1] = controller;
 	buf_msg1[17] = zone;
@@ -207,7 +214,10 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
 		case 6: //bal
 			buf_msg2[0] = 0xF0;
 			buf_msg2[13] = 0x03;
-			buf_msg2[21] = val;
+			if (val>127)
+				buf_msg2[21] = val-256+10;
+			else
+				buf_msg2[21] = val+10;
 			break;
 		case 7: //party
 			buf_msg2[0] = 0xF0;
@@ -298,6 +308,12 @@ void *sendKNXdgram(int type, int dpt, eibaddr_t dest, unsigned char val) {
 	  buf[2] = val;
 	  len=3;
 	  break;
+	case 6:
+	case 6001:
+	  //FIXME: This is basically wrong but as we get a uchar we expect the sender to know..
+	  buf[2] = val;
+	  len=3;
+	  break;
 /*
 	case 9:
 	  fval=atof(data);
@@ -351,11 +367,17 @@ void *sendKNXresponse(eibaddr_t dest, int zone, int func) {
 			break;
 		case 3:
 		case 23:
-			sendKNXdgram (0x40,51,dest,zones[zone].bass);
+			if (zones[zone].bass<10)
+				sendKNXdgram (0x40,51,dest,zones[zone].bass-10+256);
+			else
+				sendKNXdgram (0x40,51,dest,zones[zone].bass-10);
 			break;
 		case 4:
 		case 24:
-			sendKNXdgram (0x40,51,dest,zones[zone].treble);
+			if (zones[zone].treble<10)
+				sendKNXdgram (0x40,51,dest,zones[zone].treble-10+256);
+			else
+				sendKNXdgram (0x40,51,dest,zones[zone].treble-10);
 			break;
 		case 5:
 		case 25:
@@ -363,7 +385,10 @@ void *sendKNXresponse(eibaddr_t dest, int zone, int func) {
 			break;
 		case 6:
 		case 26:
-			sendKNXdgram (0x40,51,dest,zones[zone].balance);
+			if (zones[zone].balance<10)
+				sendKNXdgram (0x40,51,dest,zones[zone].balance-10+256);
+			else
+				sendKNXdgram (0x40,51,dest,zones[zone].balance-10);
 			break;
 		case 27:
 			sendKNXdgram (0x40,1,dest,zones[zone].partymode);
@@ -467,7 +492,7 @@ void *updateZone(unsigned char num, unsigned char val, int func) {
 	syslog(LOG_DEBUG, "update Zone %d val %d func %d",num,val,func);
 	int controller = num/ZONES_PER_CONTROLLER;
 	int zone = num%ZONES_PER_CONTROLLER;
-	//TODO IMPORTANT!: lock mutex befor updating
+	//lock mutex befor updating
 	pthread_mutex_lock (&zonelock);
 	switch (func) {
 			case 1:
@@ -487,13 +512,21 @@ void *updateZone(unsigned char num, unsigned char val, int func) {
 				break;
 			case 4:
 				zones[num].bass =val;
-				if (zones[num].inited)
-					sendKNXdgram (0x80,51,(knxstartaddress+33)+(zone*40)+(controller*256),val);
+				if (zones[num].inited) {
+					if (val<10)
+						sendKNXdgram (0x80,51,(knxstartaddress+33)+(zone*40)+(controller*256),val-10+256);
+					else
+						sendKNXdgram (0x80,51,(knxstartaddress+33)+(zone*40)+(controller*256),val-10);
+				}
 				break;
 			case 5:
 				zones[num].treble =val;
-				if (zones[num].inited)
-					sendKNXdgram (0x80,51,(knxstartaddress+34)+(zone*40)+(controller*256),val);
+				if (zones[num].inited) {
+					if (val<10)
+						sendKNXdgram (0x80,51,(knxstartaddress+34)+(zone*40)+(controller*256),val-10+256);
+					else
+						sendKNXdgram (0x80,51,(knxstartaddress+34)+(zone*40)+(controller*256),val-10);
+				}
 				break;
 			case 6:
 				zones[num].loudness =val;
@@ -502,8 +535,12 @@ void *updateZone(unsigned char num, unsigned char val, int func) {
 				break;
 			case 7:
 				zones[num].balance =val;
-				if (zones[num].inited)
-					sendKNXdgram (0x80,51,(knxstartaddress+36)+(zone*40)+(controller*256),val);
+				if (zones[num].inited) {
+					if (val<10)
+						sendKNXdgram (0x80,51,(knxstartaddress+36)+(zone*40)+(controller*256),val-10+256);
+					else
+						sendKNXdgram (0x80,51,(knxstartaddress+36)+(zone*40)+(controller*256),val-10);
+				}
 				break;
 			case 8:
 				zones[num].partymode =val;
@@ -527,113 +564,134 @@ void *updateZone(unsigned char num, unsigned char val, int func) {
 	return 0;
 }
 
+void *parseRussMsg(unsigned char* buf, int len) {
+	int i;
+	if ((len==34) && (buf[0]==0xF0) && (buf[9]==0x04)) { //zone-status
+			syslog(LOG_DEBUG,"russ Controller:%d Zone:%d Status:%d src:%d vol:%d bass:%d treb:%d loud:%d bal:%d sys:%d shrsrc:%d party:%d,DnD:%d\n",
+			       buf[4],buf[12],buf[20],buf[21],buf[22],buf[23],buf[24],buf[25],buf[26],buf[27],buf[28],buf[29],buf[30]);
+		buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
+		if (sendOnStart)
+			zones[buf[12]].inited = 1;
+		
+		if (buf[20] != zones[buf[12]].zonepower)
+			updateZone(buf[12],buf[20],1);
+		if (buf[21] != zones[buf[12]].srcid)
+			updateZone(buf[12],buf[21],2);
+		if (buf[22] != zones[buf[12]].volume)
+			updateZone(buf[12],buf[22],3);
+		if (buf[23] != zones[buf[12]].bass)
+			updateZone(buf[12],buf[23],4);
+		if (buf[24] != zones[buf[12]].treble)
+			updateZone(buf[12],buf[24],5);
+		if (buf[25] != zones[buf[12]].loudness)
+			updateZone(buf[12],buf[25],6);
+		if (buf[26] != zones[buf[12]].balance)
+			updateZone(buf[12],buf[26],7);
+		if (buf[29] != zones[buf[12]].partymode)
+			updateZone(buf[12],buf[29],8);
+		if (buf[30] != zones[buf[12]].dnd)
+			updateZone(buf[12],buf[30],9);
+		zones[buf[12]].inited = 1;
+	} else if ((len==24) && (buf[0]==0xF0) && (buf[9]==0x05) && (buf[13]==0x00)) { //zone turn-on volume
+		//FIXME: this *might* be wrong andf trigger also on other msgs, as it's written otherwise in the docs, the checked bytes are just a guess!
+			syslog(LOG_DEBUG,"russ Controller:%d Zone:%d TurnOnVolume:%d",
+			       buf[4],buf[12],buf[21]);
+		buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
+		if (buf[21] != zones[buf[12]].onvolume)
+			updateZone(buf[12],buf[21],10);
+	} else {
+		//FIXME: just for debugging
+		//for (i=0; i<len; i++)
+		//	printf("%d:0x%02X ",i,buf[i]);
+		printf(" unknown len: %d ",len);
+		for (i=0; i<len; i++)
+			printf("0x%02X ",buf[i]);
+		printf("\n");
+	}
+	return 0;
+}
+
 void *russhandler()
 {
-	int i;
+	int cflag,worked;
 	unsigned char buf[BUFLEN];
 	unsigned char prevbuf[BUFLEN];
 	int prevlen = 0;
 	syslog(LOG_DEBUG, "Russound reader thread started");
 	while (1) {
+		//unlock standby-mutex as we received something
+		pthread_mutex_unlock(&standbylock);
 		int len = recvfrom(udpSocket, buf, BUFLEN, 0, (struct sockaddr *) &si_other, &slen);
 		if (len==-1) {
 			syslog(LOG_WARNING, "russ: recvfrom failed");
 			sleep(RETRY_TIME);
 			break;
 		}
+
 		/* Stick together fragmented telegrams, start is F0, end is F7
-		*/
 		//FIXME: we assume either complete telegrams or fragmented but no overlapping messages in sep. udp dgrams!
-		
-		//DEBUG
+		int i,pos;
+
 		//for (i=0; i<len; i++)
 		//	printf("PRE-parse: %d:0x%02X ",i,buf[i]);
 		printf( "PRE-Parse: %d -> ",len);
 		for (i=0; i<len; i++)
 			printf( "0x%02X ",buf[i]);
 		printf( "\n");
-		//END DEBUG code
+		*/
 		if ((len + prevlen) > BUFLEN) {
 			syslog(LOG_INFO, "Message too large: %d + %d !!",len,prevlen);
 			prevlen=0;
 			continue;
 		}
 		
-		if (buf[0] == 0xF0 && buf[len-1] == 0xF7) { // complete message
-			syslog(LOG_DEBUG, "----> COMPLETE <---- message received, size %d \n", len);
-		} else if (buf[0] == 0xF0) { // start of new message
-			printf("..START..\n");
-			prevlen = len;
-			memcpy(prevbuf,buf,len);
-			continue;
-		} else if (prevlen > 0 && prevbuf[0] == 0xF0 && buf[len-1] == 0xF7) { // message complete
-			printf("..complete..%d %d\n",prevlen,len);
-			memcpy(prevbuf+prevlen,buf,len);
-			len += prevlen;
-			prevlen = 0;
-			memcpy(buf,prevbuf,len);
-		} else if (prevlen > 0 && prevbuf[0] == 0xF0) { //continuation message
-			printf("..continue..%d %d\n",prevlen,len);
-			memcpy(prevbuf+prevlen,buf,len);
-   			prevlen += len;
-			continue;
-		} else { //DUNNO!!
-			syslog(LOG_DEBUG,"---> DUNNO <--- !!! resetting message buffers!");
-			prevlen = 0;
-			prevbuf[0] = 0x0;
-			continue;
-		}
-		//DEBUG
-		printf( "POST-Parse: %d -> ",len);
-		for (i=0; i<len; i++)
-			printf( "0x%02X ",prevbuf[i]);
-		printf( "\n");
-		//END DEBUG code
+		worked = 0;
+		//while (worked < len) {
+			if (buf[0] == 0xF0 && buf[len-1] == 0xF7) { // complete message
+				syslog(LOG_DEBUG, "----> COMPLETE <---- message received, size %d \n", len);
+			} else if (buf[0] == 0xF0) { // start of new message
+				//printf("..START..\n");
+				prevlen = len;
+				worked += len;
+				memcpy(prevbuf,buf,len);
+				cflag = 1;
+				continue;
+			} else if (prevlen > 0 && prevbuf[0] == 0xF0 && buf[len-1] == 0xF7) { // message complete
+				//printf("..complete..%d %d\n",prevlen,len);
+				memcpy(prevbuf+prevlen,buf,len);
+				len += prevlen;
+				prevlen = 0;
+				memcpy(buf,prevbuf,len);
+			} else if (prevlen > 0 && prevbuf[0] == 0xF0) { //continuation message
+				//printf("..continue..%d %d\n",prevlen,len);
+				memcpy(prevbuf+prevlen,buf,len);
+	   			prevlen += len;
+				worked += len;
+				cflag = 1;
+				continue;
+			} else { //DUNNO!!
+				syslog(LOG_DEBUG,"---> DUNNO <--- !!! resetting message buffers!");
+				prevlen = 0;
+				prevbuf[0] = 0x0;
+				cflag = 1;
+				continue;
+			}
+			/* 
+			printf( "POST-Parse: %d -> ",len);
+			for (i=0; i<len; i++)
+				printf( "0x%02X ",prevbuf[i]);
+			printf( "\n");
+			*/
 		
-		//TODO: Checksum calculation / check of russound-message
-		if ((len==34) && (buf[0]==0xF0) && (buf[9]==0x04)) { //zone-status
-				syslog(LOG_DEBUG,"russ Controller:%d Zone:%d Status:%d src:%d vol:%d bass:%d treb:%d loud:%d bal:%d sys:%d shrsrc:%d party:%d,DnD:%d\n",
-				       buf[4],buf[12],buf[20],buf[21],buf[22],buf[23],buf[24],buf[25],buf[26],buf[27],buf[28],buf[29],buf[30]);
-			buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
-			if (buf[20] != zones[buf[12]].zonepower)
-				updateZone(buf[12],buf[20],1);
-			if (buf[21] != zones[buf[12]].srcid)
-				updateZone(buf[12],buf[21],2);
-			if (buf[22] != zones[buf[12]].volume)
-				updateZone(buf[12],buf[22],3);
-			if (buf[23] != zones[buf[12]].bass)
-				updateZone(buf[12],buf[23],4);
-			if (buf[24] != zones[buf[12]].treble)
-				updateZone(buf[12],buf[24],5);
-			if (buf[25] != zones[buf[12]].loudness)
-				updateZone(buf[12],buf[25],6);
-			if (buf[26] != zones[buf[12]].balance)
-				updateZone(buf[12],buf[26],7);
-			if (buf[29] != zones[buf[12]].partymode)
-				updateZone(buf[12],buf[29],8);
-			if (buf[30] != zones[buf[12]].dnd)
-				updateZone(buf[12],buf[30],9);
-			zones[buf[12]].inited = 1;
-		} else if ((len==24) && (buf[0]==0xF0) && (buf[9]==0x05) && (buf[13]==0x00)) { //zone turn-on volume
-			//FIXME: this *might* be wrong andf trigger also on other msgs, as it's written otherwise in the docs, the checked bytes are just a guess!
-				syslog(LOG_DEBUG,"russ Controller:%d Zone:%d TurnOnVolume:%d",
-				       buf[4],buf[12],buf[21]);
-			buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
-			if (buf[21] != zones[buf[12]].onvolume)
-				updateZone(buf[12],buf[21],10);
-		} else {
-			//FIXME: just for debugging
-			for (i=0; i<len; i++)
-				printf("%d:0x%02X ",i,buf[i]);
-			printf(" unknown len: %d\n",len);
-			for (i=0; i<len; i++)
-				printf("0x%02X ",buf[i]);
-			printf("\n");
-		}
-	}
+			//TODO: Checksum calculation / check of russound-message
+			parseRussMsg(buf,len);
+		//} //end while worked
+		if (cflag)
+			continue;
+	} //end with recvfrom
 	syslog(LOG_WARNING,"russ: closed socket"); //break in read-loop
 	pthread_exit(NULL);
-}
+} //end func russhandler
 
 eibaddr_t readgaddr (const char *addr) {
 	int a, b, c;
@@ -682,10 +740,13 @@ int main(int argc, char **argv) {
 	char *p;
 	char pidstr[255];
 	
-	while ((c = getopt (argc, argv, "dp:i:l:a:z:u:")) != -1)
+	while ((c = getopt (argc, argv, "dp:i:l:a:z:u:s")) != -1)
 		switch (c) {
 			case 'd':
 				daemonize = 1;
+				break;
+			case 's':
+				sendOnStart = 1;
 				break;
 			case 'p':
 				pidfilename = optarg;
@@ -782,6 +843,7 @@ int main(int argc, char **argv) {
 	// PTHREAD_CREATE_DETACHED?
 	knxthread = pthread_create(&threads[1], NULL, knxhandler, NULL); //id, thread attributes, subroutine, arguments
 	russthread = pthread_create(&threads[2], NULL, russhandler, NULL); //id, thread attributes, subroutine, arguments
+	syslog(LOG_DEBUG,"Threads created: %d %d",knxthread,russthread);
 	//TODO: Maybe another console/TCP-server/Logging thread?
 	while (1) {
 		syslog(LOG_DEBUG, "%s daemon running", DAEMON_NAME);

@@ -36,5 +36,6 @@ RS = GA readable/sends status updates on change
 
 *** Outlook
 - *maybe* make much more modular and other interfaces (simple UDP/TCP server like C0 Z1 VolUp?)
+-> implement RIO protocal partially
 - don't depend on libeibclient then
 - *maybe* add outgoing interfaces for KNX-> mpd,vdr,.. to stick multiroom togehter
