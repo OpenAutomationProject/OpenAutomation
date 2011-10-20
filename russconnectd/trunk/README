@@ -1,14 +1,16 @@
 *** Russound RNET(R) to EIB/KNX bridge
 
 - eibd is needed for KNX communication, either locally or remote
+(subject to get optional when TCP-Server/lirc-interface is implemented)
 - uses mainly native Russound-Values
-TODO: document various values for Volume, bass,.. better
 - controllers and zone-numbers are zero based!
 - use socat or Moxa to get serial-data from/to UDP:
 	19200 8N1, No flowctrl, no special stop chars needed
 
 *** INSTALL
-- needs pthread and libeibclient from bcusdk/eibd
+- needs pthread and libeibclient from bcusdk/eibd, but autotools etc. should 
+work for release.tar.gz with
+./configure; make; make install
 	
 *** Group address structure:
 - given a start-address the next 256 GA are used per 6 Zones, currently pretty hardcoded
@@ -19,23 +21,20 @@ Example: Start-address given 10/1/0
 10/1/2 WO Actuator powering the controllers (not yet)
 
 10/1/10 W Zone 1 Power on/off 0/1
-... see .ods
-
-W = GA writeable
-RS = GA readable/sends status updates on change
+... -> see ga_list.ods for an example
 
 *** TODO:
 - see various TODO/FIXME in source
 - reconnection/error-handling if network-problems occur (mainly eibd?)
-- prettify code / split main.c
-- fix dependency on uclibc++ (?) in OpenWRT Makefile
-- change russ UDP-socket to be shared for send/receive with listening (-l) sourceport for outgoing
-    (makes usage with socat udp-recvfrom easier)
+- prettify code / split up main.c
+- fix dependency on uclibcxx (!?) in OpenWRT Makefile
 - supply examples for socat
 - directly connect serialport
 
 *** Outlook
 - *maybe* make much more modular and other interfaces (simple UDP/TCP server like C0 Z1 VolUp?)
 -> implement RIO protocal partially
+-> connect to lirc directly?
 - don't depend on libeibclient then
 - *maybe* add outgoing interfaces for KNX-> mpd,vdr,.. to stick multiroom togehter
+- add at least a KNX-address to switch on/off to avoid ext. logic here

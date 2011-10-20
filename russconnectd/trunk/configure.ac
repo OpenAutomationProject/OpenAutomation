@@ -27,8 +27,11 @@ IT_PROG_INTLTOOL([0.35.0])
 AM_PROG_LIBTOOL
 
 
-
-
+dnl **********
+dnl with ....
+dnl ''''''''''
+AC_ARG_WITH(eib,  [  --without-eib       build without EIB/KNX support])
+dnl not yet..
 
 
 AC_OUTPUT([
