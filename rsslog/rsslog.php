@@ -18,6 +18,8 @@
 // 4. Remove old content:
 //    URL parameter "r":   the timestamp (seconds since 1970) of the oldest log
 //                         line to keep
+// 5. Get content as JSON:
+//    URL parameter "j"
 
 // create database connection
 $db = sqlite_open('rsslog.db', 0666, $error);
@@ -60,6 +62,41 @@ if( isset($_GET['c']) )
 {
   $timestamp  = $_GET['r'] ? $_GET['r'] : '';
   delete( $db, $timestamp );
+} else if( isset($_GET['j']) )
+{
+  ?>
+{
+  "responseData" : {
+    "feed" : {
+      "feedUrl": "<?php echo 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['SCRIPT_NAME']; ?>",
+      "title": "RSS supplied logs",
+      "link": "<?php echo 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['SCRIPT_NAME']; ?>",
+      "author": "",
+      "description": "RSS supplied logs",
+      "type": "rss20",
+      "entries": [
+<?php
+  $result = retrieve( $db, $log_filter );
+  $first = true;
+  while( sqlite_has_more($result) )
+  {
+    $row = sqlite_fetch_array($result, SQLITE_ASSOC ); 
+    if( !$first ) echo ",\n";
+    echo '{';
+    echo '"title": "' . $row['content'] . '",';
+    echo '"content": "' . $row['content'] . '",';
+    echo '"publishedDate": "' . date( DATE_RFC822, $row['t'] ) . '"';
+    echo '}';
+    $first = false;
+  }
+?>
+      ]
+    }
+  },
+  "responseDetails" : null,
+  "responseStatus" : 200
+}
+  <?php
 } else {
   // send logs
   $log_filter  = $_GET['f'] ? $_GET['f'] : '';
