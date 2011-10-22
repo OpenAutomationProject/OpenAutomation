@@ -48,6 +48,7 @@ if( isset($_GET['c']) )
     $row = sqlite_fetch_array($result, SQLITE_ASSOC ); 
     echo '<tr>';
     echo '<td>' . date( DATE_RFC822, $row['t'] ) . '</td>';
+    echo '<td>' . $row['t'] . '</td>';
     echo '<td>' . $row['content'] . '</td>';
     echo "</tr>\n";
   }
@@ -119,7 +120,8 @@ function insert( $db, $content, $tags )
   // store a new log line
   $q = 'INSERT INTO Logs(content, t) VALUES( ' .
        "  '" . sqlite_escape_string( $content ) . "'," .
-       "  datetime('now','localtime')" .
+//       "  datetime('now','localtime')" .
+       "  datetime('now')" .
        ')';
   
   $ok = sqlite_exec($db, $q, $error);
@@ -131,14 +133,16 @@ function insert( $db, $content, $tags )
 // return a handle to all the data
 function retrieve( $db, $filter )
 {
-  $q = "SELECT content, strftime('%s', t, 'localtime') AS t FROM Logs";
+//  $q = "SELECT content, strftime('%s', t, 'localtime') AS t FROM Logs";
+  $q = "SELECT content, strftime('%s', t) AS t FROM Logs";
   return sqlite_query( $db, $q, SQLITE_ASSOC );
 }
 
 // delete all log lines older than the timestamp
 function delete( $db, $timestamp )
 {
-  $q = "DELETE from Logs WHERE t < datetime($timestamp, 'unixepoch', 'localtime')";
+  //$q = "DELETE from Logs WHERE t < datetime($timestamp, 'unixepoch', 'localtime')";
+  $q = "DELETE from Logs WHERE t < datetime($timestamp, 'unixepoch')";
   $ok = sqlite_exec($db, $q, $error);
   
   if (!$ok)
