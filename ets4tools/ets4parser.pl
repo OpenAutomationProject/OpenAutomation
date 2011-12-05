@@ -21,6 +21,7 @@
 use XML::Simple;
 use Data::Dumper;
 use POSIX;
+binmode(STDOUT, ":utf8");
 
 no warnings qw(uninitialized);
 
@@ -31,8 +32,8 @@ if (! glob("P-*/0.xml")) { # unzip
 }
 
 my $file0 = glob("P-*/0.xml");
-open(my $fh, "<:encoding(ISO-8859-1)", $file0) || die "can't open file: $!";
-open(my $knxmfh, "<:encoding(ISO-8859-1)", 'knx_master.xml') || die "can't open file: $!";
+open(my $fh, $file0) || die "can't open file: $!";
+open(my $knxmfh, 'knx_master.xml') || die "can't open file: $!";
 
 #special case: only one MG/GA etc. fixed with forcearray
 my $proj = XMLin($fh, ForceArray => ['GroupRange','GroupAddress','Area','Line','DeviceInstance','ComObjectInstanceRef','Send','Receive']);
@@ -150,3 +151,4 @@ sub str2addr {
     	return;
     }
 }
+
