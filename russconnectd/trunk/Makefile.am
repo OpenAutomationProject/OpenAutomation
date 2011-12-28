@@ -11,7 +11,8 @@ russconnectddoc_DATA = \
 	ChangeLog\
 	INSTALL\
 	NEWS\
-	russ_galist.ods
+	russ_galist.ods\
+	cfgmaker.pl
 
 
 INTLTOOL_FILES = intltool-extract.in \
