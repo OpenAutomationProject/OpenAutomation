@@ -140,6 +140,19 @@ char *russChecksum(char* buf, int len) {
 void *sendrussPolling(unsigned char zone) {
 	syslog(LOG_DEBUG, "polling zone %d",zone);
 	pthread_mutex_trylock(&standbylock);
+	
+	//Send device reset-event to wakeup (at least) C3 - yet untested
+	if (keypadid == 0x71) {
+		char buf_devreset[25] = { 0xF0, 0, 0, 0x7F, 0, 0, keypadid, 0x05, 0x02, 0x02, 0, 0, 0x55, 0x01, 0x03, 0, 0x35, 0, 0x01, 0, 0xF7 };
+		buf_devreset[4] = zone/ZONES_PER_CONTROLLER;
+		buf_devreset[5] = zone%ZONES_PER_CONTROLLER;
+		buf_devreset[19] = (int) russChecksum (buf_devreset,21-2);
+		if (sendto(udpSocket, buf_devreset, 21, 0, (struct sockaddr *) &si_other, slen)==-1)
+			syslog(LOG_WARNING,"sendto failed!");
+		usleep(20*1000); //FIXME: throttle a little
+	}
+
+	//Get Poweron-Volume
 	char buf_onvol[25] = { 0xF0, 0, 0, 0x7F, 0, 0, keypadid, 0x01, 0x05, 0x02, 0, 0, 0, 0x04, 0, 0, 0, 0xF7 };
 	buf_onvol[1] = zone/ZONES_PER_CONTROLLER;
 	buf_onvol[11] = zone%ZONES_PER_CONTROLLER;
@@ -148,6 +161,7 @@ void *sendrussPolling(unsigned char zone) {
 		syslog(LOG_WARNING,"sendto failed!");
 	usleep(20*1000); //FIXME: throttle a little (20ms)
 
+	//Get zonestate
 	char buf_getzone[25] = { 0xF0, 0, 0, 0x7F, 0, 0, keypadid, 0x01, 0x04, 0x02, 0, 0, 0x07, 0, 0, 0, 0xF7 };
 	buf_getzone[1] = zone/ZONES_PER_CONTROLLER;
 	buf_getzone[11] = zone%ZONES_PER_CONTROLLER;
@@ -199,12 +213,18 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
 			break;
 		case 3: //bass
 			buf_msg2[0] = 0xF0;
-			buf_msg2[21] = val;
+			if (val>127)
+				buf_msg2[21] = val-256+10;
+			else
+				buf_msg2[21] = val+10;
 			break;
 		case 4: //treb
 			buf_msg2[0] = 0xF0;
 			buf_msg2[13] = 0x01;
-			buf_msg2[21] = val;
+			if (val>127)
+				buf_msg2[21] = val-256+10;
+			else
+				buf_msg2[21] = val+10;
 			break;
 		case 5: //loud
 			buf_msg2[0] = 0xF0;
@@ -787,7 +807,7 @@ int main(int argc, char **argv) {
     if (!daemonize) {
 	    setlogmask(LOG_UPTO(LOG_DEBUG));
 		openlog(DAEMON_NAME, LOG_CONS | LOG_NDELAY | LOG_PERROR | LOG_PID, LOG_USER);
-        syslog(LOG_DEBUG, "startup with debug; Russ-IP: %s:%d, listenport %d, pidfile: %s, start address: %d, number of zones: %d, eibd: %s SendonStartup: %d KeypadID: %d", 
+        syslog(LOG_DEBUG, "startup with debug; Russ-IP: %s:%d, listenport %d, pidfile: %s, start address: %d, number of zones: %d, eibd: %s SendonStartup: %d KeypadID: %li", 
                russipaddr, russport, listenport, pidfilename, knxstartaddress, numzones, eibd_url, sendOnStart, keypadid);
 	} else {
 	    setlogmask(LOG_UPTO(LOG_INFO));

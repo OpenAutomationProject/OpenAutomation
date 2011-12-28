@@ -1,3 +1,9 @@
+russconnectd (0.21-1) lenny; urgency=low
+
+  * fixes/new upstream
+
+ -- Michael Markstaller <devel@wiregate.de>  Wed, 28 Dec 2011 19:29:58 +0100
+
 russconnectd (0.2-3) lenny; urgency=low
 
   * rebuild for lenny
