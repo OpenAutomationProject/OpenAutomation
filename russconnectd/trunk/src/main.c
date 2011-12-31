@@ -38,7 +38,16 @@
 
 #define DEBUG 1
 #define DAEMON_NAME "russconnectd"
-#define USAGESTRING "\n\t-d\tRun as daemon/No debug output\n\t-p <pidfile>\tPID-filename\n\t-i <ip:port>\tIP-Address:Port to send UDP-packets to russound\n\t-l <UDP-port>\tUDP port to listen on\n\t-a <KNX address>\tKNX start-address (see README)\n\t-z <number>\tNumber of Zones to support\n\t-u <eib url>\tURL to conatct eibd like localo:/tmp/eib or ip:192.168.0.101\n\t-s\t(Optional) send all values to KNX on startup of daemon\n\t-k 0x71\t(Optional) Keypad ID - defaults to 0x70 for CAx - use 0x71 for C5"
+#define USAGESTRING "\n"\
+  "\t-d               Run as daemon/No debug output\n"\
+  "\t-p <pidfile>     PID-filename\n"\
+  "\t-i <ip:port>     IP-Address:Port to send UDP-packets to russound\n"\
+  "\t-l <UDP-port>    UDP port to listen on\n"\
+  "\t-a <KNX address> KNX start-address (see README)\n"\
+  "\t-z <number>      Number of Zones to support\n"\
+  "\t-u <eib url>     URL to conatct eibd like localo:/tmp/eib or ip:192.168.0.101\n"\
+  "\t-s               (Optional) send all values to KNX on startup of daemon\n"\
+  "\t-k 0x71          (Optional) Keypad ID - defaults to 0x70 for CAx - use 0x71 for C5\n"
 #define NUM_THREADS 3
 #define MAX_ZONES 31
 #define RETRY_TIME 5
