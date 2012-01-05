@@ -1,14 +1,18 @@
 #!/usr/bin/perl
 use strict;
 
-my $ZONES_PER_CONTROLLER = 6; #static
-my @gfuncnames = qw(SetAllZonesPower WRITEONLYACT NA3 NA4 NA5 AllZonesPowerState);
 my @funcnames = qw(SetPower SetSource SetVol SetBass SetTreble SetLoudness SetBalance SetParty SetDnD SetOnVol SourceSetCMD SourceKeypadCMD SetVolRelative);
 my @statenames = qw(PowerState SourceSelected VolumeState BassState TrebleState LoudnessState BalanceState PartyState DnDState OnVolState);
 my $NamePrefix = "Multiroom";
 my @SourceNames = qw(UKW-Tuner vdr/mpd Denon-WZ WG1 WG2 Hobby);
+my $CV_switch_mapping = "On_Off";
+my $CV_switch_styling = "Green_Red";
+my $CV_source_mapping_name = "RussoundSRC";
+
 ### End config - Don't change below ###
 #######################################
+my $ZONES_PER_CONTROLLER = 6; #static
+my @gfuncnames = qw(SetAllZonesPower WRITEONLYACT NA3 NA4 NA5 AllZonesPowerState);
 
 use File::Copy; 
 use Config::Tiny;
@@ -58,7 +62,7 @@ open VISU3, ">", "visu_snipplet_room_pages_all.xml"  or die $!;
 print VISU1 "    <page name=\"$NamePrefix\">\n";
 
 print VISU2 "<!-- Change SourceNames in script and insert this on top between <mappings> and </mappings> -->\n";
-print VISU2 "      <mapping name=\"RussoundSRC\">\n"
+print VISU2 "      <mapping name=\"$CV_source_mapping_name\">\n"
 ."        <entry value=\"0\">$SourceNames[0]</entry>\n"
 ."        <entry value=\"1\">$SourceNames[1]</entry>\n"
 ."        <entry value=\"2\">$SourceNames[2]</entry>\n"
@@ -103,7 +107,7 @@ for (my $zone=0;$zone<$opts{z};$zone++) {
         print ESF "$NamePrefix.Controller$ctrl." . addr2str($basega+$i+20,1) . "\t" . "$NamePrefix $zonenames[$zone] C" . ($ctrl+1) . "-Z" . ($czone+1) . " $statenames[$i]" . "\t" . $EISmap{$statedpts[$i]} . "\tLow\n";
         print XML "\t\t<object id=\"$zonenames[$zone]_C" . ($ctrl+1) . "_Z" . ($czone+1) . "_" . "$statenames[$i]\" gad=\"" . addr2str($basega+$i+20,1) . "\" type=\"$statedpts[$i]\">" . "$NamePrefix $zonenames[$zone] (C" . ($ctrl+1) . "/Z" . ($czone+1) . ") $statenames[$i]" . "</object>\n";
     }
-    print VISU1 '      <switch mapping="OnOff" styling="GreenRed">'
+    print VISU1 '      <switch mapping="'. $CV_switch_mapping .'" styling="'. $CV_switch_styling .'">'
              ."\n        <label>$zonenames[$zone]</label>\n"
                .'        <address transform="DPT:1.001" readonly="false" type="">' . addr2str($basega,1) . "</address>\n"
                .'        <address transform="DPT:1.001" readonly="true" type="">' .  addr2str($basega+20,1) . "</address>\n"
@@ -115,7 +119,7 @@ for (my $zone=0;$zone<$opts{z};$zone++) {
                ."      </slide>\n";
                
     print VISU2 "    <page name=\"$NamePrefix $zonenames[$zone]\">\n";
-    print VISU2 '      <switch mapping="OnOff" styling="GreenRed">'
+    print VISU2 '      <switch mapping="'. $CV_switch_mapping .'" styling="'. $CV_switch_styling .'">'
              ."\n        <label>Power</label>\n"
                .'        <address transform="DPT:1.001" readonly="false" type="">' . addr2str($basega,1) . "</address>\n"
                .'        <address transform="DPT:1.001" readonly="true" type="">' .  addr2str($basega+20,1) . "</address>\n"
@@ -136,7 +140,7 @@ for (my $zone=0;$zone<$opts{z};$zone++) {
                .'        <address transform="DPT:5.010" readonly="false">' . addr2str($basega+1,1) . "</address>\n"
                .'        <address transform="DPT:5.010" readonly="true">' .  addr2str($basega+21,1) . "</address>\n"
                ."      </infotrigger>\n";
-    print VISU2 '      <switch mapping="OnOff" styling="GreenRed">'
+    print VISU2 '      <switch mapping="'. $CV_switch_mapping .'" styling="'. $CV_switch_styling .'">'
              ."\n        <label>Loudness</label>\n"
                .'        <address transform="DPT:1.001" readonly="false" type="">' . addr2str($basega+5,1) . "</address>\n"
                .'        <address transform="DPT:1.001" readonly="true" type="">' .  addr2str($basega+25,1) . "</address>\n"
@@ -172,12 +176,12 @@ for (my $zone=0;$zone<$opts{z};$zone++) {
                .'        <address transform="DPT:6.001" readonly="false" type="">' . addr2str($basega+6,1) . "</address>\n"
                .'        <address transform="DPT:6.001" readonly="true" type="">' .  addr2str($basega+26,1) . "</address>\n"
                ."      </infotrigger>\n";
-    print VISU2 '      <switch mapping="OnOff" styling="GreenRed">'
+    print VISU2 '      <switch mapping="'. $CV_switch_mapping .'" styling="'. $CV_switch_styling .'">'
              ."\n        <label>Party</label>\n"
                .'        <address transform="DPT:1.001" readonly="false" type="">' . addr2str($basega+7,1) . "</address>\n"
                .'        <address transform="DPT:1.001" readonly="true" type="">' .  addr2str($basega+27,1) . "</address>\n"
                ."      </switch>\n";
-    print VISU2 '      <switch mapping="OnOff" styling="GreenRed">'
+    print VISU2 '      <switch mapping="'. $CV_switch_mapping .'" styling="'. $CV_switch_styling .'">'
              ."\n        <label>DnD</label>\n"
                .'        <address transform="DPT:1.001" readonly="false" type="">' . addr2str($basega+8,1) . "</address>\n"
                .'        <address transform="DPT:1.001" readonly="true" type="">' .  addr2str($basega+28,1) . "</address>\n"
