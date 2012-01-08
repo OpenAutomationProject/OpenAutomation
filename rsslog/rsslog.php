@@ -10,6 +10,7 @@
 // 1. Creating a new log line:
 //    URL parameter "c":   the content of the log
 //    URL parameter "t[]": a tag for later filtering. Multiple might be given
+//    URL parameter "h":   a header(title) for the entry; maybe empty 
 // 2. Recieve the log as RSS:
 //    URL parameter "f":   The (optional) filter, only log lines with a tag
 //                         that fit this string are sent
@@ -21,8 +22,20 @@
 // 5. Get content as JSON:
 //    URL parameter "j"
 
+// look where to store DB
+if (is_dir('/etc/wiregate/rss'))
+    $dbfile = '/etc/wiregate/rss/rsslog.db';
+else
+    $dbfile = 'rsslog.db';
+
+//check if the DIRECTORY is writeable by the webserver
+$dbfile_dir = dirname($dbfile);
+if (! is_writable($dbfile_dir))
+    die ("Database $dbfile not writeable! make sure the file AND " .
+        "the directory are writeable by the webserver!"); 
+
 // create database connection
-$db = sqlite_open('rsslog.db', 0666, $error);
+$db = sqlite_open($dbfile, 0666, $error);
 if (!$db) die ($error);
 
 // create table if it doesn't exists
@@ -33,11 +46,15 @@ if( isset($_GET['c']) )
   // store a new log
   $store = true;
   $log_content = $_GET['c'] ? $_GET['c'] : '<no content>';
+  $log_title = $_GET['h'] ? $_GET['h'] : '';
   if( mb_detect_encoding($log_content, 'UTF-8', true) != 'UTF-8' )
     $log_content = utf8_encode($log_content);
+  if( mb_detect_encoding($log_title, 'UTF-8', true) != 'UTF-8' )
+    $log_title = utf8_encode($log_title);
   $log_tags    = $_GET['t'] ? $_GET['t'] : array();
-  
-  insert( $db, $log_content, $log_tags );
+  if(! is_array($log_tags))
+    die("wrong format - use one or more t[]= for tags");
+  insert( $db, $log_content, $log_title, $log_tags );
 } else if( isset($_GET['dump']) )
 {
   $result = retrieve( $db, $log_filter );
@@ -51,7 +68,9 @@ if( isset($_GET['c']) )
     echo '<tr>';
     echo '<td>' . date( DATE_ATOM, $row['t'] ) . '</td>';
     echo '<td>' . $row['t'] . '</td>';
+    echo '<td>' . $row['title'] . '</td>';
     echo '<td>' . $row['content'] . '</td>';
+    echo '<td>' . $row['tags'] . '</td>';
     echo "</tr>\n";
   }
   ?>
@@ -83,7 +102,7 @@ if( isset($_GET['c']) )
     $row = sqlite_fetch_array($result, SQLITE_ASSOC ); 
     if( !$first ) echo ",\n";
     echo '{';
-    echo '"title": "' . $row['content'] . '",';
+    echo '"title": "' . $row['title'] . '",';
     echo '"content": "' . $row['content'] . '",';
     echo '"publishedDate": "' . date( DATE_ATOM, $row['t'] ) . '"';
     echo '}';
@@ -115,8 +134,10 @@ if( isset($_GET['c']) )
   while( sqlite_has_more($result) )
   {
     $row = sqlite_fetch_array($result, SQLITE_ASSOC ); 
+    if ($row['tags'])
+        $tags = ' [' . $row['tags'] . ']';
     echo '<item>';
-    echo '<title>' . $row['content'] . '</title>';
+    echo '<title>' . $row['title'] . $tags . '</title>';
     echo '<description>' . $row['content'] . '</description>';
     echo '<pubDate>' . date( DATE_ATOM, $row['t'] ) . '</pubDate>';
     echo '</item>' . "\n";
@@ -135,43 +156,47 @@ function create( $db )
 {
   $q = "SELECT name FROM sqlite_master WHERE type='table' AND name='Logs';";
   $result = sqlite_query( $db, $q, SQLITE_NUM );
-  if (!$result) die("Cannot execute query.");
+  if (!$result) die("Cannot execute query. $q");
   if( !sqlite_has_more($result) )
   {
     // no table found - create it
     $q = 'CREATE TABLE Logs(' .
-        '  id INTEGER PRIMARY KEY,' . 
+        '  id INTEGER PRIMARY KEY,' .
+        '  title TEXT,' . 
         '  content TEXT NOT NULL,' .
+        '  tags TEXT,' .
         '  t TIMESTAMP' .
         ');';
     $ok = sqlite_exec($db, $q, $error);
     
     if (!$ok)
-      die("Cannot execute query. $error");
+      die("Cannot execute query $q. $error");
   }
 }
 
 // insert a new log line
-function insert( $db, $content, $tags )
+function insert( $db, $content, $title, $tags )
 {
   // store a new log line
-  $q = 'INSERT INTO Logs(content, t) VALUES( ' .
+  $q = 'INSERT INTO Logs(content, title, tags, t) VALUES( ' .
        "  '" . sqlite_escape_string( $content ) . "'," .
-//       "  datetime('now','localtime')" .
+       "  '" . sqlite_escape_string( $title ) . "'," .
+       "  '" . sqlite_escape_string( implode(",",$tags) ) . "'," .
        "  datetime('now')" .
        ')';
   
   $ok = sqlite_exec($db, $q, $error);
   
   if (!$ok)
-    die("Cannot execute query. $error");
+    die("Cannot execute query. $error (Content: $content Tags: $tags");
 }
 
 // return a handle to all the data
 function retrieve( $db, $filter )
 {
 //  $q = "SELECT content, strftime('%s', t, 'localtime') AS t FROM Logs";
-  $q = "SELECT content, strftime('%s', t) AS t FROM Logs";
+  $q = "SELECT title, content, tags, strftime('%s', t) AS t FROM Logs " .
+       "WHERE tags LIKE '%" . sqlite_escape_string($filter) . "%'";
   return sqlite_query( $db, $q, SQLITE_ASSOC );
 }
 
