@@ -49,7 +49,7 @@ if( isset($_GET['c']) )
   {
     $row = sqlite_fetch_array($result, SQLITE_ASSOC ); 
     echo '<tr>';
-    echo '<td>' . date( DATE_RFC822, $row['t'] ) . '</td>';
+    echo '<td>' . date( DATE_ATOM, $row['t'] ) . '</td>';
     echo '<td>' . $row['t'] . '</td>';
     echo '<td>' . $row['content'] . '</td>';
     echo "</tr>\n";
@@ -85,7 +85,7 @@ if( isset($_GET['c']) )
     echo '{';
     echo '"title": "' . $row['content'] . '",';
     echo '"content": "' . $row['content'] . '",';
-    echo '"publishedDate": "' . date( DATE_RFC822, $row['t'] ) . '"';
+    echo '"publishedDate": "' . date( DATE_ATOM, $row['t'] ) . '"';
     echo '}';
     $first = false;
   }
@@ -118,7 +118,7 @@ if( isset($_GET['c']) )
     echo '<item>';
     echo '<title>' . $row['content'] . '</title>';
     echo '<description>' . $row['content'] . '</description>';
-    echo '<pubDate>' . date( DATE_RFC822, $row['t'] ) . '</pubDate>';
+    echo '<pubDate>' . date( DATE_ATOM, $row['t'] ) . '</pubDate>';
     echo '</item>' . "\n";
   }
   ?>
