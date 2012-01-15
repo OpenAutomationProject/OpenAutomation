@@ -196,7 +196,8 @@ function retrieve( $db, $filter )
 {
 //  $q = "SELECT content, strftime('%s', t, 'localtime') AS t FROM Logs";
   $q = "SELECT title, content, tags, strftime('%s', t) AS t FROM Logs " .
-       "WHERE tags LIKE '%" . sqlite_escape_string($filter) . "%'";
+       "WHERE tags LIKE '%" . sqlite_escape_string($filter) . "%' " .
+       "ORDER by t DESC";
   return sqlite_query( $db, $q, SQLITE_ASSOC );
 }
 
