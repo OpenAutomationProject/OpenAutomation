@@ -11,9 +11,10 @@
 //    URL parameter "c":   the content of the log
 //    URL parameter "t[]": a tag for later filtering. Multiple might be given
 //    URL parameter "h":   a header(title) for the entry; maybe empty 
-// 2. Recieve the log as RSS:
+// 2. Receive the log as RSS:
 //    URL parameter "f":   The (optional) filter, only log lines with a tag
 //                         that fit this string are sent
+//    URL parameter "state": get only rows with state=value
 // 3. Dump all the content in a HTML page:
 //    URL parameter "dump" - no value needed
 // 4. Remove old content:
@@ -21,10 +22,14 @@
 //                         line to keep
 // 5. Get content as JSON:
 //    URL parameter "j"
+// 6. Update state:
+//    URL parameter "u" id of row
+//    URL parameter "state": new state
+
 
 // look where to store DB
 if (is_dir('/etc/wiregate/rss'))
-    $dbfile = '/etc/wiregate/rss/rsslog.db';
+  $dbfile = '/etc/wiregate/rss/rsslog.db';
 else
     $dbfile = 'rsslog.db';
 
@@ -57,7 +62,7 @@ if( isset($_GET['c']) )
   insert( $db, $log_content, $log_title, $log_tags );
 } else if( isset($_GET['dump']) )
 {
-  $result = retrieve( $db, $log_filter );
+  $result = retrieve( $db, $log_filter, '' );
   ?>
 <html><head><meta http-equiv="Content-Type" content="text/html;charset=utf-8" /></head><body>
 <table border="1">
@@ -66,11 +71,13 @@ if( isset($_GET['c']) )
   {
     $row = sqlite_fetch_array($result, SQLITE_ASSOC ); 
     echo '<tr>';
+    echo '<td>' . $row['id'] . '</td>';
     echo '<td>' . date( DATE_ATOM, $row['t'] ) . '</td>';
     echo '<td>' . $row['t'] . '</td>';
     echo '<td>' . $row['title'] . '</td>';
     echo '<td>' . $row['content'] . '</td>';
     echo '<td>' . $row['tags'] . '</td>';
+    echo '<td>' . $row['state'] . '</td>';
     echo "</tr>\n";
   }
   ?>
@@ -95,7 +102,7 @@ if( isset($_GET['c']) )
       "type": "rss20",
       "entries": [
 <?php
-  $result = retrieve( $db, $log_filter );
+  $result = retrieve( $db, $log_filter, '' );
   $first = true;
   while( sqlite_has_more($result) )
   {
@@ -115,27 +122,41 @@ if( isset($_GET['c']) )
   "responseDetails" : null,
   "responseStatus" : 200
 }
-  <?php
+<?php
+} else if ( isset($_GET['u']) ) {
+  $id = $_GET['u'];
+  if (!is_numeric($id))
+    die("wrong format - id has to be numeric");
+  $newstate = $_GET['state'];
+  if (!is_numeric($newstate))
+    die("wrong format - state is required and has to be numeric");
+  updatestate( $db, $id, $newstate );
+?>
+Successfully updated ID=<?php echo $id; ?>.
+<?php
 } else {
   // send logs
   $log_filter  = $_GET['f'] ? $_GET['f'] : '';
+  $state = $_GET['state']; // ? $_GET['state'] : '';
 
   // retrieve data
-  $result = retrieve( $db, $log_filter );
+  $result = retrieve( $db, $log_filter, $state );
   echo '<?xml version="1.0"?>';
   ?>
 <rss version="2.0">
   <channel>
-    <title>RSS supplied logs</title>
+    <title>RSS supplied logs <?php echo $state; echo $log_filter; ?></title>
     <link><?php echo 'http://' . $_SERVER['HTTP_HOST'] . $_SERVER['SCRIPT_NAME']; ?></link>
     <description>RSS supplied logs</description>
   <?php
   // echo '<description>foo</description>';
   while( sqlite_has_more($result) )
   {
-    $row = sqlite_fetch_array($result, SQLITE_ASSOC ); 
+    $row = sqlite_fetch_array($result, SQLITE_ASSOC );
+    $tags = ' [ id=' . $row['id']. ',state=' . $row['state'];
     if ($row['tags'])
-        $tags = ' [' . $row['tags'] . ']';
+        $tags .= ',' . $row['tags'];
+    $tags .= ' ]';
     echo '<item>';
     echo '<title>' . $row['title'] . $tags . '</title>';
     echo '<description>' . $row['content'] . '</description>';
@@ -166,6 +187,7 @@ function create( $db )
         '  content TEXT NOT NULL,' .
         '  tags TEXT,' .
         '  t TIMESTAMP' .
+        '  state INT' .
         ');';
     $ok = sqlite_exec($db, $q, $error);
     
@@ -192,12 +214,15 @@ function insert( $db, $content, $title, $tags )
 }
 
 // return a handle to all the data
-function retrieve( $db, $filter )
+function retrieve( $db, $filter, $state )
 {
 //  $q = "SELECT content, strftime('%s', t, 'localtime') AS t FROM Logs";
-  $q = "SELECT title, content, tags, strftime('%s', t) AS t FROM Logs " .
-       "WHERE tags LIKE '%" . sqlite_escape_string($filter) . "%' " .
-       "ORDER by t DESC";
+  $q = "SELECT id, title, content, tags, state, strftime('%s', t) AS t FROM Logs " .
+       "WHERE tags LIKE '%" . sqlite_escape_string($filter) . "%' ";
+  if (isset($state))
+    $q .= " AND state=" . $state . " ";
+  
+  $q .= "ORDER by t DESC";
   return sqlite_query( $db, $q, SQLITE_ASSOC );
 }
 
@@ -206,6 +231,15 @@ function delete( $db, $timestamp )
 {
   //$q = "DELETE from Logs WHERE t < datetime($timestamp, 'unixepoch', 'localtime')";
   $q = "DELETE from Logs WHERE t < datetime($timestamp, 'unixepoch')";
+  $ok = sqlite_exec($db, $q, $error);
+  
+  if (!$ok)
+    die("Cannot execute query. $error");
+}
+
+function updatestate( $db, $id, $newstate)
+{
+  $q = 'UPDATE Logs SET state=' . $newstate . ' WHERE id=' . $id . ';';
   $ok = sqlite_exec($db, $q, $error);
   
   if (!$ok)
