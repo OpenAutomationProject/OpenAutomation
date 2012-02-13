@@ -10,7 +10,7 @@
 # change path to database !
 
 # config
-my $logdb = '/var/www/rsslog.db';
+my $logdb = '/etc/wiregate/rss/rsslog.db';
 
 # ab hier nichts aendern
 
