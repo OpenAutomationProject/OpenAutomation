@@ -216,9 +216,13 @@ function insert( $db, $content, $title, $tags )
 // return a handle to all the data
 function retrieve( $db, $filter, $state )
 {
-//  $q = "SELECT content, strftime('%s', t, 'localtime') AS t FROM Logs";
-  $q = "SELECT id, title, content, tags, state, strftime('%s', t) AS t FROM Logs " .
-       "WHERE tags LIKE '%" . sqlite_escape_string($filter) . "%' ";
+  $filters = explode(',', $filter); // accept filters by separated by ,
+  foreach ($filters as $i => $val) {
+    $filters[$i] = " (tags LIKE '%" . sqlite_escape_string($val) . "%') ";
+  }
+  
+  $q = "SELECT id, title, content, tags, state, strftime('%s', t) AS t FROM Logs WHERE" . implode('OR', $filters);;
+  
   if (isset($state))
     $q .= " AND state=" . $state . " ";
   
