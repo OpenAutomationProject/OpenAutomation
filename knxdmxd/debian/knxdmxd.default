@@ -1,0 +1,17 @@
+# Defaults for knxdmxd initscript
+# sourced by /etc/init.d/knxdmxd
+# installed at /etc/default/knxdmxd by the maintainer scripts
+
+#
+# This is a POSIX shell fragment
+#
+
+#Usage: ./knxdmxd 
+#	-d               Run as daemon/No debug output
+#	-p <pidfile>     PID-filename
+#	-u <eib url>     URL to contact eibd like local:/tmp/eib or ip:192.168.0.101
+#	-c <config-file> Config-File
+
+# Additional options that are passed to the Daemon.
+DAEMON_ARGS="-d -c /etc/knxdmxd.conf -u local:/tmp/eib -p /var/run/knxdmxd.pid"
+

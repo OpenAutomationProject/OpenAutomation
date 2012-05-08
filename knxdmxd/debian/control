@@ -1,0 +1,14 @@
+Source: knxdmxd
+Section: unknown
+Priority: extra
+Maintainer: Michael Markstaller <devel@wiregate.de>
+Build-Depends: debhelper (>= 5.0), autotools-dev, libeibclient-dev, libjson0-dev
+Standards-Version: 3.9.1
+Homepage: http://sourceforge.net/projects/openautomation/
+
+Package: knxdmxd
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: simple daemon to connect EIB/KNX to DMX using OLA
+ simple daemon to connect EIB/KNX to DMX using OLA
+

@@ -1,0 +1,6 @@
+knxdmxd for Debian
+-----------------------
+
+control startup settings through /etc/default/knxdmxd
+
+ -- Michael Markstaller <devel@wiregate.de>  Di 08 Mai 2012 16:52:30 CEST
