@@ -552,7 +552,7 @@ int main(int argc, char **argv) {
 	//char *p;
 	char pidstr[255];
 	
-	while ((c = getopt (argc, argv, "d:p:u:c:")) != -1)
+	while ((c = getopt (argc, argv, "dp:u:c:")) != -1)
 		switch (c) {
 			case 'd':
 				daemonize = 1;
