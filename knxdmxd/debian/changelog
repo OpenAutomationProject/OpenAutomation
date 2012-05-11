@@ -1,3 +1,9 @@
+knxdmxd (0.1-2) unstable; urgency=low
+
+  * new SVN-version
+
+ -- Michael Markstaller / Elaborated Networks GmbH for WireGate <devel@wiregate.de>  Fri, 11 May 2012 21:01:39 +0200
+
 knxdmxd (0.1) unstable; urgency=low
 
   * Initial Release.
