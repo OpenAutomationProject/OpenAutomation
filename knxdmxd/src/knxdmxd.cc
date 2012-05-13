@@ -45,6 +45,7 @@
 
 #include <fixture.h>
 #include <cue.h>
+#include <cuelist.h>
 
 #define DEBUG 1
 #define DAEMON_NAME "knxdmxd"
@@ -101,13 +102,16 @@ std::string eibd_url = "local:/tmp/eib";
 std::string conf_file = "knxdmxd.conf";
 int pidFilehandle;
 std::string pidfilename = "/var/run/dmxknxd.pid";
+unsigned long long loopCounter = 0;
 
 std::map<int, ola::DmxBuffer> dmxWriteBuffer;
 std::map<std::string, knxdmxd::Fixture> fixtureList;
 std::map<std::string, knxdmxd::Cue> sceneList;
+std::map<std::string, knxdmxd::Cuelist> cuelistList;
 
 knxdmxd::knx_patch_map_t KNX_fixture_patchMap;
 knxdmxd::knx_patch_map_t KNX_scene_patchMap;
+knxdmxd::knx_patch_map_t KNX_cuelist_patchMap;
 
 //map<int, channel> DMXpatchMap;
 
@@ -141,9 +145,14 @@ void signal_handler(int sig) {
 
 void refresh_output(int signo)
 {
+  loopCounter++;
   for(std::map<std::string, knxdmxd::Fixture>::const_iterator i = fixtureList.begin(); i != fixtureList.end(); ++i) {
     fixtureList[i->first].Refresh(dmxWriteBuffer);
   }
+  for(std::map<std::string, knxdmxd::Cuelist>::const_iterator i = cuelistList.begin(); i != cuelistList.end(); ++i) {
+    cuelistList[i->first].Refresh(fixtureList, loopCounter);
+  }
+
   signal(SIGALRM, refresh_output);
 }
 
@@ -194,7 +203,7 @@ void *handleKNXdgram(eibaddr_t dest, unsigned char* buf, int len){
           std::clog << "Received " << (int)val << " @ " << dest << ", updated " << unum << " fixtures" << std::endl;
         }
 		if (KNX_scene_patchMap.count(dest)>0) {
-  		  std::pair<knxdmxd::knx_patch_map_t::iterator, knxdmxd::knx_patch_map_t::iterator> uScenes;  // fixtures that handle this
+  		  std::pair<knxdmxd::knx_patch_map_t::iterator, knxdmxd::knx_patch_map_t::iterator> uScenes;  // scenes that handle this
 		  uScenes = KNX_scene_patchMap.equal_range(dest);
           int unum=0;
           for (knxdmxd::knx_patch_map_t::iterator it = uScenes.first; it != uScenes.second; ++it)
@@ -204,9 +213,18 @@ void *handleKNXdgram(eibaddr_t dest, unsigned char* buf, int len){
           }
           std::clog << "Received " << (int) val << " @ " << dest << ", checked " << unum << " scenes" << std::endl;
         }
-        
-       
-	  }
+		if (KNX_cuelist_patchMap.count(dest)>0) {
+  		  std::pair<knxdmxd::knx_patch_map_t::iterator, knxdmxd::knx_patch_map_t::iterator> uCuelists;  // scenes that handle this
+		  uCuelists = KNX_cuelist_patchMap.equal_range(dest);
+          int unum=0;
+          for (knxdmxd::knx_patch_map_t::iterator it = uCuelists.first; it != uCuelists.second; ++it)
+          {
+            cuelistList[it->second].Update(fixtureList, dest, val, loopCounter);
+            unum++;
+          }
+          std::clog << "Received " << (int) val << " @ " << dest << ", checked " << unum << " cuelists" << std::endl;
+        }
+      }
 	  break;
   }
   return 0;
@@ -294,7 +312,7 @@ void *knxhandler(void *) {
       			std::clog << kLogWarning << "eibd: Unknown APDU from "<< src << " to " << dest << std::endl;
 				break;
 			} else {
-				if ( (KNX_fixture_patchMap.count(dest)+KNX_scene_patchMap.count(dest))<=0 ) //not for us
+				if ( (KNX_fixture_patchMap.count(dest)+KNX_scene_patchMap.count(dest)+KNX_cuelist_patchMap.count(dest))<=0 ) //not for us
 				  continue;
 				handleKNXdgram(dest,buf,len); 
 			}
@@ -312,11 +330,14 @@ void load_config() {
   
   config = json_object_from_file((char *)conf_file.c_str());
  
-  // first all fixtures
+  /*
+   * fixtures
+  */
+  
   struct json_object *fixtures = json_object_object_get(config, "fixtures");
   int fixturenum = json_object_array_length(fixtures);
-  std::clog << "Trying to import " << fixturenum << " fixtures" << std::endl;
-   
+  std::clog << "Trying to import " << fixturenum << " fixture(s)" << std::endl;
+
   for (int i=0; i<fixturenum; i++) { // read all
     // get fixture
     struct json_object *fixture = json_object_array_get_idx(fixtures, i);
@@ -366,9 +387,13 @@ void load_config() {
     fixtureList[fname] = f;
   }
 
+  /*
+   * scenes
+  */
+   
   struct json_object *scenes = json_object_object_get(config, "scenes");
   int scenenum = json_object_array_length(scenes);
-  std::clog << "Trying to import " << scenenum << " scenes" << std::endl;
+  std::clog << "Trying to import " << scenenum << " scene(s)" << std::endl;
   
   for (int i=0; i<scenenum; i++) { // read all
     struct json_object *scene = json_object_array_get_idx(scenes, i);
@@ -407,7 +432,7 @@ void load_config() {
       struct json_object *value = json_object_object_get(channel, "value"); 
 
       if ((!fixt) || (!chan) || (!value)) {
-        std::clog << kLogInfo << "Skipping errorneous channel def " << j << "' in scene '" << sname << "'" << std::endl;
+        std::clog << kLogInfo << "Skipping errorneous channel def " << j << " in scene '" << sname << "'" << std::endl;
         continue;
       }    
   
@@ -420,10 +445,103 @@ void load_config() {
       s.AddChannel(channeldata);
     }
     
-    
+    struct json_object *fading = json_object_object_get(scene, "fading");
+    if (fading) {
+      struct json_object *fading_time = json_object_object_get(fading, "time");  
+      if (!fading_time) {
+        struct json_object *fading_time_in = json_object_object_get(fading, "in"); 
+        struct json_object *fading_time_out = json_object_object_get(fading, "out"); 
+     
+        if ((!fading_time_in) || (!fading_time_out)) {
+          std::clog << kLogInfo << "Skipping errorneous fading def in scene '" << sname << "'" << std::endl;
+        } else {
+           float in = json_object_get_double(fading_time_in);
+           s.SetFading(in, json_object_get_double(fading_time_out));
+        }
+      } else {
+        s.SetFading(json_object_get_double(fading_time));
+      }
+    }
+      
     sceneList[sname] = s;
   }
   
+  /* 
+   * cuelists
+  */
+  
+  struct json_object *cuelists = json_object_object_get(config, "cuelists");
+  int cuelistnum = json_object_array_length(cuelists);
+  std::clog << "Trying to import " << cuelistnum << " cuelist(s)" << std::endl;
+  
+  for (int i=0; i<cuelistnum; i++) { // read all
+    struct json_object *cuelist = json_object_array_get_idx(cuelists, i);
+
+    // get name & create
+    struct json_object *name = json_object_object_get(cuelist, "name");
+    std::string cname = (name) ? json_object_get_string(name) : "_c_"+t_to_string(i);
+    knxdmxd::Cuelist c(cname);
+    
+     // trigger is required
+    struct json_object *trigger = json_object_object_get(cuelist, "trigger");
+    struct json_object *trigger_knx = json_object_object_get(trigger, "knx");
+
+    if ((!trigger) || (!trigger_knx)) {
+      std::clog << kLogInfo << "Skipping cuelist '" << cname << "' (error in trigger)" << std::endl;      
+      continue;
+    }
+
+    struct json_object *trigger_go = json_object_object_get(trigger, "go");
+    c.AddTrigger(KNX_cuelist_patchMap, json_object_get_string(trigger_knx), (trigger_go) ? json_object_get_int(trigger_go) : -1);
+   
+    struct json_object *cues = json_object_object_get(cuelist, "cues");
+    int cuenum = json_object_array_length(cues);
+    for (int i=0; i<cuenum; i++) { // read all
+      struct json_object *cue = json_object_array_get_idx(cues, i);
+
+      struct json_object *name = json_object_object_get(cue, "name");
+      std::string c_name = (name) ? json_object_get_string(name) : cname+"_c_"+t_to_string(i);
+      knxdmxd::Cue c_(c_name);
+     
+      struct json_object *waittime = json_object_object_get(cue, "waittime");
+      c_.SetWaittime((waittime) ? (float) json_object_get_double(waittime) : -1);
+      
+      // get channels
+      struct json_object *channels = json_object_object_get(cue, "channels");
+      if (!channels) {
+        std::clog << kLogInfo << "Skipping cue '" << c_name << "' (no channels defined)" << std::endl;
+        continue;
+      }
+    
+      int channelnum = json_object_array_length(channels);
+      for (int j=0; j<channelnum; j++) { // read all
+        // get channel
+        struct json_object *channel = json_object_array_get_idx(channels, j);
+
+        struct json_object *fixt = json_object_object_get(channel, "fixture"); 
+        struct json_object *chan = json_object_object_get(channel, "channel"); 
+        struct json_object *value = json_object_object_get(channel, "value"); 
+
+        if ((!fixt) || (!chan) || (!value)) {
+          std::clog << kLogInfo << "Skipping errorneous channel def " << j << " in cue '" << c_name << "'" << std::endl;
+          continue;
+        }    
+  
+        knxdmxd::cue_channel_t channeldata;
+        channeldata.fixture = json_object_get_string(fixt);
+        channeldata.name = json_object_get_string(chan);
+        channeldata.value = json_object_get_int(value);
+    
+        // add
+        c_.AddChannel(channeldata);
+      }
+      
+      c.AddCue(c_);
+    }
+       
+    cuelistList[cname] = c;
+  }
+ 
   return;
 }
 

@@ -27,17 +27,24 @@ class Cue {
     Cue() {};
     Cue(const std::string name);
 
-    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, int KNX, int val);    
-    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, std::string KNX, int val);
-    void AddChannel(cue_channel_t channel);
-        
+    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const int KNX, const int val);    
+    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const std::string KNX, const int val);
+    void AddChannel(const cue_channel_t& channel);
+    void SetFading(const float fadeIn, const float fadeOut=-1);
+    void SetWaittime(const float waittime);
+    void Update(std::map<std::string, knxdmxd::Fixture>& fixtureList);        
     void Update(std::map<std::string, knxdmxd::Fixture>& fixtureList, const int KNX, const int val);
-    
+
+    std::string GetName();
+    float GetWaitTime();
+        
   private:
     std::string _name;
     int _triggerKNX;
     int _trigger_val;
     std::list<cue_channel_t> _channel_data;
+    float _fadeIn, _fadeOut;
+    float _waittime;
 };
 
 

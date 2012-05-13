@@ -23,10 +23,11 @@ class Fixture {
     void Patch(knxdmxd::knx_patch_map_t& patchMap, const std::string channel, const std::string DMX, const std::string KNX);
     void SetFadeTime(const float t);
     void PatchFadeTime(const int KNX);
-    void Update(std::string channel, const int val, const bool direct=false);
-    void Update(std::string channel, const int val, const float fadeStep);
+    void Update(const std::string& channel, const int val, const bool direct=false);
+    void Update(const std::string& channel, const int val, const float fadeStep);
     void Update(const int KNX, const int val, const bool direct=false);
     void Refresh(std::map<int, ola::DmxBuffer>& output);
+    int GetCurrentValue(const std::string& channel);
   private:
     std::string _name;
     std::map <std::string, int> _channelKNX;

@@ -47,7 +47,7 @@ void Fixture::PatchFadeTime(const int KNX) {
   _fadeTimeKNX = KNX;
 }
 
-void Fixture::Update(std::string channel, const int val, bool direct) {
+void Fixture::Update(const std::string& channel, const int val, bool direct) {
   _channelValue[channel] = val;
   _channelFadeStep[channel] = direct ? 256 : _fadeStep; 
   std::clog << "Fixture '" << _name << "': Channel '" << channel << "' @ " << val << ", direct: " << ((direct) ? "true" : "false") << std::endl;
@@ -59,16 +59,16 @@ void Fixture::Update(const int KNX, const int val, bool direct) {
   }
 }
 
-void Fixture::Update(std::string channel, const int val, float fadeStep) {
+void Fixture::Update(const std::string& channel, const int val, float fadeStep) {
   _channelValue[channel] = val;
   _channelFadeStep[channel] = fadeStep; 
-  std::clog << "Fixture '" << _name << "': Channel '" << channel << "' @ " << val << ", fading: " << fadeStep << std::endl;
+  std::clog << "Fixture '" << _name << "': Channel '" << channel << "' @ " << _channelValue[channel] << ", fading: " << fadeStep << " old: "<< _channelFloatValue[channel] << std::endl;
 }
 
 
 void Fixture::Refresh(std::map<int, ola::DmxBuffer>& output) {
   for(std::map<std::string, int>::const_iterator i = _channelDMX.begin(); i != _channelDMX.end(); ++i) {  
-    int dmxuniverse = (int) (i->second / 512) , dmxchannel = i->second % 512;
+    int dmxuniverse = (int) (i->second / 512), dmxchannel = i->second % 512;
     int oldValue = output[dmxuniverse].Get(dmxchannel);
     int newValue = _channelValue[i->first];
     if (oldValue<newValue) {
@@ -77,7 +77,7 @@ void Fixture::Refresh(std::map<int, ola::DmxBuffer>& output) {
         _channelFloatValue[i->first] = newValue;
       }
       output[dmxuniverse].SetChannel(dmxchannel, (int) _channelFloatValue[i->first]);
-      std::clog << "Fade: " << dmxuniverse << "." << dmxchannel << " @ " << _channelFloatValue[i->first] << std::endl;
+      //std::clog << "Fade: " << dmxuniverse << "." << dmxchannel << " @ " << _channelFloatValue[i->first] << std::endl;
     }
     if (oldValue>newValue) {
       _channelFloatValue[i->first] -= _channelFadeStep[i->first];
@@ -85,9 +85,12 @@ void Fixture::Refresh(std::map<int, ola::DmxBuffer>& output) {
         _channelFloatValue[i->first] = newValue;
       }
       output[dmxuniverse].SetChannel(dmxchannel, (int) _channelFloatValue[i->first]);
-      std::clog << "Fade: " << dmxuniverse << "." << dmxchannel << " @ " << _channelFloatValue[i->first] << std::endl;
+      //std::clog << "Fade: " << dmxuniverse << "." << dmxchannel << " @ " << _channelFloatValue[i->first] << std::endl;
     }
   }
 }
 
+int Fixture::GetCurrentValue(const std::string& channel) {
+  return (int) _channelFloatValue.find(channel)->second;
+}
 }
