@@ -24,6 +24,7 @@ class Cuelist {
 
     void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const int KNX, const int val);    
     void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const std::string KNX, const int val);
+    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const knxdmxd::Trigger trigger);
     void AddCue(knxdmxd::Cue& cue);
             
     void Update(std::map<std::string, knxdmxd::Fixture>& fixtureList, const int KNX, const int val, const unsigned long long loopCounter);
@@ -33,11 +34,15 @@ class Cuelist {
     void NextCue(std::map<std::string, knxdmxd::Fixture>& fixtureList, const unsigned long long loopCounter);
     
     std::string _name;
-    int _triggerKNX;
-    int _trigger_val;
+    int _go_trigger_knx;
+    int _go_trigger_val;
+    int _halt_trigger_knx;
+    int _halt_trigger_val;
+
     int _current_cue;
     unsigned long long _next_cue_start;
     std::deque<knxdmxd::Cue> _cue_data;
+    std::map<std::string, int> _cue_names;
 
 };
 

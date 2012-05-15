@@ -11,11 +11,17 @@
 
 namespace knxdmxd {
 
-Cue::Cue(const std::string name) {
+Cue::Cue(const std::string name, const bool isLink) {
   _name=name;
   _fadeIn = 0.0;
   _fadeOut = 0.0;
-  std::clog << "Creating Cue '" << name << "'" << std::endl;
+  _waittime = -1;
+  _is_link = isLink;
+  if (!_is_link) {
+    std::clog << "Creating Cue '" << name << "'" << std::endl;
+  } else {
+    std::clog << "Creating link to cue '" << name << "'" << std::endl;
+  }
 }
 
 void Cue::AddTrigger(knxdmxd::knx_patch_map_t& patchMap, int KNX, int val) {
@@ -38,6 +44,10 @@ void Cue::AddTrigger(knxdmxd::knx_patch_map_t& patchMap, std::string KNX, int va
   AddTrigger(patchMap, readgaddr(KNX), val);
 }
 
+void Cue::AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const knxdmxd::Trigger trigger) {
+  AddTrigger(patchMap, trigger.knx, trigger.value);
+}
+
 void Cue::AddChannel(const cue_channel_t& channel) {
   _channel_data.push_back(channel);
   std::clog << "Cue '" << _name << "': added channel definition " << channel.fixture << "/" << channel.name << "@" << channel.value << std::endl;
@@ -46,6 +56,15 @@ void Cue::AddChannel(const cue_channel_t& channel) {
 void Cue::SetFading(const float fadeIn, const float fadeOut) {
   _fadeIn = fadeIn;
   _fadeOut = (fadeOut < 0) ? fadeIn : fadeOut;
+  
+  if (_fadeIn<1.e-3) {
+    _fadeIn = (FADING_INTERVAL/1.e6);
+  }
+
+  if (_fadeOut<1.e-3) {
+    _fadeOut = (FADING_INTERVAL/1.e6);
+  }
+  
   std::clog << kLogDebug << "Cue '" << _name << "': set fading " << _fadeIn << "/" << _fadeOut << std::endl;
 }
 
@@ -60,23 +79,27 @@ void Cue::Update(std::map<std::string, knxdmxd::Fixture>& fixtureList) {
   std::clog << "Called cue " << _name << std::endl;
 }
 
-void Cue::Update(std::map<std::string, knxdmxd::Fixture>& fixtureList, const int KNX, const int val) {
+void Cue::Update(std::map<std::string, knxdmxd::Fixture>& fixtureList, const int KNX, const int val, const int loopCounter) {
   if ((_trigger_val==-1) || (_trigger_val==val)) {
     Update(fixtureList);
   }
 }
 
-std::string Cue::GetName() {
+const std::string Cue::GetName() {
   return _name;
 }
 
-float Cue::GetWaitTime() {
+const float Cue::GetWaitTime() {
   return _waittime;
 }
 
 void Cue::SetWaittime(const float waittime) {
   _waittime = waittime;
   std::clog << kLogDebug << "Cue '" << _name << "': set waittime " << _waittime << std::endl;
+}
+
+bool Cue::isLink() {
+  return _is_link;
 }
 
 }

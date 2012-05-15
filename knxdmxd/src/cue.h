@@ -25,18 +25,21 @@ typedef struct {
 class Cue {
   public:
     Cue() {};
-    Cue(const std::string name);
+    Cue(const std::string name, const bool isLink=false);
 
     void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const int KNX, const int val);    
     void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const std::string KNX, const int val);
+    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const knxdmxd::Trigger trigger);
     void AddChannel(const cue_channel_t& channel);
     void SetFading(const float fadeIn, const float fadeOut=-1);
     void SetWaittime(const float waittime);
     void Update(std::map<std::string, knxdmxd::Fixture>& fixtureList);        
-    void Update(std::map<std::string, knxdmxd::Fixture>& fixtureList, const int KNX, const int val);
+    void Update(std::map<std::string, knxdmxd::Fixture>& fixtureList, const int KNX, const int val, const int loopCounter);
 
-    std::string GetName();
-    float GetWaitTime();
+    const std::string GetName();
+    const float GetWaitTime();
+
+    bool isLink();
         
   private:
     std::string _name;
@@ -45,6 +48,7 @@ class Cue {
     std::list<cue_channel_t> _channel_data;
     float _fadeIn, _fadeOut;
     float _waittime;
+    bool _is_link;
 };
 
 
