@@ -11,35 +11,68 @@
 
 #include <string.h>
 #include <knxdmxd.h>
+#include <trigger.h>
 
 namespace knxdmxd {
 
-class Fixture {
-  public:
-    Fixture() {};
-    Fixture(const std::string name);
-    
-    void Patch(knxdmxd::knx_patch_map_t& patchMap, const std::string channel, const int DMX, const int KNX);
-    void Patch(knxdmxd::knx_patch_map_t& patchMap, const std::string channel, const std::string DMX, const std::string KNX);
-    void SetFadeTime(const float t);
-    void PatchFadeTime(const int KNX);
-    void Update(const std::string& channel, const int val, const bool direct=false);
-    void Update(const std::string& channel, const int val, const float fadeStep);
-    void Update(const int KNX, const int val, const bool direct=false);
-    void Refresh(std::map<int, ola::DmxBuffer>& output);
-    int GetCurrentValue(const std::string& channel);
-  private:
-    std::string _name;
-    std::map <std::string, int> _channelKNX;
-    std::map <std::string, int> _channelDMX;
-    std::map <std::string, int> _channelValue; // set value
-    std::map <std::string, float> _channelFadeStep; // individual by channel
-    std::map <std::string, float> _channelFloatValue; // internal calculation
+  class DMX {
+    protected:
+      static std::map<int, ola::DmxBuffer> output;
+    public:
+      DMX() {};
+      void SetDMXChannel(int channel, int value);
+      int GetDMXChannel(int channel);
+      
+  };
+  
+  typedef struct {
+    int KNX, DMX, value;
+    float fadeStep, floatValue;
+  } fixture_channel_t;
+  
+  class Fixture : private DMX {
+      std::string name_;
+      std::vector<fixture_channel_t> channel_data_;
+      std::map<std::string, unsigned> channel_names_;
+      
+      float _fadeTime; // is set by knx or config
+      float _fadeStep; // calculated from _fadeTime
+      int fadeTimeKNX_;
 
-    float _fadeTime; // is set by knx or config
-    float _fadeStep; // calculated from _fadeTime
-    int _fadeTimeKNX;
-};
+    public:
+      Fixture() {};
+      Fixture(const std::string name);
+
+      void AddChannel(const std::string& name, const std::string& DMX, const std::string& KNX);
+      void SetFadeTime(const float t);
+      void PatchFadeTime(const int KNX) { fadeTimeKNX_ = KNX; };
+      void Update(const std::string& channel, const int val, const float fadeStep);
+      void Process(const Trigger& trigger);
+      void Refresh();
+      
+      int GetCurrentValue(const std::string& channel);
+      std::string& GetName() { return name_; };
+
+      void Lock(const std::string& cuelist, int lockpriority);
+      int isLocked();
+      void Release();
+    
+  };
+
+  typedef Fixture* pFixture;
+  
+  class FixtureList {
+      std::map<std::string, knxdmxd::pFixture> fixture_list_;
+      
+    public:
+      FixtureList() {};
+      
+      void Add(pFixture fixture) {  fixture_list_.insert(std::pair<std::string, knxdmxd::pFixture> (fixture->GetName(), fixture)); };
+      void Process(const Trigger& trigger);
+      void Refresh();
+      
+      pFixture Get(const std::string& name) { return fixture_list_[name]; };
+  };
 
 }
 

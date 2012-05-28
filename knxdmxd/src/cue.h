@@ -13,44 +13,54 @@
 #include <knxdmxd.h>
 #include <list>
 #include <fixture.h>
+#include <trigger.h>
+#include <dmxsender.h>
 
 namespace knxdmxd {
 
-typedef struct { 
-  std::string fixture;
-  std::string name;
-  int value;
-} cue_channel_t;
+  typedef struct { 
+    pFixture fixture;
+    std::string name;
+    int value;
+  } cue_channel_t;
 
-class Cue {
-  public:
-    Cue() {};
-    Cue(const std::string name, const bool isLink=false);
+  class Cue : public TriggerHandler {
+      std::list<cue_channel_t> _channel_data;
+      float _fadeIn, _fadeOut;
+      float _waittime;
+      bool _is_link;
 
-    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const int KNX, const int val);    
-    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const std::string KNX, const int val);
-    void AddTrigger(knxdmxd::knx_patch_map_t& patchMap, const knxdmxd::Trigger trigger);
-    void AddChannel(const cue_channel_t& channel);
-    void SetFading(const float fadeIn, const float fadeOut=-1);
-    void SetWaittime(const float waittime);
-    void Update(std::map<std::string, knxdmxd::Fixture>& fixtureList);        
-    void Update(std::map<std::string, knxdmxd::Fixture>& fixtureList, const int KNX, const int val, const int loopCounter);
+    public:
+      Cue() {};
+      Cue(const std::string name, const bool isLink=false);
 
-    const std::string GetName();
-    const float GetWaitTime();
+      void AddChannel(const cue_channel_t& channel);
+      void SetFading(const float fadeIn, const float fadeOut=-1);
+      void SetWaittime(const float waittime);
 
-    bool isLink();
-        
-  private:
-    std::string _name;
-    int _triggerKNX;
-    int _trigger_val;
-    std::list<cue_channel_t> _channel_data;
-    float _fadeIn, _fadeOut;
-    float _waittime;
-    bool _is_link;
-};
+      const std::string GetName() { return _name; };
+      const float GetWaitTime() { return _waittime; };
 
+      virtual void Go();
+      bool isLink();
+  };
+
+  class Cuelist : public TriggerHandler {
+      int _current_cue;
+      bool _cue_halted;
+      std::vector<knxdmxd::Cue> _cue_data;
+      std::map<std::string, int> _cue_names;
+
+      void NextCue();
+
+    public:
+      Cuelist() {};
+      Cuelist(const std::string name);
+
+      void AddCue(knxdmxd::Cue& cue);
+      void Go();
+      void Halt();        
+  };
 
 }
 

@@ -24,7 +24,7 @@ Log::Log(std::string ident, int option, int facility) {
 
 int Log::sync() {
     if (buffer_.length()) {
-        syslog(priority_, buffer_.c_str());
+        syslog(priority_, "%s", (char *)buffer_.c_str());
         buffer_.erase();
         priority_ = LOG_DEBUG; // default to debug for each message
     }

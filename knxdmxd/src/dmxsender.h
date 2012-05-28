@@ -15,26 +15,37 @@
 #include <ola/OlaCallbackClient.h>
 #include <ola/OlaClientWrapper.h>
 #include <map>
+#include <fixture.h>
 
 namespace knxdmxd {
 
-class DMXSender {
+class DMXSender : private DMX {
+    FixtureList fixture_list_;
+    bool sender_running_;
+    
   public:
-    DMXSender() {};
+    DMXSender() { sender_running_ = false; };
     ~DMXSender();
 
-    bool Init(std::map<int, ola::DmxBuffer> *dmxWriteBuffer);
+    bool Init();
     int Start();
     void SendDMX();
     bool RegisterTimeout();
-    void Terminate();
     
-  private:
-//    unsigned int m_tick;
-    std::map<int, ola::DmxBuffer> *_dmxWriteBuffer;
+    void RefreshFixtures();
+    bool RegisterFixtureTimeout();
+    
+    void Terminate();
+    bool Running() { return sender_running_; };
+   
+    void AddFixture(pFixture fixture) { fixture_list_.Add(fixture); };
+    pFixture GetFixture(const std::string& name) { return fixture_list_.Get(name); };
+    static ola::OlaCallbackClientWrapper& GetOLAClient() { return m_client; }; 
 
-  //  ola::DmxBuffer m_buffer;
-    ola::OlaCallbackClientWrapper m_client;
+    void Process(const Trigger& trigger) { fixture_list_.Process(trigger); };
+
+  private:
+    static ola::OlaCallbackClientWrapper m_client;
 };
 
 
