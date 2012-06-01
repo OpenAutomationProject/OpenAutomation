@@ -42,11 +42,14 @@ namespace knxdmxd {
       knxdmxd::Trigger tr = _triggers[i];
       if (tr==trigger) {
         switch (tr.GetType()) {
-          case knxdmxd::kTriggerGo:
+          case kTriggerGo:
             _handlers[i]->Go();
             break;
-          case knxdmxd::kTriggerHalt:
+          case kTriggerHalt:
             _handlers[i]->Halt();
+            break;
+          case kTriggerDirect:
+            _handlers[i]->Direct(trigger.GetValue());
             break;
           default: ;
         }

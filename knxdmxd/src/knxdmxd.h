@@ -25,10 +25,10 @@ namespace knxdmxd {
   const int kCue = 4;
   const int kCuelist = 8;
   
+  class DMXSender;
 }
 
 eibaddr_t readgaddr (const std::string addr);
-int readdaddr (const std::string addr);
 
 #endif
 

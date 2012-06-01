@@ -12,16 +12,24 @@
 #include <string.h>
 #include <knxdmxd.h>
 #include <trigger.h>
+//#include <ola/OlaCallbackClient.h>
+#include <ola/OlaClientWrapper.h>
+//#include <dmxsender.h>
+
 
 namespace knxdmxd {
 
   class DMX {
     protected:
       static std::map<int, ola::DmxBuffer> output;
+      static ola::OlaCallbackClientWrapper m_client;
+      
     public:
       DMX() {};
       void SetDMXChannel(int channel, int value);
       int GetDMXChannel(int channel);
+      
+      static int Address(const std::string s);
       
   };
   
@@ -49,6 +57,7 @@ namespace knxdmxd {
       void Update(const std::string& channel, const int val, const float fadeStep);
       void Process(const Trigger& trigger);
       void Refresh();
+      bool RegisterRefresh();
       
       int GetCurrentValue(const std::string& channel);
       std::string& GetName() { return name_; };
@@ -69,7 +78,6 @@ namespace knxdmxd {
       
       void Add(pFixture fixture) {  fixture_list_.insert(std::pair<std::string, knxdmxd::pFixture> (fixture->GetName(), fixture)); };
       void Process(const Trigger& trigger);
-      void Refresh();
       
       pFixture Get(const std::string& name) { return fixture_list_[name]; };
   };

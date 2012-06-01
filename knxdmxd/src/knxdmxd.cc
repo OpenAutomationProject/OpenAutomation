@@ -28,7 +28,6 @@
 #include <signal.h>
 #include <getopt.h>
 #include <json/json.h>
-#include <thread>
 
 #include <ola/Logging.h>
 #include <ola/StreamingClient.h>
@@ -55,10 +54,10 @@
   "\t-p <pidfile>     PID-filename\n"\
   "\t-u <eib url>     URL to contact eibd like local:/tmp/eib or ip:192.168.0.101\n"\
   "\t-c <config-file> Config-File\n"
-//#define NUM_THREADS 4
 #define RETRY_TIME 5
 #define BUFLEN 1024
 #define POLLING_INTERVAL 10
+
 
 template<class T>
 std::string t_to_string(T i) {
@@ -84,23 +83,11 @@ eibaddr_t readgaddr (const std::string addr) {
 	return 0;
 }
 
-int readdaddr (const std::string addr) {
-  int universe, channel;
-  sscanf( (char*)addr.c_str(), "%d.%d", &universe, &channel);
-  if (channel==-1) { // default universe is 1
-    channel = universe;
-    universe = 1;
-  }
-  return (universe << 9) + channel;
-}
 
 std::string eibd_url = "local:/tmp/eib";
 std::string conf_file = "knxdmxd.conf";
 int pidFilehandle;
 std::string pidfilename = "/var/run/knxdmxd.pid";
-
-std::map<int, ola::DmxBuffer> knxdmxd::DMX::output;
-
 knxdmxd::TriggerList triggerList;
 knxdmxd::DMXSender sender;
 
@@ -157,74 +144,6 @@ void olahandler() { // thread for OLA connection
 
 }
 
-void knxhandler() {
-
-	std::clog << "KNX thread started" << std::endl;
-	int len;
-	EIBConnection *con;
-	eibaddr_t dest;
-	eibaddr_t src;
-	unsigned char buf[255], val;
-	
-	while (1) //retry infinite
-	{
-		con = EIBSocketURL ((char *)eibd_url.c_str());
-		if (!con) {
-			std::clog << kLogWarning << "eibd: Open failed" << std::endl;
-			sleep(RETRY_TIME);
-			continue;
-		}
-
-		if (EIBOpen_GroupSocket (con, 0) == -1) {
-			std::clog << kLogWarning << "eibd: Connect failed" << std::endl;
-			sleep(RETRY_TIME);
-			continue;
-		}
-
-		while (1)
-		{
-			len = EIBGetGroup_Src (con, sizeof (buf), buf, &src, &dest);
-			if (len == -1) {
-    			std::clog << kLogWarning << "eibd: Read failed" << std::endl;
-				sleep(RETRY_TIME);
-				break;
-			}
-			
-			if (len < 2) {
-    			std::clog << kLogWarning << "eibd: Invalid Packet" << std::endl;
-				break;
-			}
-			
-			if (buf[0] & 0x3 || (buf[1] & 0xC0) == 0xC0) {
-      			std::clog << kLogWarning << "eibd: Unknown APDU from "<< src << " to " << dest << std::endl;
-				break;
-			} else {
-              switch (buf[1] & 0xC0) {
-            	case 0x00:
-                  //    sendKNXresponse (dest,zone+(controller*ZONES_PER_CONTROLLER),func);
-	              break;
-                case 0x40:
-            	  //FIXME: response dunno
-	              break;
-            	case 0x80:
-	              if (buf[1] & 0xC0) {
-                    val = (len==2) ? buf[1] & 0x3F : buf[2];
-        	        std::clog << "Received " << (int)val << " @ " << dest << std::endl;
-                    knxdmxd::Trigger trigger(knxdmxd::kTriggerAll, dest, val);
-                    sender.Process(trigger);
-                    triggerList.Process(trigger);
-                  }
-            	  break;
-              }
-			}
-		}
-		
-     	std::clog << kLogWarning << "eibd: Closed connection" << std::endl; //break in read-loop
-		EIBClose (con);
-	}
-  
-}
-
 knxdmxd::Trigger *json_get_trigger(struct json_object *trigger, const int type) {
 
   if (!trigger) {
@@ -237,13 +156,11 @@ knxdmxd::Trigger *json_get_trigger(struct json_object *trigger, const int type) 
   if (!trigger_knx) {
     return NULL;
   }
-   
+
   int knx = readgaddr(json_object_get_string(trigger_knx));
   int val = (trigger_value) ? json_object_get_int(trigger_value) : -1;
 
-  knxdmxd::Trigger *new_trigger = new knxdmxd::Trigger(type, knx, val);
-  return new_trigger;
-
+  return new knxdmxd::Trigger(type, knx, val);
 }
 
 knxdmxd::Cue *json_get_cue(struct json_object *cue, const int cuenum, const int type) {
@@ -315,6 +232,12 @@ knxdmxd::Cue *json_get_cue(struct json_object *cue, const int cuenum, const int 
   if (waittime) {
     new_cue->SetWaittime(json_object_get_double(waittime));
   }
+
+  struct json_object *delay = json_object_object_get(cue, "delay");
+  if (delay) {
+    new_cue->SetDelay(json_object_get_double(delay));
+  }
+
 
   if (type==knxdmxd::kScene) {
     struct json_object *triggers = json_object_object_get(cue, "trigger");
@@ -445,19 +368,128 @@ void load_config() {
       continue;
     }
 
-    knxdmxd::Trigger *go_trigger = json_get_trigger(json_object_object_get(triggers, "go"), knxdmxd::kTriggerGo);
-    if (go_trigger) {
-      triggerList.Add(*go_trigger, c);
+    knxdmxd::Trigger *trigger;
+
+    trigger = json_get_trigger(json_object_object_get(triggers, "go"), knxdmxd::kTriggerGo);
+    if (trigger) {
+      triggerList.Add(*trigger, c);
     }
 
-    knxdmxd::Trigger *halt_trigger = json_get_trigger(json_object_object_get(triggers, "halt"), knxdmxd::kTriggerHalt);
-    if (halt_trigger) {
-      triggerList.Add(*halt_trigger, c);
+    trigger = json_get_trigger(json_object_object_get(triggers, "halt"), knxdmxd::kTriggerHalt);
+    if (trigger) {
+      triggerList.Add(*trigger, c);
+    }
+
+    trigger = json_get_trigger(json_object_object_get(triggers, "direct"), knxdmxd::kTriggerDirect);
+    if (trigger) {
+      triggerList.Add(*trigger, c);
     }
   }
  
   return;
 }
+
+class KNXHandler : public ola::thread::Thread {
+  public:
+    KNXHandler()
+        : Thread(),
+          m_mutex() {
+    }
+    ~KNXHandler() {}
+
+
+    void knxhandler() {
+  	  std::clog << "KNX thread started" << std::endl;
+	  int len;
+	  EIBConnection *con;
+	  eibaddr_t dest;
+	  eibaddr_t src;
+	  unsigned char buf[255], val;
+	
+	  while (1) { //retry infinite
+		con = EIBSocketURL ((char *)eibd_url.c_str());
+		if (!con) {
+          std::clog << kLogWarning << "eibd: Open failed" << std::endl;
+		  sleep(RETRY_TIME);
+		  continue;
+		}
+
+		if (EIBOpen_GroupSocket (con, 0) == -1) {
+		  std::clog << kLogWarning << "eibd: Connect failed" << std::endl;
+		  sleep(RETRY_TIME);
+		  continue;
+		}
+
+		while (1) {
+		  len = EIBGetGroup_Src (con, sizeof (buf), buf, &src, &dest);
+		  if (len == -1) {
+    	    std::clog << kLogWarning << "eibd: Read failed" << std::endl;
+			sleep(RETRY_TIME);
+			break;
+		  }
+			
+	      if (len < 2) {
+    	    std::clog << kLogWarning << "eibd: Invalid Packet" << std::endl;
+			break;
+		  }
+			
+		  if (buf[0] & 0x3 || (buf[1] & 0xC0) == 0xC0) {
+      		std::clog << kLogWarning << "eibd: Unknown APDU from "<< src << " to " << dest << std::endl;
+			break;
+		  } else {
+            switch (buf[1] & 0xC0) {
+              case 0x00:
+                //    sendKNXresponse (dest,zone+(controller*ZONES_PER_CONTROLLER),func);
+	            break;
+              case 0x40:
+                //FIXME: response dunno
+	            break;
+              case 0x80:
+	            if (buf[1] & 0xC0) {
+                  val = (len==2) ? buf[1] & 0x3F : buf[2];
+                  knxdmxd::Trigger trigger(knxdmxd::kTriggerAll, dest, val);
+                  sender.Process(trigger);
+                  triggerList.Process(trigger);
+                }
+            	break;
+            }
+		  }
+		}
+		
+     	std::clog << kLogWarning << "eibd: Closed connection" << std::endl; //break in read-loop
+		EIBClose (con);
+	  }
+  
+    }
+
+    void *Run() {
+      ola::thread::MutexLocker locker(&m_mutex);
+      knxhandler();
+      return NULL;
+    }
+
+  private:
+    ola::thread::Mutex m_mutex;
+};
+
+class OLAThread : public ola::thread::Thread {
+  public:
+    OLAThread()
+        : Thread(),
+          m_mutex() {
+    }
+    ~OLAThread() {}
+
+    void *Run() {
+      ola::thread::MutexLocker locker(&m_mutex);
+      olahandler();
+      return NULL;
+    }
+
+  private:
+    ola::thread::Mutex m_mutex;
+};
+
 
 int main(int argc, char **argv) {
 
@@ -528,10 +560,12 @@ int main(int argc, char **argv) {
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
     }
+
 	//FIXME: output errors to stderr, change order
 	pidFilehandle = open((char *)pidfilename.c_str(), O_RDWR|O_CREAT, 0600);
 	if (pidFilehandle == -1 )
 	{
+
 		std::clog << kLogInfo << "Could not open pidfile " << pidfilename << ", exiting" << std::endl;
 	    fprintf(stderr, "Could not open pidfile %s, exiting", (char *)pidfilename.c_str());	
 		exit(EXIT_FAILURE);
@@ -547,11 +581,11 @@ int main(int argc, char **argv) {
 
     load_config();
 
-    std::thread knx(knxhandler);
-    std::thread ola(olahandler);
+    KNXHandler knx;
+    OLAThread ola;
 
-    knx.join();
-    ola.join();
+    knx.Start();
+    ola.Start();
 
 	while (1) {
 //		std::clog << DAEMON_NAME << " daemon running" << std::endl;

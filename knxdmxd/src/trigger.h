@@ -43,6 +43,7 @@ namespace knxdmxd {
       virtual void Go() {};
       virtual void Halt() {};
       virtual void Refresh() {};
+      virtual void Direct(const int val) {};
       
       friend std::ostream& operator<<(std::ostream &stream, const TriggerHandler& handler);
   };
