@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 # a simple ETS4 project-parser, just a skeleton playing with and printing out some data
 #
-# (C) 2011 Michael Markstaller <devel@wiregate.de> / Elaborated Networks GmbH
+# (C) 2011-2012 Michael Markstaller <devel@wiregate.de> / Elaborated Networks GmbH
 # All Rights Reserved
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -119,8 +119,9 @@ print "ETS: ". $proj->{ToolVersion} ."\n";
 
 #Version-check 4.0.1387.12605
 my @etsversion = split(/\./, $proj->{ToolVersion});
-if ($etsversion[2] < 1387) {
-	print "error ETS " . $proj->{ToolVersion} . " too old - must be 4.0.3 or higher\n";
+# changed from 4.0 to 4.1 > 4.1.2 (Build 3013)
+if ($etsversion[1] < 1) {
+	print "error ETS " . $proj->{ToolVersion} . " too old - must be 4.1 or higher\n";
 	exit;
 }
 
