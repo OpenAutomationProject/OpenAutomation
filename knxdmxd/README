@@ -1,3 +1,1 @@
-Further describe this program ;)
-
-Use ./configure "CXXFLAGS=-std=c++0x -O3 -pthread"
+doc still missing, but have fun
