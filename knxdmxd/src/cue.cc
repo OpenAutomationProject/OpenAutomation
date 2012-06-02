@@ -17,6 +17,7 @@ namespace knxdmxd {
     fadeOut_ = 0.0;
     waittime_ = -1; // never step automatically
     delay_ = 0.0; // call immediately
+    delay_on_ = false;
     is_link_ = isLink;
     if (!is_link_) {
       std::clog << "Creating Cue " << name << std::endl;
@@ -31,26 +32,24 @@ namespace knxdmxd {
   }
 
   void Cue::SetFading(const float fadeIn, const float fadeOut) {
-    fadeIn_ = fadeIn;
-    fadeOut_ = (fadeOut < 0) ? fadeIn : fadeOut;
-    
-    if (fadeIn_<1.e-3) {
-      fadeIn_ = (FADING_INTERVAL/1.e6);
-    }  
-
-    if (fadeOut_<1.e-3) {
-      fadeOut_ = (FADING_INTERVAL/1.e6);
-    }
+    fadeIn_ = (fadeIn<1.e-3) ? (DMX_INTERVAL/1.e3) : fadeIn;
+    fadeOut_ = (fadeOut<1.e-3) ? (DMX_INTERVAL/1.e3) : fadeOut;
   
     std::clog << kLogDebug << "Cue " << _name << ": set fading " << fadeIn_ << "/" << fadeOut_ << std::endl;
   }
 
   void Cue::Go() {
-    for(std::list<cue_channel_t>::iterator it = _channel_data.begin(); it != _channel_data.end(); ++it) {
-      int currentValue = it->fixture->GetCurrentValue(it->name);
-      int deltaVal = currentValue - it->value;
-      float ft = (deltaVal>0) ? (deltaVal/(fadeOut_*1.e6/FADING_INTERVAL)) : (-deltaVal/(fadeIn_*1.e6/FADING_INTERVAL));
-      it->fixture->Update(it->name, it->value, (float)ft);
+    if ((delay_>0) && (!delay_on_)) {
+      DMXSender::GetOLAClient().GetSelectServer()->RegisterSingleTimeout(
+        (int) delay_*1000, ola::NewSingleCallback(this, &Cue::Go));
+      delay_on_ = true;
+    } else {
+      for(std::list<cue_channel_t>::iterator it = _channel_data.begin(); it != _channel_data.end(); ++it) {
+        int deltaVal = it->fixture->GetCurrentValue(it->name) - it->value;
+        float ft = (deltaVal>0) ? (deltaVal/(fadeOut_*1.e3/DMX_INTERVAL)) : (-deltaVal/(fadeIn_*1.e3/DMX_INTERVAL));
+        it->fixture->Update(it->name, it->value, ft);
+      }
+      delay_on_ = false;
     }
     std::clog << "Called cue " << _name << std::endl;
   }
@@ -59,7 +58,7 @@ namespace knxdmxd {
     _name=name;
     current_cue_=-1;
     was_direct_ = false;
-    cue_halted_=true;
+    cue_halted_ = true;
     std::clog << "Creating Cuelist '" << name << "'" << std::endl;
   }  
 
@@ -85,7 +84,7 @@ namespace knxdmxd {
         std::clog << kLogInfo << "Tried direct call to cue " << direct << " in cuelist " << _name << ": too large" << std::endl;
         return;
       }
-      current_cue_ = direct-1;
+      current_cue_ = direct - 1;
       if (!cue_halted_) // only if cuelist was running
         was_direct_ = true;
     }
@@ -108,7 +107,7 @@ namespace knxdmxd {
           nextCue = _cue_data.at(nextCuenum);
         }
         waittime = nextCue.GetWaitTime();
-        if ((waittime>=0 && !cue_halted_)) {
+        if ((waittime>=0) && (!cue_halted_)) {
           DMXSender::GetOLAClient().GetSelectServer()->RegisterSingleTimeout(
             (int) waittime*1000, ola::NewSingleCallback(this, &Cuelist::NextCue, -1));
         }

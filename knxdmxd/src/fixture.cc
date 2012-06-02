@@ -12,12 +12,13 @@ namespace knxdmxd {
 
   Fixture::Fixture(const std::string name) {
     name_ = name;
+    fadeTimeKNX_ = 0;
     std::clog << "Creating Fixture " << name_ << std::endl;
   }
 
   void Fixture::AddChannel(const std::string& name, const std::string& DMX, const std::string& KNX) {
     fixture_channel_t channel;
-    channel.KNX = (KNX!="") ? readgaddr(KNX) : -1;
+    channel.KNX = (KNX!="") ? KNXHandler::Address(KNX) : -1;
     channel.DMX = Address(DMX);
     channel.value = channel.floatValue = 0; // we start blacked out
     channel.fadeStep = 255; // direct by default
@@ -27,7 +28,7 @@ namespace knxdmxd {
 
   void Fixture::SetFadeTime(const float t) {
     _fadeTime = t;
-    _fadeStep = (t<=0) ? 256 :  256/(t*1e6/FADING_INTERVAL);
+    _fadeStep = (t<=0) ? 256 :  256/(t*1e3/DMX_INTERVAL);
   }
 
   void Fixture::Update(const std::string& channel, const int val, float fadeStep) {
@@ -38,7 +39,6 @@ namespace knxdmxd {
   }
 
   void Fixture::Refresh() {
-    std::cout << "refreshing" << std::endl;
     bool needs_refresh = false;
     for(std::vector<knxdmxd::fixture_channel_t>::iterator it=channel_data_.begin(); it!=channel_data_.end(); ++it) {
       int oldValue = GetDMXChannel(it->DMX);

@@ -28,14 +28,14 @@ namespace knxdmxd {
       std::list<cue_channel_t> _channel_data;
       float fadeIn_, fadeOut_;
       float waittime_, delay_;
-      bool is_link_;
+      bool is_link_, delay_on_;
 
     public:
       Cue() {};
       Cue(const std::string name, const bool isLink=false);
  
       void AddChannel(const cue_channel_t& channel);
-      void SetFading(const float fadeIn, const float fadeOut=-1);
+      void SetFading(const float fadeIn, const float fadeOut);
       void SetWaittime(const float waittime) { waittime_ = waittime; };
       void SetDelay(const float delay) { delay_ = delay; };
       

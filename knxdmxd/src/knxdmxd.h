@@ -11,12 +11,13 @@
 
 #include <iostream>
 #include <map>
+#include <string>
 #include <log.h>
 
 #include <eibclient.h>
 #include <ola/DmxBuffer.h>
+#include <ola/thread/Thread.h>
 
-#define FADING_INTERVAL 25000 // in us
 #define DMX_INTERVAL 25 // in ms
 
 namespace knxdmxd {
@@ -26,9 +27,21 @@ namespace knxdmxd {
   const int kCuelist = 8;
   
   class DMXSender;
-}
+ 
+  class KNXHandler : public ola::thread::Thread {
+    public:
+      KNXHandler() : Thread(), m_mutex() { }
+      ~KNXHandler() {}
 
-eibaddr_t readgaddr (const std::string addr);
+      static eibaddr_t Address(const std::string addr);
+      void knxhandler();
+      void *Run();
+
+    private:
+      ola::thread::Mutex m_mutex;
+  };
+  
+}
 
 #endif
 

@@ -12,10 +12,7 @@
 #include <string.h>
 #include <knxdmxd.h>
 #include <trigger.h>
-//#include <ola/OlaCallbackClient.h>
 #include <ola/OlaClientWrapper.h>
-//#include <dmxsender.h>
-
 
 namespace knxdmxd {
 
