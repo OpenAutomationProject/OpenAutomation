@@ -51,6 +51,9 @@ namespace knxdmxd {
           case kTriggerDirect:
             _handlers[i]->Direct(trigger.GetValue());
             break;
+          case kTriggerProcess:
+            _handlers[i]->Process(trigger);
+            break;
           default: ;
         }
       }

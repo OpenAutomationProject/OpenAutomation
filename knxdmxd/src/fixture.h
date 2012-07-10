@@ -27,6 +27,7 @@ namespace knxdmxd {
       int GetDMXChannel(int channel);
       
       static int Address(const std::string s);
+      static ola::OlaCallbackClientWrapper& GetOLAClient() { return m_client; }; 
       
   };
   
@@ -35,7 +36,12 @@ namespace knxdmxd {
     float fadeStep, floatValue;
   } fixture_channel_t;
   
-  class Fixture : private DMX {
+  typedef struct {
+    std::string locker;
+    int prio;
+  } fixture_lock_t;
+  
+  class Fixture : private DMX, public TriggerHandler {
       std::string name_;
       std::vector<fixture_channel_t> channel_data_;
       std::map<std::string, unsigned> channel_names_;
@@ -43,6 +49,9 @@ namespace knxdmxd {
       float _fadeTime; // is set by knx or config
       float _fadeStep; // calculated from _fadeTime
       int fadeTimeKNX_;
+      fixture_lock_t lock_;
+      
+      bool refresh_;
 
     public:
       Fixture() {};
@@ -53,16 +62,36 @@ namespace knxdmxd {
       void PatchFadeTime(const int KNX) { fadeTimeKNX_ = KNX; };
       void Update(const std::string& channel, const int val, const float fadeStep);
       void Process(const Trigger& trigger);
+      
+      void Wait();
       void Refresh();
       bool RegisterRefresh();
       
       int GetCurrentValue(const std::string& channel);
       std::string& GetName() { return name_; };
 
-      void Lock(const std::string& cuelist, int lockpriority);
-      int isLocked();
-      void Release();
-    
+      // locking
+      bool Lock(const fixture_lock_t& lock) { 
+        if ((lock_.locker == lock.locker) || (lock_.locker == "") || (lock_.prio<=lock.prio)) {
+          std::clog << "Locking " << lock.locker << " @ " << lock.prio << std::endl;
+          lock_ = lock;
+          return true;
+        } else {
+          std::clog << "Refused " << lock.locker << " @ " << lock.prio << std::endl;
+          return false;
+        }
+      };
+      bool Release(const fixture_lock_t& lock) { 
+        if (lock_.locker == lock.locker) {
+          lock_.locker = ""; 
+          lock_.prio=0; 
+          return true; 
+        } else {
+          return false;
+        }
+      };
+      fixture_lock_t GetLock() { return lock_; };
+   
   };
 
   typedef Fixture* pFixture;
@@ -74,7 +103,8 @@ namespace knxdmxd {
       FixtureList() {};
       
       void Add(pFixture fixture) {  fixture_list_.insert(std::pair<std::string, knxdmxd::pFixture> (fixture->GetName(), fixture)); };
-      void Process(const Trigger& trigger);
+      void StartRefresh();
+//      void Process(const Trigger& trigger);
       
       pFixture Get(const std::string& name) { return fixture_list_[name]; };
   };

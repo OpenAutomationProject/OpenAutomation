@@ -36,9 +36,8 @@ namespace knxdmxd {
    
       void AddFixture(pFixture fixture) { fixture_list_.Add(fixture); };
       pFixture GetFixture(const std::string& name) { return fixture_list_.Get(name); };
-      static ola::OlaCallbackClientWrapper& GetOLAClient() { return m_client; }; 
 
-      void Process(const Trigger& trigger) { fixture_list_.Process(trigger); };
+//      void Process(const Trigger& trigger) { fixture_list_.Process(trigger); };
 
   };
 

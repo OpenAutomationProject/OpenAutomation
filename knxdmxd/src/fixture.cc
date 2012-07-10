@@ -35,36 +35,37 @@ namespace knxdmxd {
     unsigned ch = channel_names_[channel];
     channel_data_[ch].value=val;
     channel_data_[ch].fadeStep=fadeStep;
-    RegisterRefresh();
+    refresh_ = true;
   }
 
   void Fixture::Refresh() {
-    bool needs_refresh = false;
-    for(std::vector<knxdmxd::fixture_channel_t>::iterator it=channel_data_.begin(); it!=channel_data_.end(); ++it) {
-      int oldValue = GetDMXChannel(it->DMX);
-      int newValue = it->value;
-      if (oldValue<newValue) {
-        it->floatValue += it->fadeStep;
-        if (it->floatValue>newValue) {
-          it->floatValue = newValue;
-        } else {
-          needs_refresh = true;
+    if (refresh_) {
+      bool refresh = false;
+      for(std::vector<knxdmxd::fixture_channel_t>::iterator it=channel_data_.begin(); it!=channel_data_.end(); ++it) {
+        int oldValue = GetDMXChannel(it->DMX);
+        int newValue = it->value;
+        if (oldValue<newValue) {
+          it->floatValue += it->fadeStep;
+          if (it->floatValue>newValue) {
+            it->floatValue = newValue;
+          } else {
+            refresh = true;
+          }
+          SetDMXChannel(it->DMX, (int) it->floatValue);
         }
-        SetDMXChannel(it->DMX, (int) it->floatValue);
-      }
-      if (oldValue>newValue) {
-        it->floatValue -= it->fadeStep;
-        if (it->floatValue<newValue) {
-          it->floatValue = newValue;
-        } else {
-          needs_refresh = true;
+        if (oldValue>newValue) {
+          it->floatValue -= it->fadeStep;
+          if (it->floatValue<newValue) {
+            it->floatValue = newValue;
+          } else {
+            refresh = true;
+          }
+          SetDMXChannel(it->DMX, (int) it->floatValue);
         }
-        SetDMXChannel(it->DMX, (int) it->floatValue);
       }
+      refresh_ = refresh;
     }
-    if (needs_refresh) { // we need another refresh
-      RegisterRefresh();
-    }    
+    RegisterRefresh();
   }
 
   bool Fixture::RegisterRefresh() {
@@ -78,17 +79,20 @@ namespace knxdmxd {
   }
   
   void Fixture::Process(const Trigger& trigger) {
+    std::clog << "fprocess" << std::endl;
     for (std::vector<knxdmxd::fixture_channel_t>::iterator it=channel_data_.begin(); it!=channel_data_.end(); ++it) {
       if (it->KNX == trigger.GetKNX()) {
         it->value = trigger.GetValue();
         it->fadeStep = _fadeStep; 
+        refresh_ = true;
+        std::clog << "Updated " << it->DMX << " to " << it->value << "rate: " << it->fadeStep << std::endl;
       }
     }
     if (fadeTimeKNX_ == trigger.GetKNX()) {
       SetFadeTime(trigger.GetValue());
     }
   }
-   
+  
   void DMX::SetDMXChannel(int channel, int value) {
     int dmxuniverse = (int) (channel / 512), dmxchannel = channel % 512;
     output[dmxuniverse].SetChannel(dmxchannel, value);
@@ -98,8 +102,7 @@ namespace knxdmxd {
     int dmxuniverse = (int) (channel / 512), dmxchannel = channel % 512;
     return output[dmxuniverse].Get(dmxchannel);
   }
-  
-  
+    
   int DMX::Address(const std::string addr) {
     int universe, channel;
     sscanf( (char*)addr.c_str(), "%d.%d", &universe, &channel);
@@ -110,13 +113,11 @@ namespace knxdmxd {
     return (universe << 9) + channel;
   }
 
-  
-  void FixtureList::Process(const Trigger& trigger) {
+  void FixtureList::StartRefresh() {
     for(std::map<std::string, knxdmxd::pFixture>::iterator it=fixture_list_.begin(); it!=fixture_list_.end(); ++it) {
-      it->second->Process(trigger);
+      it->second->RegisterRefresh();
     }
   }
-  
   // initalize static variables of DMX class
   ola::OlaCallbackClientWrapper DMX::m_client;
   std::map<int, ola::DmxBuffer> DMX::output; 

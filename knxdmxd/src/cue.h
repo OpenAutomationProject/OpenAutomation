@@ -29,6 +29,7 @@ namespace knxdmxd {
       float fadeIn_, fadeOut_;
       float waittime_, delay_;
       bool is_link_, delay_on_;
+      fixture_lock_t lock_;
 
     public:
       Cue() {};
@@ -38,20 +39,29 @@ namespace knxdmxd {
       void SetFading(const float fadeIn, const float fadeOut);
       void SetWaittime(const float waittime) { waittime_ = waittime; };
       void SetDelay(const float delay) { delay_ = delay; };
+      void SetLock(const fixture_lock_t lock) { lock_ = lock; };
+      
+      void Go();
+      void Release() {
+        for(std::list<cue_channel_t>::iterator it = _channel_data.begin(); it != _channel_data.end(); ++it) {
+          it->fixture->Release(lock_);
+        }
+      };
       
       const std::string GetName() { return _name; };
       const float GetWaitTime() { return waittime_; };
       const float GetDelayTime() { return delay_; };
 
-      virtual void Go();
       bool isLink() { return is_link_; };
   };
 
   class Cuelist : public TriggerHandler {
-      int current_cue_;
+      int current_cue_, max_cue_;
       bool cue_halted_, was_direct_;
-      std::vector<knxdmxd::Cue> _cue_data;
-      std::map<std::string, int> _cue_names;
+      bool release_on_halt_;
+      fixture_lock_t lock_;
+      std::vector<knxdmxd::Cue> cue_data_;
+      std::map<std::string, int> cue_names_;
 
       void NextCue(const int direct);
 
@@ -60,9 +70,23 @@ namespace knxdmxd {
       Cuelist(const std::string name);
 
       void AddCue(knxdmxd::Cue& cue);
-      void Go();
-      void Halt();
-      void Direct(const int value);
+      void Go() {
+       if (cue_halted_) {
+         cue_halted_ = false;
+         NextCue(-1);
+       } else {
+         NextCue(-2);
+       }
+       
+      };
+      void Halt() {
+        cue_halted_ = true;
+        if (release_on_halt_) {
+          Release();
+        }
+      };
+      void Direct(const int value) { NextCue(value); };
+      void Release() { cue_data_.at(current_cue_).Release(); };
   };
 
 }
