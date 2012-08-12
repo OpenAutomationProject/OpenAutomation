@@ -71,8 +71,19 @@ int pidFilehandle;
 std::string pidfilename = "/var/run/knxdmxd.pid";
 knxdmxd::TriggerList triggerList;
 knxdmxd::DMXSender sender;
+std::map<std::string, knxdmxd::dmx_addr_t> channel_names;
+std::map<knxdmxd::dmx_addr_t, eibaddr_t> statusmap;
+
 
 namespace knxdmxd {
+
+  std::queue<Trigger> KNXHandler::fromKNX;
+  ola::thread::Mutex KNXHandler::mutex_fromKNX;
+  std::queue<eib_message_t> KNXHandler::toKNX;
+  ola::thread::Mutex KNXHandler::mutex_toKNX;
+
+  std::set<eibaddr_t> KNXHandler::listenGA;
+  std::map<eibaddr_t, long> KNXHandler::messagetracker;
 
   eibaddr_t KNXHandler::Address(const std::string addr) {
     int a, b, c;
@@ -111,6 +122,16 @@ namespace knxdmxd {
       }
 
       while (1) {
+        triggerList.Process();
+        knxdmxd::eib_message_t message;
+        if (!KNXHandler::toKNX.empty()) { // there is something to send
+          {
+            ola::thread::MutexLocker locker(&KNXHandler::mutex_toKNX);
+            message = KNXHandler::toKNX.front();
+            KNXHandler::toKNX.pop();
+          }
+          std::clog << "KNXOut : " << message.ga << std::endl;
+        }
         len = EIBGetGroup_Src(con, sizeof(buf), buf, &src, &dest);
         if (len == -1) {
           std::clog << kLogWarning << "eibd: Read failed" << std::endl;
@@ -138,8 +159,13 @@ namespace knxdmxd {
             case 0x80:
               if (buf[1] & 0xC0) {
                 val = (len == 2) ? buf[1] & 0x3F : buf[2];
-                knxdmxd::Trigger trigger(knxdmxd::kTriggerAll, dest, val);
-                triggerList.Process(trigger);
+                if (KNXHandler::listenGA.count(dest)) { // keep queue clean from unwanted messages
+                  std::clog << "EIBD: " << dest << " " << (int) val << std::endl;
+                  knxdmxd::Trigger trigger(knxdmxd::kTriggerAll, dest, val);
+                  ola::thread::MutexLocker locker(&KNXHandler::mutex_fromKNX);
+                  KNXHandler::fromKNX.push(trigger);
+                }
+
               }
               break;
           }
@@ -218,9 +244,10 @@ knxdmxd::Trigger *json_get_trigger(struct json_object *trigger,
     return NULL;
   }
 
-  int knx = knxdmxd::KNXHandler::Address(json_object_get_string(trigger_knx));
-  int val = (trigger_value) ? json_object_get_int(trigger_value) : -1;
+  eibaddr_t knx = knxdmxd::KNXHandler::Address(json_object_get_string(trigger_knx));
+  int val = (trigger_value) ? json_object_get_int(trigger_value) : 256;
 
+  knxdmxd::KNXHandler::listenGA.insert(knx);
   return new knxdmxd::Trigger(type, knx, val);
 }
 
@@ -241,7 +268,7 @@ knxdmxd::Cue *json_get_cue(struct json_object *cue, const int cuenum,
   knxdmxd::Cue *new_cue = new knxdmxd::Cue(c_name);
 
   // get channels
-  struct json_object *channels = json_object_object_get(cue, "channels");
+  struct json_object *channels = json_object_object_get(cue, "data");
   if (!channels) {
     std::clog << kLogInfo << "Skipping cue '" << c_name
         << "' (no channels defined)" << std::endl;
@@ -253,19 +280,26 @@ knxdmxd::Cue *json_get_cue(struct json_object *cue, const int cuenum,
     // get channel
     struct json_object *channel = json_object_array_get_idx(channels, j);
 
-    struct json_object *fixt = json_object_object_get(channel, "fixture");
     struct json_object *chan = json_object_object_get(channel, "channel");
     struct json_object *value = json_object_object_get(channel, "value");
 
-    if ((!fixt) || (!chan) || (!value)) {
+    if ((!chan) || (!value)) {
       std::clog << kLogInfo << "Skipping errorneous channel def " << j
           << " in cue '" << c_name << "'" << std::endl;
       continue;
     }
+    std::string chan_str = json_object_get_string(chan);
+    if (!channel_names.count(chan_str)) {
+      std::clog << kLogInfo << "Skipping errorneous channel def " << j
+                << " in cue '" << c_name << "'" << std::endl;
+     continue;
+    }
+    knxdmxd::dmx_addr_t dmx = channel_names.find(chan_str)->second;
+
 
     knxdmxd::cue_channel_t channeldata;
-    channeldata.fixture = sender.GetFixture(json_object_get_string(fixt));
-    channeldata.name = json_object_get_string(chan);
+
+    channeldata.dmx = dmx;
     channeldata.value = json_object_get_int(value);
 
     // add
@@ -333,82 +367,107 @@ void load_config() {
   config = json_object_from_file((char *) conf_file.c_str());
 
   /*
-   * fixtures
+   * channel definitions
    */
+  struct json_object *in_data  = json_object_object_get(config, "channels");
+  int in_length = json_object_array_length(in_data);
+  std::clog << "Trying to import " << in_length << " channel(s)" << std::endl;
 
-  struct json_object *fixtures = json_object_object_get(config, "fixtures");
-  int fixturenum = json_object_array_length(fixtures);
-  std::clog << "Trying to import " << fixturenum << " fixture(s)" << std::endl;
-
-  for (int i = 0; i < fixturenum; i++) { // read all
-    // get fixture
-    struct json_object *fixture = json_object_array_get_idx(fixtures, i);
-
-    // get name & create
-    struct json_object *name = json_object_object_get(fixture, "name");
-    std::string fname =
+  for (int i = 0; i < in_length; i++) { // read all
+    struct json_object *element = json_object_array_get_idx(in_data, i);
+    struct json_object *name = json_object_object_get(element, "name");
+    std::string name_str =
         (name) ? json_object_get_string(name) : "_f_" + t_to_string(i);
-    knxdmxd::Fixture* f = new knxdmxd::Fixture(fname);
+    struct json_object *dmx = json_object_object_get(element, "dmx");
+    if (!dmx) {
+      std::clog << kLogInfo << "Skipping channel '" << name_str
+        << " (missing dmx)" << std::endl;
+      continue;
+    }
+    knxdmxd::dmx_addr_t dmx_addr(knxdmxd::DMX::Address(json_object_get_string(dmx)));
+    sender.AddUniverse((char) (dmx_addr / 512));
+    channel_names.insert(std::pair<std::string, knxdmxd::dmx_addr_t> (name_str, dmx_addr));
 
-    // get channels & patch them
-    struct json_object *channels = json_object_object_get(fixture, "channels");
-    if (!channels) {
-      std::clog << kLogInfo << "Skipping fixture '" << fname
-          << "' (no channels defined)" << std::endl;
+    std::clog << "Named DMX " << dmx_addr << " as " << name_str;
+    struct json_object *ga = json_object_object_get(element, "statusga");
+    if (!ga) {
+      std::clog << std::endl;
       continue;
     }
 
-    for (int j = 0; j < json_object_array_length(channels); j++) { // read all
-      // get channel
-      struct json_object *channel = json_object_array_get_idx(channels, j);
+    std::string ga_str = json_object_get_string(ga);
+    statusmap.insert(std::pair<knxdmxd::dmx_addr_t, eibaddr_t> (dmx_addr, knxdmxd::KNXHandler::Address(ga_str)));
+    std::clog << " (GA: " << ga_str << ")" << std::endl;
 
-      // channel name, default is _c_<num>
-      struct json_object *name = json_object_object_get(channel, "name");
-      std::string cname =
-          (name) ? json_object_get_string(name) : "_c_" + t_to_string(j);
+  }
 
-      // dmx is required
-      struct json_object *dmx = json_object_object_get(channel, "dmx");
-      if (!dmx) {
-        std::clog << kLogInfo << "Skipping channel '" << cname
-            << "' in fixture '" << fname << "' (missing dmx)" << std::endl;
-        continue;
-      }
-      std::string cdmx(json_object_get_string(dmx));
+  /*
+   * dimmers
+   */
 
-      // knx is optional
-      struct json_object *knx = json_object_object_get(channel, "knx"); // knx is optional
-      if (knx) { // if we have knx, add to triggerlist
-        f->AddChannel(cname, cdmx, json_object_get_string(knx));
-        knxdmxd::Trigger* trigger = new knxdmxd::Trigger(
-            knxdmxd::kTriggerProcess,
-            knxdmxd::KNXHandler::Address(json_object_get_string(knx)), -1);
-        triggerList.Add(*trigger, f);
-      } else {
-        f->AddChannel(cname, cdmx, "");
-      }
+  in_data = json_object_object_get(config, "dimmers");
+  in_length = json_object_array_length(in_data);
+  std::clog << "Trying to import " << in_length << " dimmer(s)" << std::endl;
+
+  for (int i = 0; i < in_length; i++) { // read all
+    // get fixture
+    struct json_object *element = json_object_array_get_idx(in_data, i);
+
+    // get name & create
+    struct json_object *name = json_object_object_get(element, "name");
+    std::string name_str =
+        (name) ? json_object_get_string(name) : "_d_" + t_to_string(i);
+
+    // get channel
+    struct json_object *channel = json_object_object_get(element, "channel");
+    if (!channel) {
+      std::clog << kLogInfo << "Skipping dimmer '" << name_str
+          << "' (no channels defined)" << std::endl;
+      continue;
+    }
+    std::string channel_str = json_object_get_string(channel);
+    if (!channel_names.count(channel_str)) {
+      std::clog << kLogInfo << "Skipping dimmer '" << name_str
+          << "' (invalid channel name)" << std::endl;
+      continue;
+    }
+    knxdmxd::dmx_addr_t dmx = channel_names.find(channel_str)->second;
+
+    struct json_object *ga = json_object_object_get(element, "ga");
+    if (!ga) {
+      std::clog << kLogInfo << "Skipping dimmer '" << name_str
+                << "' (no group address defined)" << std::endl;
+      continue;
     }
 
-    // get fading
-    struct json_object *fading = json_object_object_get(fixture, "fading");
-    float ftime =
-        (fading) ?
-            json_object_get_double(json_object_object_get(fading, "time")) : 0;
-    f->SetFadeTime(ftime);
+    eibaddr_t ga_ = knxdmxd::KNXHandler::Address(json_object_get_string(ga));
 
-    sender.AddFixture(f);
+    knxdmxd::Dimmer* d = new knxdmxd::Dimmer(name_str, ga_, dmx);
+
+    knxdmxd::KNXHandler::listenGA.insert(ga_);
+    knxdmxd::Trigger* trigger = new knxdmxd::Trigger(
+      knxdmxd::kTriggerProcess,
+      ga_, 256);
+    triggerList.Add(*trigger, d);
+
+    // get fading
+    struct json_object *fading = json_object_object_get(element, "fading");
+    if (fading) {
+      d->SetFadeTime(json_object_get_double(fading));
+    }
+
   }
 
   /*
    * scenes
    */
 
-  struct json_object *scenes = json_object_object_get(config, "scenes");
-  int scenenum = json_object_array_length(scenes);
-  std::clog << "Trying to import " << scenenum << " scene(s)" << std::endl;
+  in_data = json_object_object_get(config, "scenes");
+  in_length = json_object_array_length(in_data);
+  std::clog << "Trying to import " << in_length << " scene(s)" << std::endl;
 
-  for (int i = 0; i < scenenum; i++) { // read all
-    struct json_object *scene = json_object_array_get_idx(scenes, i);
+  for (int i = 0; i < in_length; i++) { // read all
+    struct json_object *scene = json_object_array_get_idx(in_data, i);
 
     // get name & create
     struct json_object *name = json_object_object_get(scene, "name");
@@ -444,8 +503,8 @@ void load_config() {
       knxdmxd::Cue* cue = json_get_cue(json_object_array_get_idx(cues, i), i,
           knxdmxd::kCue);
 
-      knxdmxd::fixture_lock_t lock = { cname, prio };
-      cue->SetLock(lock);
+      /*knxdmxd::fixture_lock_t lock = { cname, prio };
+      cue->SetLock(lock);*/
       c->AddCue(*cue);
     }
 
@@ -512,6 +571,7 @@ int main(int argc, char **argv) {
         return 1;
       default:
         abort();
+        break;
     }
 
   //FIXME: clean shutdown in sub-thread with signals?

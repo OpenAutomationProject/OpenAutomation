@@ -7,10 +7,11 @@
 */
 
 #include "trigger.h"
+#include "ola/thread/Thread.h"
 
 namespace knxdmxd {
 
-  Trigger::Trigger(const int type, int knx, const int val) {
+  Trigger::Trigger(const int type = kTriggerAll, const eibaddr_t knx=0, const unsigned val=0) {
    _type= type;
    _knx = knx;
    _val = val;
@@ -19,7 +20,7 @@ namespace knxdmxd {
   bool Trigger::operator==(const Trigger &other) const {
     return ((_knx == other._knx)  // same knx
       && ((_type == other._type) || (other._type == kTriggerAll) || (_type==kTriggerAll))  // same trigger type
-      && ((_val == other._val) || (other._val ==-1) || (_val==-1))); // same value
+      && ((_val == other._val) || (other._val==256) || (_val==256))); // same value
   }
 
   Trigger& Trigger::operator= (Trigger const& other) { 
@@ -37,7 +38,16 @@ namespace knxdmxd {
     std::clog << "Added Trigger " << trigger << " for handler " << (*handler) << std::endl;
   }
 
-  void TriggerList::Process(const Trigger& trigger) {
+  void TriggerList::Process() {
+    if (KNXHandler::fromKNX.empty())
+      return;
+    Trigger trigger;
+    {
+      ola::thread::MutexLocker locker(&KNXHandler::mutex_fromKNX);
+      trigger = KNXHandler::fromKNX.front();
+      KNXHandler::fromKNX.pop();
+    }
+
     for (unsigned i=0; i<_triggers.size(); i++) {
       knxdmxd::Trigger tr = _triggers[i];
       if (tr==trigger) {
@@ -54,7 +64,8 @@ namespace knxdmxd {
           case kTriggerProcess:
             _handlers[i]->Process(trigger);
             break;
-          default: ;
+          default:
+            break;
         }
       }
     }

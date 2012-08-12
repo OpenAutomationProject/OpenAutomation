@@ -10,7 +10,7 @@
 
 namespace knxdmxd {
 
-  Fixture::Fixture(const std::string name) {
+ /* Fixture::Fixture(const std::string name) {
     name_ = name;
     fadeTimeKNX_ = 0;
     std::clog << "Creating Fixture " << name_ << std::endl;
@@ -70,20 +70,20 @@ namespace knxdmxd {
 
   bool Fixture::RegisterRefresh() {
     m_client.GetSelectServer()->RegisterSingleTimeout(
-      DMX_INTERVAL, ola::NewSingleCallback(this, &Fixture::Refresh));      
+      DMX_INTERVAL, ola::NewSingleCallback(this, &Fixture::Refresh));
     return true;
   }
-  
+
   int Fixture::GetCurrentValue(const std::string& channel) {
     return (int) channel_data_[channel_names_[channel]].floatValue;
   }
-  
+
   void Fixture::Process(const Trigger& trigger) {
     std::clog << "fprocess" << std::endl;
     for (std::vector<knxdmxd::fixture_channel_t>::iterator it=channel_data_.begin(); it!=channel_data_.end(); ++it) {
       if (it->KNX == trigger.GetKNX()) {
         it->value = trigger.GetValue();
-        it->fadeStep = _fadeStep; 
+        it->fadeStep = _fadeStep;
         refresh_ = true;
         std::clog << "Updated " << it->DMX << " to " << it->value << "rate: " << it->fadeStep << std::endl;
       }
@@ -91,35 +91,7 @@ namespace knxdmxd {
     if (fadeTimeKNX_ == trigger.GetKNX()) {
       SetFadeTime(trigger.GetValue());
     }
-  }
-  
-  void DMX::SetDMXChannel(int channel, int value) {
-    int dmxuniverse = (int) (channel / 512), dmxchannel = channel % 512;
-    output[dmxuniverse].SetChannel(dmxchannel, value);
-  } 
-  
-  int DMX::GetDMXChannel(int channel) {
-    int dmxuniverse = (int) (channel / 512), dmxchannel = channel % 512;
-    return output[dmxuniverse].Get(dmxchannel);
-  }
-    
-  int DMX::Address(const std::string addr) {
-    int universe, channel;
-    sscanf( (char*)addr.c_str(), "%d.%d", &universe, &channel);
-    if (channel==-1) { // default universe is 1
-      channel = universe;
-      universe = 1;
-    }
-    return (universe << 9) + channel;
-  }
+  } */
 
-  void FixtureList::StartRefresh() {
-    for(std::map<std::string, knxdmxd::pFixture>::iterator it=fixture_list_.begin(); it!=fixture_list_.end(); ++it) {
-      it->second->RegisterRefresh();
-    }
-  }
-  // initalize static variables of DMX class
-  ola::OlaCallbackClientWrapper DMX::m_client;
-  std::map<int, ola::DmxBuffer> DMX::output; 
-  
+    
 }

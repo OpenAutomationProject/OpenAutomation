@@ -13,8 +13,6 @@ namespace knxdmxd {
 
   Cue::Cue(const std::string name, const bool isLink) {
     _name=name;
-    lock_.locker = name; // default is cue-name
-    lock_.prio = 0;
     fadeIn_ = 0.0;
     fadeOut_ = 0.0;
     waittime_ = -1; // never step automatically
@@ -30,7 +28,7 @@ namespace knxdmxd {
 
   void Cue::AddChannel(const cue_channel_t& channel) {
     _channel_data.push_back(channel);
-    std::clog << "Cue " << _name << ": added channel definition " << channel.fixture->GetName() << "/" << channel.name << "@" << channel.value << std::endl;
+    std::clog << "Cue " << _name << ": added channel definition " << channel.dmx << "@" << channel.value << std::endl;
   }
 
   void Cue::SetFading(const float fadeIn, const float fadeOut) {
@@ -48,13 +46,7 @@ namespace knxdmxd {
       std::clog << "Called cue " << _name << " (delaying)" << std::endl;
     } else {
       for(std::list<cue_channel_t>::iterator it = _channel_data.begin(); it != _channel_data.end(); ++it) {
-        if (!it->fixture->Lock(lock_)) { // Test if we can lock
-          std::clog << _name << ": locking failed " << it->fixture->GetName() << std::endl;
-          continue; // no, we can't
-        }
-        int deltaVal = it->fixture->GetCurrentValue(it->name) - it->value;
-        float ft = (deltaVal>0) ? ((deltaVal+1)/(fadeOut_*1.e3/(DMX_INTERVAL+1))) : ((-deltaVal+1)/(fadeIn_*1.e3/(DMX_INTERVAL+1)));
-        it->fixture->Update(it->name, it->value, ft);
+        DMX::SetDMXChannel(it->dmx , it->value, fadeIn_, fadeOut_ );
       }
       delay_on_ = false;
       std::clog << "Called cue " << _name << std::endl;
@@ -64,9 +56,6 @@ namespace knxdmxd {
 
   Cuelist::Cuelist(const std::string name) {
     _name=name;
-    
-    lock_.locker = name; // default is cuelist-name
-    lock_.prio = 0;
     current_cue_=-1;
     
     was_direct_ = false;
@@ -111,33 +100,37 @@ namespace knxdmxd {
       case -2: // next on running cuelist
         was_direct_ = true;
         break;
-
     }
 
     if (max_cue_>(current_cue_+1)) {
-      if (current_cue_>=0)
-        cue_data_.at(current_cue_).Release();
-      current_cue_++;
-      knxdmxd::Cue cue = cue_data_.at(current_cue_);
-      if (cue.isLink()) {
-        current_cue_ = cue_names_.find(cue.GetName())->second;
-      }
+      try {
+        if (current_cue_>=0)
+          cue_data_.at(current_cue_).Release();
+
+        current_cue_++;
+        knxdmxd::Cue cue = cue_data_.at(current_cue_);
+        if (cue.isLink()) {
+          current_cue_ = cue_names_.find(cue.GetName())->second;
+        }
         
-      cue_data_.at(current_cue_).Go();
+        cue_data_.at(current_cue_).Go();
     
-      float waittime;
-      int nextCuenum = current_cue_+1;
-      if (max_cue_>nextCuenum) { // last cue stops automatically
-        knxdmxd::Cue nextCue = cue_data_.at(nextCuenum);
-        if (nextCue.isLink()) {
-          nextCuenum = cue_names_.find(nextCue.GetName())->second;
-          nextCue = cue_data_.at(nextCuenum);
+        float waittime;
+        int nextCuenum = current_cue_+1;
+        if (max_cue_>nextCuenum) { // last cue stops automatically
+          knxdmxd::Cue nextCue = cue_data_.at(nextCuenum);
+          if (nextCue.isLink()) {
+            nextCuenum = cue_names_.find(nextCue.GetName())->second;
+            nextCue = cue_data_.at(nextCuenum);
+          }
+          waittime = nextCue.GetWaitTime();
+          if ((waittime>=0) && (!cue_halted_)) {
+            DMX::GetOLAClient().GetSelectServer()->RegisterSingleTimeout(
+              (int) waittime*1000, ola::NewSingleCallback(this, &Cuelist::NextCue, -1));
+          }
         }
-        waittime = nextCue.GetWaitTime();
-        if ((waittime>=0) && (!cue_halted_)) {
-          DMX::GetOLAClient().GetSelectServer()->RegisterSingleTimeout(
-            (int) waittime*1000, ola::NewSingleCallback(this, &Cuelist::NextCue, -1));
-        }
+      } catch (char *str) {
+        std::clog << kLogErr << "Exception " << str << " in calling cue, current_cue_ = " << current_cue_ << std::endl;
       }
     }
   }

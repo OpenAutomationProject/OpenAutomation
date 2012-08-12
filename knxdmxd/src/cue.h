@@ -19,8 +19,7 @@
 namespace knxdmxd {
 
   typedef struct { 
-    pFixture fixture;
-    std::string name;
+    dmx_addr_t dmx;
     int value;
   } cue_channel_t;
 
@@ -29,7 +28,7 @@ namespace knxdmxd {
       float fadeIn_, fadeOut_;
       float waittime_, delay_;
       bool is_link_, delay_on_;
-      fixture_lock_t lock_;
+     // fixture_lock_t lock_;
 
     public:
       Cue() {};
@@ -39,13 +38,13 @@ namespace knxdmxd {
       void SetFading(const float fadeIn, const float fadeOut);
       void SetWaittime(const float waittime) { waittime_ = waittime; };
       void SetDelay(const float delay) { delay_ = delay; };
-      void SetLock(const fixture_lock_t lock) { lock_ = lock; };
+ //     void SetLock(const fixture_lock_t lock) { lock_ = lock; };
       
       void Go();
       void Release() {
-        for(std::list<cue_channel_t>::iterator it = _channel_data.begin(); it != _channel_data.end(); ++it) {
+        /*for(std::list<cue_channel_t>::iterator it = _channel_data.begin(); it != _channel_data.end(); ++it) {
           it->fixture->Release(lock_);
-        }
+        }*/
       };
       
       const std::string GetName() { return _name; };
@@ -59,7 +58,7 @@ namespace knxdmxd {
       int current_cue_, max_cue_;
       bool cue_halted_, was_direct_;
       bool release_on_halt_;
-      fixture_lock_t lock_;
+   //   fixture_lock_t lock_;
       std::vector<knxdmxd::Cue> cue_data_;
       std::map<std::string, int> cue_names_;
 

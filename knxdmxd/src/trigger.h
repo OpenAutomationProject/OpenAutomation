@@ -24,17 +24,17 @@ namespace knxdmxd {
   const int kTriggerProcess = 256;
 
   class Trigger {
-      int _knx;
-      int _val;
+      eibaddr_t _knx;
+      unsigned _val;
       int _type;
 
     public:
-      Trigger(const int type, const int knx, const int val);
+      Trigger(const int type, const eibaddr_t knx, const unsigned val);
   
       bool operator == (const Trigger &other) const;
       Trigger& operator = (const Trigger &other);
-      const int GetKNX() const { return _knx; };
-      const int GetValue() const { return _val; };
+      const eibaddr_t GetKNX() const { return _knx; };
+      const unsigned GetValue() const { return _val; };
       const int GetType() const { return _type; };
     
       friend std::ostream& operator<<(std::ostream &stream, const Trigger& t);
@@ -50,7 +50,8 @@ namespace knxdmxd {
       virtual void Direct(const int val) {};
       virtual void Release() {};
       virtual void Process(const Trigger& trigger) {};
-      
+      virtual ~TriggerHandler() {};
+
       friend std::ostream& operator<<(std::ostream &stream, const TriggerHandler& handler);
   };
   
@@ -63,7 +64,7 @@ namespace knxdmxd {
       TriggerList() { };
       
       void Add(Trigger& trigger, pTriggerHandler handler);
-      void Process(const Trigger& trigger);
+      void Process();
   };
 
 }
