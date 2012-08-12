@@ -1,9 +1,20 @@
-knxdmxd (0.1-2.1) unstable; urgency=low
+knxdmxd (0.1-8) unstable; urgency=low
 
-  * Non-maintainer upload.
-  * 
+  * new SVN-version
 
- -- root <root@wiregate1-mm.elabnet.com>  Sat, 02 Jun 2012 21:19:32 +0200
+ -- Michael Markstaller / Elaborated Networks GmbH for WireGate <devel@wiregate.de>  Sun, 12 Aug 2012 22:46:49 +0200
+
+knxdmxd (0.1-7) unstable; urgency=low
+
+  * new SVN-version
+
+ -- Michael Markstaller / Elaborated Networks GmbH for WireGate <devel@wiregate.de>  Tue, 10 Jul 2012 19:17:58 +0200
+
+knxdmxd (0.1-6) unstable; urgency=low
+
+  * new SVN-version WiP
+
+ -- Michael Markstaller / Elaborated Networks GmbH for WireGate <devel@wiregate.de>  Sat, 02 Jun 2012 22:55:22 +0200
 
 knxdmxd (0.1-2) unstable; urgency=low
 
