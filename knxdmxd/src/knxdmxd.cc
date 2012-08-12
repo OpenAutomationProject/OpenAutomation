@@ -376,18 +376,21 @@ void load_config() {
   for (int i = 0; i < in_length; i++) { // read all
     struct json_object *element = json_object_array_get_idx(in_data, i);
     struct json_object *name = json_object_object_get(element, "name");
+
     std::string name_str =
         (name) ? json_object_get_string(name) : "_f_" + t_to_string(i);
     struct json_object *dmx = json_object_object_get(element, "dmx");
+
     if (!dmx) {
       std::clog << kLogInfo << "Skipping channel '" << name_str
         << " (missing dmx)" << std::endl;
       continue;
     }
-    knxdmxd::dmx_addr_t dmx_addr(knxdmxd::DMX::Address(json_object_get_string(dmx)));
+    std::string s = json_object_get_string(dmx);
+
+    knxdmxd::dmx_addr_t dmx_addr(knxdmxd::DMX::Address(s));
     sender.AddUniverse((char) (dmx_addr / 512));
     channel_names.insert(std::pair<std::string, knxdmxd::dmx_addr_t> (name_str, dmx_addr));
-
     std::clog << "Named DMX " << dmx_addr << " as " << name_str;
     struct json_object *ga = json_object_object_get(element, "statusga");
     if (!ga) {

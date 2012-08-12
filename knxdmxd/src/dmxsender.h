@@ -66,7 +66,7 @@ namespace knxdmxd {
       };
       char GetDMXChannel(int channel);
 
-      static dmx_addr_t Address(const std::string s);
+      static dmx_addr_t Address(const std::string addr);
       static ola::OlaCallbackClientWrapper& GetOLAClient() { return m_client; };
 
   };

@@ -14,7 +14,9 @@ namespace knxdmxd {
   dmx_addr_t DMX::Address(const std::string addr) {
     char universe;
     int channel;
+    std::clog << "a " << addr << std::endl;
     sscanf( (char*)addr.c_str(), "%d.%d", &universe, &channel);
+    std::clog << "b" << std::endl;
     return (channel==-1) ? (universe+512) : ((universe << 9) + channel);
   }
 
