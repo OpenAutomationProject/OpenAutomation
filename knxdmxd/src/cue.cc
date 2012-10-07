@@ -128,10 +128,14 @@ namespace knxdmxd {
             DMX::GetOLAClient().GetSelectServer()->RegisterSingleTimeout(
               (int) waittime*1000, ola::NewSingleCallback(this, &Cuelist::NextCue, -1));
           }
-        }
-      } catch (char *str) {
-        std::clog << kLogErr << "Exception " << str << " in calling cue, current_cue_ = " << current_cue_ << std::endl;
-      }
+              }
+          }
+        catch (char *str)
+          {
+            std::clog << kLogErr << "Exception " << str
+                << " in calling cue, current_cue_ = " << current_cue_
+                << std::endl;
+          }
     }
   }
 
