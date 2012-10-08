@@ -91,12 +91,12 @@ namespace knxdmxd
   eibaddr_t
   KNXHandler::Address(const std::string addr)
   {
-    int a, b, c;
+    unsigned int a, b, c;
     char *s = (char *) addr.c_str();
 
-    if (sscanf(s, "%d/%d/%d", &a, &b, &c) == 3)
+    if (sscanf(s, "%u/%u/%u", &a, &b, &c) == 3)
       return ((a & 0x01f) << 11) | ((b & 0x07) << 8) | ((c & 0xff));
-    if (sscanf(s, "%d/%d", &a, &b) == 2)
+    if (sscanf(s, "%u/%u", &a, &b) == 2)
       return ((a & 0x01f) << 11) | ((b & 0x7FF));
     if (sscanf(s, "%x", &a) == 1)
       return a & 0xffff;
@@ -108,12 +108,12 @@ namespace knxdmxd
   eibaddr_t
   KNXSender::Address(const std::string addr)
   {
-    int a, b, c;
+    unsigned int a, b, c;
     char *s = (char *) addr.c_str();
 
-    if (sscanf(s, "%d/%d/%d", &a, &b, &c) == 3)
+    if (sscanf(s, "%u/%u/%u", &a, &b, &c) == 3)
       return ((a & 0x01f) << 11) | ((b & 0x07) << 8) | ((c & 0xff));
-    if (sscanf(s, "%d/%d", &a, &b) == 2)
+    if (sscanf(s, "%u/%u", &a, &b) == 2)
       return ((a & 0x01f) << 11) | ((b & 0x7FF));
     if (sscanf(s, "%x", &a) == 1)
       return a & 0xffff;
@@ -128,9 +128,7 @@ namespace knxdmxd
     std::clog << "KNX sender thread started" << std::endl;
     int len;
     EIBConnection *con;
-    eibaddr_t dest;
-    eibaddr_t src;
-    unsigned char buf[255], val;
+    unsigned char buf[255];
     knxdmxd::eib_message_t message;
     while (1)
       {
@@ -204,7 +202,7 @@ namespace knxdmxd
   void
   KNXHandler::knxhandler()
   {
-    std::clog << "KNX thread started" << std::endl;
+    std::clog << "KNX handler thread started" << std::endl;
     int len;
     EIBConnection *con;
     eibaddr_t dest;
@@ -233,7 +231,6 @@ namespace knxdmxd
         while (1)
           {
             triggerList.Process();
-            knxdmxd::eib_message_t message;
             len = EIBGetGroup_Src(con, sizeof(buf), buf, &src, &dest);
             if (len == -1)
               {
@@ -677,8 +674,8 @@ load_config()
           (name) ? json_object_get_string(name) : "_c_" + t_to_string(i);
       knxdmxd::Cuelist *c = new knxdmxd::Cuelist(cname);
 
-      struct json_object *lprio = json_object_object_get(cuelist, "priority");
-      int prio = (lprio) ? json_object_get_int(lprio) : 0;
+      //struct json_object *lprio = json_object_object_get(cuelist, "priority");
+      //int prio = (lprio) ? json_object_get_int(lprio) : 0;
 
       // get cues
       struct json_object *cues = json_object_object_get(cuelist, "cues");

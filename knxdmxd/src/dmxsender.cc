@@ -12,12 +12,12 @@ namespace knxdmxd
 {
 
   dmx_addr_t
-  DMX::Address(const std::string addr)
+  DMX::Address(const std::string &addr)
   {
-    char universe;
-    int channel;
-    sscanf((char*) addr.c_str(), "%d.%d", &universe, &channel);
-    return (channel == -1) ? (universe + 512) : ((universe << 9) + channel);
+    int universe, channel;
+    std::string c(addr);
+    sscanf((char*) c.c_str(), "%d.%d", &universe, &channel);
+    return (channel == -1) ? (universe + 512) : ((((unsigned) universe) << 9) + channel);
   }
 
   // initalize static variables of DMX class
