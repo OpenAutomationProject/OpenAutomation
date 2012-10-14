@@ -133,9 +133,7 @@ namespace knxdmxd
     while (1)
       {
         ola::thread::MutexLocker locker(&KNXSender::mutex_toKNX);
-        std::clog << "KNX sender waiting for message" << std::endl;
-        KNXSender::condition_toKNX.Wait(&KNXSender::mutex_toKNX);
-        std::clog << "KNX sender resumed" << std::endl;
+
         if (!KNXSender::toKNX.empty())
           { // there is something to send
 
@@ -192,8 +190,13 @@ namespace knxdmxd
                     << message.ga << " (DPT: " << (int) message.dpt << ")"
                     << std::endl;
               }
-
+            usleep(25000); // wait 25 ms, max. 40 tps
             EIBClose(con);
+
+          } else {
+              std::clog << "KNX sender waiting for message" << std::endl;
+              KNXSender::condition_toKNX.Wait(&KNXSender::mutex_toKNX);
+              std::clog << "KNX sender resumed" << std::endl;
 
           }
       }
