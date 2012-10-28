@@ -64,13 +64,13 @@ namespace knxdmxd
             if (currenttime > fadeend_[i])
               {
                 current_[i] = old_[i] = new_[i];
-                std::clog << "DMXSender: Finished crossfading universe "
+                std::clog << kLogDebug << "DMXSender: Finished crossfading universe "
                     << (int) universe_ << " channel " << i << " to "
                     << (int) current_[i] << std::endl;
                 dmx_addr_t dmx = (universe_ << 9) + i; // calculate dmx-addr
                 if (knxdmxd::statusmap.count(dmx))
                   {
-                    std::clog << "DMXSender: writing status update to KNX "
+                    std::clog << kLogDebug << "DMXSender: writing status update to KNX "
                         << std::endl;
                     knxdmxd::eib_message_t message;
                     message.value = (long) new_[i];

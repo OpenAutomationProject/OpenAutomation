@@ -150,7 +150,8 @@ namespace knxdmxd
     void
     Release()
     {
-      cue_data_.at(current_cue_).Release();
+      cue_halted_ = true;
+      current_cue_ = -1;
     }
     ;
   };

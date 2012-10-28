@@ -179,14 +179,14 @@ namespace knxdmxd
             len = EIBSendAPDU(con, len, buf);
             if (len == -1)
               {
-                std::clog << "KNXSender: failed to sent " << (int) message.value
+                std::clog << kLogDebug << "KNXSender: failed to sent " << (int) message.value
                     << " to " << message.ga << " (DPT: " << (int) message.dpt
                     << ")" << std::endl;
 
               }
             else
               {
-                std::clog << "KNXSender: sent " << (int) message.value << " to "
+                std::clog << kLogDebug << "KNXSender: sent " << (int) message.value << " to "
                     << message.ga << " (DPT: " << (int) message.dpt << ")"
                     << std::endl;
               }
@@ -194,9 +194,9 @@ namespace knxdmxd
             EIBClose(con);
 
           } else {
-              std::clog << "KNX sender waiting for message" << std::endl;
+              std::clog << kLogDebug << "KNX sender waiting for message" << std::endl;
               KNXSender::condition_toKNX.Wait(&KNXSender::mutex_toKNX);
-              std::clog << "KNX sender resumed" << std::endl;
+              std::clog << kLogDebug << "KNX sender resumed" << std::endl;
 
           }
       }
@@ -271,7 +271,7 @@ namespace knxdmxd
                       val = (len == 2) ? buf[1] & 0x3F : buf[2];
                       if (KNXHandler::listenGA.count(dest))
                         { // keep queue clean from unwanted messages
-                          std::clog << "KNXHandler: " << dest << " "
+                          std::clog << kLogDebug << "KNXHandler: " << dest << " "
                               << (int) val << std::endl;
                           knxdmxd::Trigger trigger(knxdmxd::kTriggerAll, dest,
                               val);
@@ -562,7 +562,7 @@ load_config()
       sender.AddUniverse((char) (dmx_addr / 512));
       knxdmxd::channel_names.insert(
           std::pair<std::string, knxdmxd::dmx_addr_t>(name_str, dmx_addr));
-      std::clog << "Named DMX " << dmx_addr << " as " << name_str;
+      std::clog << kLogDebug << "Named DMX " << dmx_addr << " as " << name_str;
       struct json_object *ga = json_object_object_get(element, "statusga");
       if (!ga)
         {
@@ -584,7 +584,7 @@ load_config()
 
   in_data = json_object_object_get(config, "dimmers");
   in_length = json_object_array_length(in_data);
-  std::clog << "Trying to import " << in_length << " dimmer(s)" << std::endl;
+  std::clog << kLogDebug  << "Trying to import " << in_length << " dimmer(s)" << std::endl;
 
   for (int i = 0; i < in_length; i++)
     { // read all
@@ -665,7 +665,7 @@ load_config()
 
   struct json_object *cuelists = json_object_object_get(config, "cuelists");
   int cuelistnum = json_object_array_length(cuelists);
-  std::clog << "Trying to import " << cuelistnum << " cuelist(s)" << std::endl;
+  std::clog << kLogDebug << "Trying to import " << cuelistnum << " cuelist(s)" << std::endl;
 
   for (int i = 0; i < cuelistnum; i++)
     { // read all
@@ -777,15 +777,15 @@ main(int argc, char **argv)
       std::clog.rdbuf(
           new Log(DAEMON_NAME, LOG_CONS | LOG_NDELAY | LOG_PERROR | LOG_PID,
               LOG_USER));
-      std::clog << "startup with debug; pidfile: " << pidfilename << ", eibd: "
+      std::clog << kLogDebug << "startup with debug; pidfile: " << pidfilename << ", eibd: "
           << knxhandler.GetEIBDURL() << std::endl;
     }
   else
     {
-      setlogmask(LOG_UPTO(LOG_DEBUG));
+      setlogmask(LOG_UPTO(LOG_INFO));
       std::clog.rdbuf(new Log(DAEMON_NAME, LOG_CONS, LOG_USER));
     }
-  std::clog << kLogDebug << DAEMON_NAME << " compiled on " << __DATE__ << " "
+  std::clog << kLogInfo << DAEMON_NAME << " compiled on " << __DATE__ << " "
       << __TIME__ << " with GCC " << __VERSION__ << std::endl;
   std::clog << kLogInfo << "using config-file " << conf_file << std::endl;
 

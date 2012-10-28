@@ -46,7 +46,7 @@ namespace knxdmxd
   {
     _triggers.push_back(trigger);
     _handlers.push_back(handler);
-    std::clog << "Added Trigger " << trigger << " for handler " << (*handler)
+    std::clog << kLogDebug << "Added Trigger " << trigger << " for handler " << (*handler)
         << std::endl;
   }
 

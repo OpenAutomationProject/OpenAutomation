@@ -45,17 +45,18 @@ namespace knxdmxd
         1.e-4, const float fade_out = 1.e-4)
     {
       ola::thread::MutexLocker locker(&data_mutex);
-      new_[channel] = value;
-      old_[channel] = current_[channel];
-      float fadeTime = (new_[channel] > current_[channel]) ? fade_in : fade_out;
-      fadestart_[channel] = Timer::Get();
-      fadeend_[channel] = fadestart_[channel]
+      const unsigned ch = channel - 1;
+      new_[ch] = value;
+      old_[ch] = current_[ch];
+      float fadeTime = (new_[ch] > current_[ch]) ? fade_in : fade_out;
+      fadestart_[ch] = Timer::Get();
+      fadeend_[ch] = fadestart_[ch]
           + (unsigned long) (fadeTime * 1000.0);
     }
     unsigned char
     Get(const unsigned channel)
     {
-      return current_[channel];
+      return current_[channel-1];
     }
     ola::DmxBuffer &
     GetBuffer()
@@ -138,7 +139,7 @@ namespace knxdmxd
         { // only create if not already existing;
           pUniverse new_universe = new Universe(universe);
           output.insert(std::pair<char, pUniverse>(universe, new_universe));
-          std::clog << "DMXSender created universe " << (int) universe
+          std::clog << kLogInfo << "DMXSender created universe " << (int) universe
               << std::endl;
         }
     }
@@ -163,7 +164,7 @@ namespace knxdmxd
         dmx_ = dmx;
         ga_ = ga;
         fade_time_ = 1.e-4;
-        std::clog << "Created dimmer '" << name << "' for " << dmx << std::endl;
+        std::clog << kLogDebug << "Created dimmer '" << name << "' for " << dmx << std::endl;
       }
       void
       SetFadeTime(float fade_time)
@@ -179,17 +180,17 @@ namespace knxdmxd
       Process(const Trigger& trigger)
       {
         eibaddr_t ga = trigger.GetKNX();
-        std::clog << "Checking trigger " << trigger << " for " << name_
+        std::clog << kLogDebug << "Checking trigger " << trigger << " for " << name_
             << " (GA: " << ga_ << ")" << std::endl;
         if (ga == ga_)
           {
             DMX::SetDMXChannel(dmx_, trigger.GetValue(), fade_time_, fade_time_);
-            std::clog << "Dimmer/Process: Updating value for " << name_ << " to "
+            std::clog << kLogDebug << "Dimmer/Process: Updating value for " << name_ << " to "
                 << trigger.GetValue() << std::endl;
           }
         if (ga == ga_fading_)
           {
-            std::clog << "Dimmer/Process: Updating (tba) fading for " << name_
+            std::clog << kLogDebug << "Dimmer/Process: Updating (tba) fading for " << name_
                 << " to " << trigger.GetValue() << std::endl;
           }
       }
