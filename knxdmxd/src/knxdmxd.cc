@@ -179,24 +179,27 @@ namespace knxdmxd
             len = EIBSendAPDU(con, len, buf);
             if (len == -1)
               {
-                std::clog << kLogDebug << "KNXSender: failed to sent " << (int) message.value
-                    << " to " << message.ga << " (DPT: " << (int) message.dpt
-                    << ")" << std::endl;
+                std::clog << kLogDebug << "KNXSender: failed to sent "
+                    << (int) message.value << " to " << message.ga << " (DPT: "
+                    << (int) message.dpt << ")" << std::endl;
 
               }
             else
               {
-                std::clog << kLogDebug << "KNXSender: sent " << (int) message.value << " to "
-                    << message.ga << " (DPT: " << (int) message.dpt << ")"
-                    << std::endl;
+                std::clog << kLogDebug << "KNXSender: sent "
+                    << (int) message.value << " to " << message.ga << " (DPT: "
+                    << (int) message.dpt << ")" << std::endl;
               }
             usleep(25000); // wait 25 ms, max. 40 tps
             EIBClose(con);
 
-          } else {
-              std::clog << kLogDebug << "KNX sender waiting for message" << std::endl;
-              KNXSender::condition_toKNX.Wait(&KNXSender::mutex_toKNX);
-              std::clog << kLogDebug << "KNX sender resumed" << std::endl;
+          }
+        else
+          {
+            std::clog << kLogDebug << "KNX sender waiting for message"
+                << std::endl;
+            KNXSender::condition_toKNX.Wait(&KNXSender::mutex_toKNX);
+            std::clog << kLogDebug << "KNX sender resumed" << std::endl;
 
           }
       }
@@ -271,8 +274,8 @@ namespace knxdmxd
                       val = (len == 2) ? buf[1] & 0x3F : buf[2];
                       if (KNXHandler::listenGA.count(dest))
                         { // keep queue clean from unwanted messages
-                          std::clog << kLogDebug << "KNXHandler: " << dest << " "
-                              << (int) val << std::endl;
+                          std::clog << kLogDebug << "KNXHandler: " << dest
+                              << " " << (int) val << std::endl;
                           knxdmxd::Trigger trigger(knxdmxd::kTriggerAll, dest,
                               val);
                           ola::thread::MutexLocker locker(
@@ -532,13 +535,37 @@ load_config()
           << " while trying to parse config file " << std::endl;
       exit(EXIT_FAILURE);
     }
+  /*
+   * patch table
+   */
+
+  struct json_object *in_data = json_object_object_get(config, "patch");
+  int in_length = (in_data) ? json_object_array_length(in_data) : 0;
+  if (in_length>0) {
+    std::clog << "Trying to import " << in_length << " patche(s)" << std::endl;
+  } else {
+    std::clog << kLogInfo << "No patches defined, manual output patch needed" << std::endl;
+  }
+  for (int i = 0; i < in_length; i++)
+      { // read all
+        struct json_object *element = json_object_array_get_idx(in_data, i);
+        struct json_object *d = json_object_object_get(element, "device");
+        struct json_object *p = json_object_object_get(element, "port");
+        struct json_object *u = json_object_object_get(element, "universe");
+
+        if ((!d) || (!p) || (!u)) { std::clog << kLogInfo << "Skipping errorneous patch " << i+1 << std::endl;
+          continue;
+        }
+
+        knxdmxd::DMX::Patch(json_object_get_int(d), json_object_get_int(p), json_object_get_int(u));
+      }
 
   /*
    * channel definitions
    */
 
-  struct json_object *in_data = json_object_object_get(config, "channels");
-  int in_length = json_object_array_length(in_data);
+  in_data = json_object_object_get(config, "channels");
+  in_length = json_object_array_length(in_data);
   std::clog << "Trying to import " << in_length << " channel(s)" << std::endl;
 
   for (int i = 0; i < in_length; i++)
@@ -584,7 +611,8 @@ load_config()
 
   in_data = json_object_object_get(config, "dimmers");
   in_length = json_object_array_length(in_data);
-  std::clog << kLogDebug  << "Trying to import " << in_length << " dimmer(s)" << std::endl;
+  std::clog << kLogDebug << "Trying to import " << in_length << " dimmer(s)"
+      << std::endl;
 
   for (int i = 0; i < in_length; i++)
     { // read all
@@ -665,7 +693,8 @@ load_config()
 
   struct json_object *cuelists = json_object_object_get(config, "cuelists");
   int cuelistnum = json_object_array_length(cuelists);
-  std::clog << kLogDebug << "Trying to import " << cuelistnum << " cuelist(s)" << std::endl;
+  std::clog << kLogDebug << "Trying to import " << cuelistnum << " cuelist(s)"
+      << std::endl;
 
   for (int i = 0; i < cuelistnum; i++)
     { // read all
@@ -677,8 +706,17 @@ load_config()
           (name) ? json_object_get_string(name) : "_c_" + t_to_string(i);
       knxdmxd::Cuelist *c = new knxdmxd::Cuelist(cname);
 
-      //struct json_object *lprio = json_object_object_get(cuelist, "priority");
-      //int prio = (lprio) ? json_object_get_int(lprio) : 0;
+      struct json_object *roh = json_object_object_get(cuelist, "release_on_halt");
+      if (roh) {
+          bool rohval = json_object_get_boolean(roh);
+          c->SetReleaseOnHalt(rohval);
+      }
+
+      struct json_object *pog = json_object_object_get(cuelist, "proceed_on_go");
+            if (pog) {
+                bool pogval = json_object_get_boolean(roh);
+                c->SetProceedOnGo(pogval);
+            }
 
       // get cues
       struct json_object *cues = json_object_object_get(cuelist, "cues");
@@ -717,6 +755,13 @@ load_config()
 
       trigger = json_get_trigger(json_object_object_get(triggers, "direct"),
           knxdmxd::kTriggerDirect);
+      if (trigger)
+        {
+          triggerList.Add(*trigger, c);
+        }
+
+      trigger = json_get_trigger(json_object_object_get(triggers, "release"),
+          knxdmxd::kTriggerRelease);
       if (trigger)
         {
           triggerList.Add(*trigger, c);
@@ -777,8 +822,8 @@ main(int argc, char **argv)
       std::clog.rdbuf(
           new Log(DAEMON_NAME, LOG_CONS | LOG_NDELAY | LOG_PERROR | LOG_PID,
               LOG_USER));
-      std::clog << kLogDebug << "startup with debug; pidfile: " << pidfilename << ", eibd: "
-          << knxhandler.GetEIBDURL() << std::endl;
+      std::clog << kLogDebug << "startup with debug; pidfile: " << pidfilename
+          << ", eibd: " << knxhandler.GetEIBDURL() << std::endl;
     }
   else
     {

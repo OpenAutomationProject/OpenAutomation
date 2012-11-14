@@ -80,6 +80,7 @@ namespace knxdmxd
     was_direct_ = false;
     cue_halted_ = true;
     release_on_halt_ = true;
+    proceed_on_go_ = true;
 
     max_cue_ = 0;
 
@@ -105,6 +106,30 @@ namespace knxdmxd
     max_cue_++;
   }
 
+  void
+  Cuelist::Go()
+  {
+    std::clog << kLogDebug << "Cue " << _name << ": go ";
+    if ((cue_halted_) && ((current_cue_+1) < max_cue_))
+      {
+        std::clog << "was halted before" << std::endl;
+        cue_halted_ = false;
+        NextCue(-1);
+      }
+    else
+      {
+        if (proceed_on_go_)
+          {
+            std::clog << "was running, next step" << std::endl;
+            NextCue(-2);
+          }
+        else
+          {
+            std::clog << "ignored" << std::endl;
+          }
+      }
+
+  }
   void
   Cuelist::NextCue(const int direct)
   {
@@ -167,9 +192,11 @@ namespace knxdmxd
                         (int) (waittime * 1000.),
                         ola::NewSingleCallback(this, &Cuelist::NextCue, -1));
                   }
-              } else {
-                  // last cue halts automatically
-                  Halt();
+              }
+            else
+              {
+                // last cue halts automatically
+                Halt();
               }
           }
         catch (char *str)

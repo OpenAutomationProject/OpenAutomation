@@ -17,12 +17,15 @@ namespace knxdmxd
     int universe, channel;
     std::string c(addr);
     sscanf((char*) c.c_str(), "%d.%d", &universe, &channel);
-    return (channel == -1) ? (universe + 512) : ((((unsigned) universe) << 9) + channel);
+    return
+        (channel == -1) ?
+            (universe + 512) : ((((unsigned) universe) << 9) + channel);
   }
 
   // initalize static variables of DMX class
   ola::OlaCallbackClientWrapper DMX::m_client;
   std::map<char, knxdmxd::pUniverse> DMX::output;
+  std::list<patch_table_t> DMX::patchTable;
 
   bool
   DMXSender::Init()
@@ -33,6 +36,22 @@ namespace knxdmxd
             << std::endl;
         return false;
       }
+    if (patchTable.size())
+      {
+        for (std::list<patch_table_t>::const_iterator iterator =
+            patchTable.begin(), end = patchTable.end(); iterator != end;
+            ++iterator)
+          {
+            patch_table_t pEntry = *iterator;
+
+            m_client.GetClient()->Patch(pEntry.device, pEntry.port,
+                ola::OUTPUT_PORT, ola::PATCH, pEntry.universe,
+                ola::NewSingleCallback(this, &DMXSender::PatchComplete));
+
+          }
+
+      }
+
     return true;
   }
 
@@ -64,13 +83,15 @@ namespace knxdmxd
             if (currenttime > fadeend_[i])
               {
                 current_[i] = old_[i] = new_[i];
-                std::clog << kLogDebug << "DMXSender: Finished crossfading universe "
+                std::clog << kLogDebug
+                    << "DMXSender: Finished crossfading universe "
                     << (int) universe_ << " channel " << i << " to "
                     << (int) current_[i] << std::endl;
-                dmx_addr_t dmx = (universe_ << 9) + i; // calculate dmx-addr
+                dmx_addr_t dmx = (universe_ << 9) + i + 1; // calculate dmx-addr
                 if (knxdmxd::statusmap.count(dmx))
                   {
-                    std::clog << kLogDebug << "DMXSender: writing status update to KNX "
+                    std::clog << kLogDebug
+                        << "DMXSender: writing status update to KNX "
                         << std::endl;
                     knxdmxd::eib_message_t message;
                     message.value = (long) new_[i];

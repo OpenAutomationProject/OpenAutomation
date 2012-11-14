@@ -99,7 +99,7 @@ namespace knxdmxd
   {
     int current_cue_, max_cue_;
     bool cue_halted_, was_direct_;
-    bool release_on_halt_;
+    bool release_on_halt_, proceed_on_go_;
     //   fixture_lock_t lock_;
     std::vector<knxdmxd::Cue> cue_data_;
     std::map<std::string, int> cue_names_;
@@ -115,25 +115,30 @@ namespace knxdmxd
     Cuelist(const std::string name);
 
     void
-    AddCue(knxdmxd::Cue& cue);
-    void
-    Go()
+    SetReleaseOnHalt(const bool release_on_halt)
     {
-      if (cue_halted_)
-        {
-          cue_halted_ = false;
-          NextCue(-1);
-        }
-      else
-        {
-          NextCue(-2);
-        }
-
+      release_on_halt_ = release_on_halt;
+      std::clog << kLogDebug << "Cue " << _name << ": set release_on_halt to "
+          << release_on_halt << std::endl;
     }
-    ;
+    void
+    SetProceedOnGo(const bool proceed_on_go)
+    {
+      proceed_on_go_ = proceed_on_go;
+      std::clog << kLogDebug << "Cue " << _name << ": set proceed_on_go to "
+          << proceed_on_go << std::endl;
+    }
+
+    void
+    AddCue(knxdmxd::Cue& cue);
+
+    void
+    Go();
+
     void
     Halt()
     {
+      std::clog << kLogDebug << "Cue " << _name << ": halt " << std::endl;
       cue_halted_ = true;
       if (release_on_halt_)
         {
@@ -150,7 +155,7 @@ namespace knxdmxd
     void
     Release()
     {
-      cue_halted_ = true;
+      std::clog << kLogDebug << "Cue " << _name << ": release " << std::endl;
       current_cue_ = -1;
     }
     ;

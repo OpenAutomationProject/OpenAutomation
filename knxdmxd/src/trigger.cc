@@ -46,43 +46,48 @@ namespace knxdmxd
   {
     _triggers.push_back(trigger);
     _handlers.push_back(handler);
-    std::clog << kLogDebug << "Added Trigger " << trigger << " for handler " << (*handler)
-        << std::endl;
+    std::clog << kLogDebug << "Added Trigger " << trigger << " for handler "
+        << (*handler) << std::endl;
   }
 
   void
   TriggerList::Process()
   {
-    if (KNXHandler::fromKNX.empty())
-      return;
-    Trigger trigger;
+    while (!KNXHandler::fromKNX.empty())
       {
-        ola::thread::MutexLocker locker(&KNXHandler::mutex_fromKNX);
-        trigger = KNXHandler::fromKNX.front();
-        KNXHandler::fromKNX.pop();
-      }
 
-    for (unsigned i = 0; i < _triggers.size(); i++)
-      {
-        knxdmxd::Trigger tr = _triggers[i];
-        if (tr == trigger)
+        Trigger trigger;
           {
-            switch (tr.GetType())
+            ola::thread::MutexLocker locker(&KNXHandler::mutex_fromKNX);
+            trigger = KNXHandler::fromKNX.front();
+            KNXHandler::fromKNX.pop();
+          }
+
+        for (unsigned i = 0; i < _triggers.size(); i++)
+          {
+            knxdmxd::Trigger tr = _triggers[i];
+            if (tr == trigger)
               {
-            case kTriggerGo:
-              _handlers[i]->Go();
-              break;
-            case kTriggerHalt:
-              _handlers[i]->Halt();
-              break;
-            case kTriggerDirect:
-              _handlers[i]->Direct(trigger.GetValue());
-              break;
-            case kTriggerProcess:
-              _handlers[i]->Process(trigger);
-              break;
-            default:
-              break;
+                switch (tr.GetType())
+                  {
+                case kTriggerGo:
+                  _handlers[i]->Go();
+                  break;
+                case kTriggerHalt:
+                  _handlers[i]->Halt();
+                  break;
+                case kTriggerDirect:
+                  _handlers[i]->Direct(trigger.GetValue());
+                  break;
+                case kTriggerRelease:
+                  _handlers[i]->Release();
+                  break;
+                case kTriggerProcess:
+                  _handlers[i]->Process(trigger);
+                  break;
+                default:
+                  break;
+                  }
               }
           }
       }

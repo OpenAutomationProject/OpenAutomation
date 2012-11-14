@@ -16,9 +16,17 @@
 #include <ola/OlaClientWrapper.h>
 #include <trigger.h>
 #include <map>
+#include <list>
 
 namespace knxdmxd
 {
+
+  typedef struct
+  {
+    unsigned int device;
+    unsigned int port;
+    unsigned int universe;
+  } patch_table_t;
 
   class Universe
   {
@@ -29,7 +37,7 @@ namespace knxdmxd
     ola::thread::Mutex data_mutex;
     char universe_;
   public:
-    Universe(char universe )
+    Universe(char universe)
     {
       universe_ = universe; // universe should now it's own number
       ola::thread::MutexLocker locker(&data_mutex);
@@ -50,13 +58,12 @@ namespace knxdmxd
       old_[ch] = current_[ch];
       float fadeTime = (new_[ch] > current_[ch]) ? fade_in : fade_out;
       fadestart_[ch] = Timer::Get();
-      fadeend_[ch] = fadestart_[ch]
-          + (unsigned long) (fadeTime * 1000.0);
+      fadeend_[ch] = fadestart_[ch] + (unsigned long) (fadeTime * 1000.0);
     }
     unsigned char
     Get(const unsigned channel)
     {
-      return current_[channel-1];
+      return current_[channel - 1];
     }
     ola::DmxBuffer &
     GetBuffer()
@@ -76,12 +83,12 @@ namespace knxdmxd
   protected:
     static std::map<char, pUniverse> output;
     static ola::OlaCallbackClientWrapper m_client;
-
+    static std::list<patch_table_t> patchTable;
   public:
     DMX()
     {
     }
-    ;
+
     static void
     SetDMXChannel(const dmx_addr_t channel, const unsigned char value,
         const float fade_in = 1.e-4, const float fade_out = 1.e-4)
@@ -89,23 +96,36 @@ namespace knxdmxd
       int dmxuniverse = (int) (channel / 512), dmxchannel = channel % 512;
       output[dmxuniverse]->Set(dmxchannel, value, fade_in, fade_out);
     }
-    ;
+
     char
     GetDMXChannel(int channel);
 
     static dmx_addr_t
     Address(const std::string &addr);
+
     static ola::OlaCallbackClientWrapper&
     GetOLAClient()
     {
       return m_client;
     }
-    ;
+
+    static void
+    Patch(unsigned int device, unsigned int port, unsigned int universe)
+    {
+      patch_table_t p;
+      p.device = device;
+      p.port = port;
+      p.universe = universe;
+      patchTable.push_back(p);
+      std::clog << kLogDebug << "Added d " << device << " / p " << port
+          << " / u " << universe << " to patch Table " << std::endl;
+    }
 
   };
 
   class DMXSender : private DMX
   {
+  private:
     bool sender_running_;
 
   public:
@@ -130,7 +150,13 @@ namespace knxdmxd
     {
       return sender_running_;
     }
-    ;
+
+    void
+    PatchComplete(const std::string &error)
+    {
+      std::clog << kLogDebug << "DMX: patch completed : " << error << std::endl;
+      (void) error;
+    }
 
     void
     AddUniverse(char universe)
@@ -139,62 +165,64 @@ namespace knxdmxd
         { // only create if not already existing;
           pUniverse new_universe = new Universe(universe);
           output.insert(std::pair<char, pUniverse>(universe, new_universe));
-          std::clog << kLogInfo << "DMXSender created universe " << (int) universe
-              << std::endl;
+          std::clog << kLogInfo << "DMXSender created universe "
+              << (int) universe << std::endl;
         }
+
     }
     ;
 
   };
 
   class Dimmer : public TriggerHandler
+  {
+    std::string name_;
+    dmx_addr_t dmx_;
+    float fade_time_;
+    eibaddr_t ga_, ga_fading_;
+  public:
+    Dimmer()
     {
-      std::string name_;
-      dmx_addr_t dmx_;
-      float fade_time_;
-      eibaddr_t ga_, ga_fading_;
-    public:
-      Dimmer()
-      {
-      }
-      ;
-      Dimmer(const std::string name, eibaddr_t ga, dmx_addr_t dmx)
-      {
-        name_ = name;
-        dmx_ = dmx;
-        ga_ = ga;
-        fade_time_ = 1.e-4;
-        std::clog << kLogDebug << "Created dimmer '" << name << "' for " << dmx << std::endl;
-      }
-      void
-      SetFadeTime(float fade_time)
-      {
-        fade_time_ = fade_time;
-      }
-      void
-      SetFadeKNX(eibaddr_t ga)
-      {
-        ga_fading_ = ga;
-      }
-      void
-      Process(const Trigger& trigger)
-      {
-        eibaddr_t ga = trigger.GetKNX();
-        std::clog << kLogDebug << "Checking trigger " << trigger << " for " << name_
-            << " (GA: " << ga_ << ")" << std::endl;
-        if (ga == ga_)
-          {
-            DMX::SetDMXChannel(dmx_, trigger.GetValue(), fade_time_, fade_time_);
-            std::clog << kLogDebug << "Dimmer/Process: Updating value for " << name_ << " to "
-                << trigger.GetValue() << std::endl;
-          }
-        if (ga == ga_fading_)
-          {
-            std::clog << kLogDebug << "Dimmer/Process: Updating (tba) fading for " << name_
-                << " to " << trigger.GetValue() << std::endl;
-          }
-      }
-    };
+    }
+    ;
+    Dimmer(const std::string name, eibaddr_t ga, dmx_addr_t dmx)
+    {
+      name_ = name;
+      dmx_ = dmx;
+      ga_ = ga;
+      fade_time_ = 1.e-4;
+      std::clog << kLogDebug << "Created dimmer '" << name << "' for " << dmx
+          << std::endl;
+    }
+    void
+    SetFadeTime(float fade_time)
+    {
+      fade_time_ = fade_time;
+    }
+    void
+    SetFadeKNX(eibaddr_t ga)
+    {
+      ga_fading_ = ga;
+    }
+    void
+    Process(const Trigger& trigger)
+    {
+      eibaddr_t ga = trigger.GetKNX();
+      std::clog << kLogDebug << "Checking trigger " << trigger << " for "
+          << name_ << " (GA: " << ga_ << ")" << std::endl;
+      if (ga == ga_)
+        {
+          DMX::SetDMXChannel(dmx_, trigger.GetValue(), fade_time_, fade_time_);
+          std::clog << kLogDebug << "Dimmer/Process: Updating value for "
+              << name_ << " to " << trigger.GetValue() << std::endl;
+        }
+      if (ga == ga_fading_)
+        {
+          std::clog << kLogDebug << "Dimmer/Process: Updating (tba) fading for "
+              << name_ << " to " << trigger.GetValue() << std::endl;
+        }
+    }
+  };
 
 }
 

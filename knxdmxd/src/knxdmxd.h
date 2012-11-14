@@ -21,6 +21,7 @@
 #include <sys/time.h>
 
 #define DMX_INTERVAL 50 // in ms
+
 namespace knxdmxd
 {
   const int kFixture = 1;
