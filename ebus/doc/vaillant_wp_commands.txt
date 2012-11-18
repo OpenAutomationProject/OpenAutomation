@@ -36,26 +36,12 @@ Kommentare nach folgendem Schema: Befehl - Info zum Befehl (ggf. Beispiel) - Enc
 ### vrDIALOG - TELEGRAMME ###
 #############################
 
-###AWU WÄRMEPUMPE
+###AWU WAERMEPUMPE
 PARAMETER UND INFORMATIONEN
 
 #Betriebsart (01 = 1)
 FF 50 B5 09 04 0E 2B 00 01 22 00 AA  	# 01=Ein 02=Aus 03=Auto 04=Eco 05=Absenken
-FF 50 B5 09 03 0D 2B 00 05 00 AA		# Lesetelegramm kommt hinterher ???
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+FF 50 B5 09 03 0D 2B 00 05 00 AA	# Lesetelegramm kommt hinterher ???
 
 
 #### CI
@@ -78,7 +64,7 @@ FF 15 B5 09 0F 0E 43 00 1F 0C 00 FF 1B 09 1F 0C 02 FF 1C 09 8B 00 00 00 00 AA #3
 
 *Raumsoll Ferienbetrieb (17 Grad)
 FF 15 B5 09 03 0D 22 00 40 00 02 10 01 1F 00 AA 
-#Passwort für Konfiguration (01 00 00 00 = 1000)
+#Passwort fuer Konfiguration (01 00 00 00 = 1000)
 FF 15 B5 09 03 0D 2C 00 35 00 04 01 00 00 00 CF 00 AA 
 *Vorlauf Soll (26 Grad)
 FF 15 B5 09 03 0D 05 00 D3 00 02 A0 01 42 00 AA 
@@ -89,11 +75,11 @@ FF 15 B5 09 03 0D 02 00 24 00 03 79 01 00 93 00 AA
 FF 15 B5 09 03 0D 4D 00 02 00 01 14 8F 00 AA 
 #max. WW-Zeit bei Heizungsanforderung (28 = 40 Minuten)
 FF 15 B5 09 03 0D 4C 00 99 00 01 28 B3 00 AA 
-#Temperaturüberhöhung (00 00 = 0,0)
+#Temperaturueberhoehung (00 00 = 0,0)
 FF 15 B5 09 03 0D 2F 00 03 00 02 00 00 2C 00 AA 
 #Vorabschaltzeit in Minuten (00 = 0)
 FF 15 B5 09 03 0D 2D 00 AE 00 01 00 9B 00 AA 
-#Frostschutz-Verzögerun in h (01 = 1)
+#Frostschutz-Verzoegerung in h (01 = 1)
 FF 15 B5 09 03 0D 2E 00 98 00 01 01 9A 00 AA 
 #Temperaturfehlererkennung nach Stunden (00 = 0)
 FF 15 B5 09 03 0D 33 00 E9 00 01 00 9B 00 AA 
@@ -101,7 +87,7 @@ FF 15 B5 09 03 0D 33 00 E9 00 01 00 9B 00 AA
 FF 15 B5 09 03 0D 5C 00 AB 00 01 00 9B 00 AA 
 #Mitternachtwert Energieerrag (D7 3B = 15319 kWh)
 FF 15 B5 09 03 0D 86 00 EE 00 04 D7 3B 00 00 F9 00 AA 
-#Betriebsart (01 = 1) -> 0=Aus,1=Heizen,2=Kühlen,3=Warmwasser,4=WW während Heizen,5=WW während Kühlen
+#Betriebsart (01 = 1) -> 0=Aus,1=Heizen,2=Kuehlen,3=Warmwasser,4=WW waehrend Heizen,5=WW waehrend Kuehlen
 FF 15 B5 09 03 0D 97 00 47 00 01 01 9A 00 AA
 
 HK NAMEN UND TEL-NR
@@ -135,7 +121,10 @@ FF 15 B5 09 03 0D 02 00 24 00 03 7E 01 00 F1 00 AA
 FF 15 B5 09 03 0D 05 00 D3 00 02 90 01 14 00 AA
 
 			  
-EnergieErträge (Jahr,Vorjahr):
+EnergieErtraege (Jahr,Vorjahr):
+
+(d1c(byte_1)*2) + (d1b(byte_2)*256) = Energieertrag
+
 #Januar (CC 0E = 3788)
 FF 15 B5 09 03 0D 84 00 43 00 02 CC 0E 39 00 AA 
 FF 15 B5 09 03 0D 85 00 D8 00 02 00 00 2C 00 AA 
@@ -175,10 +164,55 @@ FF 15 B5 09 03 0D 85 58 80 00 02 50 0B DD 00 AA
 
 ### ENDE CI
 
-Set Bivalenz Punkt ... danach Abfrage ohne Antwort
+##################################
+### ENDE vrDIALOG - TELEGRAMME ###
+##################################
 
+
+Set Values by vrDialog
+
+### ZUSATZHEIZUNG ###
+Bivalenz Punkt ... danach Abfrage ohne Antwort
 -4 Grad
 FF 08 B5 09 05 0E 65 00 C0 FF 64 00 AA 
-FF 08 B5 09 03 0D 65 00 61 00 AA
+
+Hysterese Zusatzheizung ( 60 = 6 Grad)
+FF 08 B5 09 05 0E 7E 00 60 00 F1 00 AA
+
+Verzšgerung Hysterese (14 = 20 Minuten)
+FF 08 B5 09 04 0E E0 01 14 A0 00 AA
+
+EnergieIntegral Zusatzheizung
+FF 08 B5 09 05 0E 7F 00 70 FE 63 00 AA (-400)
+FF 08 B5 09 05 0E 7F 00 A8 FD 88 00 AA (-600)
+
+Heizung Zusatzheizung
+FF 08 B5 09 04 0E 63 00 00 3A 00 AA (ohne ZH)
+FF 08 B5 09 04 0E 63 00 01 3B 00 AA (mit ZH)
+FF 08 B5 09 04 0E 63 00 02 38 00 AA (nur ZH)
+
+WarmWasser Zusatzheizung
+FF 08 B5 09 04 0E 64 00 00 58 00 AA (ohne ZH siehe oben)
+
+
+### KOMPRESSOR ###
+Kompressorhysterese
+FF 08 B5 09 05 0E 7D 00 70 00 B4 00 AA (7 Grad)
+FF 08 B5 09 05 0E 7D 00 80 00 B4 00 AA (8 Grad)
+
+Starts pro Stunde
+FF 08 B5 09 04 0E 74 00 02 A1 00 AA (2 Starts)
+
+maximale RŸcklauftemperatur HK
+FF 08 B5 09 05 0E 73 00 80 02 B4 00 AA (40 Grad)
+FF 08 B5 09 05 0E 73 00 20 03 DA 00 AA (50 Grad)
+
+
+
+
+
+# private
+#gcc -Wall -o "check" "check.c"
+
 
 
