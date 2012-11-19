@@ -6,6 +6,8 @@
 - controllers and zone-numbers are zero based!
 - use socat or Moxa to get serial-data from/to UDP:
 	19200 8N1, No flowctrl, no special stop chars needed
+Tested and working with CAA6, CAV6, CA4 (one must set six zones, not four!)
+SEE ALSO: http://cometvisu.de/wiki/index.php?title=Russconnectd
 
 *** INSTALL
 - needs pthread and libeibclient from bcusdk/eibd, but autotools etc. should 

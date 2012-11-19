@@ -52,6 +52,7 @@ my $startga = str2addr($opts{a},1);
 
 # ESF output for poor guys
 open ESF, ">", "export.esf" or die $!;
+open CSV, ">", "export_ETS4_GA_1-1_Name_GA.csv" or die $!;
 open XML, ">:encoding(UTF-8)", "linknx.xml" or die $!;
 
 # some visu_config snipplet for CometVisu - :encoding(UTF-8)?? 
@@ -76,8 +77,9 @@ $conf->{addr2str($startga+1,1)}->{'name'} = $NamePrefix . " " . $gfuncnames[0];
 $conf->{addr2str($startga+1,1)}->{'DPTSubId'} = 1.001;
 $conf->{addr2str($startga+1,1)}->{'DPTId'} = 1;
 #$conf->{addr2str($startga+1,1)}->{'DPT_SubTypeName'} = 'DPT_Switch';
-print ESF "Multiroom-export\n";
-print ESF "$NamePrefix.Controller." . addr2str($startga+1,1) . "\t$NamePrefix $gfuncnames[0]\t" . $EISmap{'1.001'} . "\tLow\n";
+print ESF "Multiroom-export\r\n";
+print ESF "$NamePrefix.Controller." . addr2str($startga+1,1) . "\t$NamePrefix $gfuncnames[0]\t" . $EISmap{'1.001'} . "\tLow\t\r\n";
+print CSV "$NamePrefix $gfuncnames[0]," .  addr2str($startga+1,1) . "\n";
 
 print XML "#<?xml version=\"1.0\" ?>\n<config>\n\t<objects>\n";
 print XML "\t\t<object id=\"$NamePrefix"."_$gfuncnames[0]\" gad=\"" . addr2str($startga+1,1) . "\" type=\"1.001\">$NamePrefix $gfuncnames[0]</object>\n";
@@ -95,7 +97,8 @@ for (my $zone=0;$zone<$opts{z};$zone++) {
         $conf->{addr2str($basega+$i,1)}->{'DPTSubId'} = $funcdpts[$i];
         $conf->{addr2str($basega+$i,1)}->{'DPTId'} = split(".",$funcdpts[$i],1);
         #$conf->{addr2str($basega+$i,1)}->{'DPT_SubTypeName'} = $funcdpts_sub[$i];
-        print ESF "$NamePrefix.Controller$ctrl." . addr2str($basega+$i,1) . "\t" . "$NamePrefix $zonenames[$zone] C" . ($ctrl+1) . "-Z" . ($czone+1) . " $funcnames[$i]" . "\t" . $EISmap{$funcdpts[$i]} . "\tLow\n";
+        print ESF "$NamePrefix.Controller$ctrl." . addr2str($basega+$i,1) . "\t" . "$NamePrefix $zonenames[$zone] C" . ($ctrl+1) . "-Z" . ($czone+1) . " $funcnames[$i]" . "\t" . ($EISmap{$funcdpts[$i]}||"Uncertain (1 Byte)") . "\tLow\t\r\n";
+        print CSV  "$NamePrefix $zonenames[$zone] C" . ($ctrl+1) . "-Z" . ($czone+1) . " $funcnames[$i]," . addr2str($basega+$i,1) . "\n";
         print XML "\t\t<object id=\"$zonenames[$zone]_C" . ($ctrl+1) . "_Z" . ($czone+1) . "_" . "$funcnames[$i]\" gad=\"" . addr2str($basega+$i,1) . "\" type=\"$funcdpts[$i]\">" . "$NamePrefix $zonenames[$zone] (C" . ($ctrl+1) . "/Z" . ($czone+1) . ") $funcnames[$i]" . "</object>\n";
     }
 	#states
@@ -104,7 +107,7 @@ for (my $zone=0;$zone<$opts{z};$zone++) {
         $conf->{addr2str($basega+$i+20,1)}->{'DPTSubId'} = $statedpts[$i];
         $conf->{addr2str($basega+$i+20,1)}->{'DPTId'} = split(".",$statedpts[$i],1);
         #$conf->{addr2str($basega+$i+20,1)}->{'DPT_SubTypeName'} = $statedpts_sub[$i];
-        print ESF "$NamePrefix.Controller$ctrl." . addr2str($basega+$i+20,1) . "\t" . "$NamePrefix $zonenames[$zone] C" . ($ctrl+1) . "-Z" . ($czone+1) . " $statenames[$i]" . "\t" . $EISmap{$statedpts[$i]} . "\tLow\n";
+        print ESF "$NamePrefix.Controller$ctrl." . addr2str($basega+$i+20,1) . "\t" . "$NamePrefix $zonenames[$zone] C" . ($ctrl+1) . "-Z" . ($czone+1) . " $statenames[$i]" . "\t" . ($EISmap{$statedpts[$i]}||"Uncertain (1 Byte)") . "\tLow\t\r\n";
         print XML "\t\t<object id=\"$zonenames[$zone]_C" . ($ctrl+1) . "_Z" . ($czone+1) . "_" . "$statenames[$i]\" gad=\"" . addr2str($basega+$i+20,1) . "\" type=\"$statedpts[$i]\">" . "$NamePrefix $zonenames[$zone] (C" . ($ctrl+1) . "/Z" . ($czone+1) . ") $statenames[$i]" . "</object>\n";
     }
     print VISU1 '      <switch mapping="'. $CV_switch_mapping .'" styling="'. $CV_switch_styling .'">'
@@ -190,6 +193,7 @@ for (my $zone=0;$zone<$opts{z};$zone++) {
 }
 
 close ESF;
+close CSV;
 print XML "\t</objects>\n</config>\n";
 close XML;
 
