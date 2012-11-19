@@ -1,3 +1,5 @@
+svn-date: 2012-11-19 21:30
+
 KOMMANDOS FUER VAILLANT WAERMEPUMPEN
 Die Datenbytes (DBx) muessen durch die encodierten Bytes des zu sendenen Wert ersetzt werden.
 Kommentare nach folgendem Schema: Befehl - Info zum Befehl (ggf. Beispiel) - Encoding
@@ -36,16 +38,9 @@ Kommentare nach folgendem Schema: Befehl - Info zum Befehl (ggf. Beispiel) - Enc
 ### vrDIALOG - TELEGRAMME ###
 #############################
 
-###AWU WAERMEPUMPE
-PARAMETER UND INFORMATIONEN
-
-#Betriebsart (01 = 1)
-FF 50 B5 09 04 0E 2B 00 01 22 00 AA  	# 01=Ein 02=Aus 03=Auto 04=Eco 05=Absenken
-FF 50 B5 09 03 0D 2B 00 05 00 AA	# Lesetelegramm kommt hinterher ???
-
-
-#### CI
-PARAMETER UND INFORMATION
+######################################
+### CI - PARAMETER UND INFORMATION ###
+######################################
 
 # Hydraulikschema (03 =3)
 FF 15 B5 09 03 0D 29 00 6F 00 01 03 98 00 AA 
@@ -90,7 +85,9 @@ FF 15 B5 09 03 0D 86 00 EE 00 04 D7 3B 00 00 F9 00 AA
 #Betriebsart (01 = 1) -> 0=Aus,1=Heizen,2=Kuehlen,3=Warmwasser,4=WW waehrend Heizen,5=WW waehrend Kuehlen
 FF 15 B5 09 03 0D 97 00 47 00 01 01 9A 00 AA
 
-HK NAMEN UND TEL-NR
+################################
+### CI - HK NAMEN UND TEL-NR ###
+################################
 
 #Namen HK 2,4,5,6,7,8,9,10,11,12,13,14,15 -> HK2,4,...,HK14,HK15 hex/ascii
 FF 15 B5 09 03 0D 41 08 D2 00 0B 48 4B 32 20 20 20 20 20 20 20 00 DF 00 AA  
@@ -113,7 +110,9 @@ FF 15 B5 09 03 0D 42 00 EC 00 09 20 20 20 20 20 20 20 20 20 C7 00 AA
 FF 15 B5 09 03 0D 42 08 E4 00 09 20 20 20 20 20 20 20 20 00 E7 00 AA
 
 
-GRAFIKEN
+#####################
+### CI - GRAFIKEN ###
+#####################
 
 #Vorlauf IST: (7E 01 = 23,563 Grad ; 75 01 = 23,313 Grad)
 FF 15 B5 09 03 0D 02 00 24 00 03 7E 01 00 F1 00 AA  
@@ -162,54 +161,188 @@ FF 15 B5 09 03 0D 85 50 88 00 02 00 00 2C 00 AA
 FF 15 B5 09 03 0D 84 58 1B 00 02 00 00 2C 00 AA 
 FF 15 B5 09 03 0D 85 58 80 00 02 50 0B DD 00 AA
 
-### ENDE CI
 
-##################################
-### ENDE vrDIALOG - TELEGRAMME ###
-##################################
-
-
-Set Values by vrDialog
+#######################################################
+### AMU - WAERMEPUMPE - PARAMETER UND INFORMATIONEN ###
+#######################################################
 
 ### ZUSATZHEIZUNG ###
-Bivalenz Punkt ... danach Abfrage ohne Antwort
+
+#Bivalenz Punkt ... danach Abfrage ohne Antwort
 -4 Grad
 FF 08 B5 09 05 0E 65 00 C0 FF 64 00 AA 
 
-Hysterese Zusatzheizung ( 60 = 6 Grad)
+#Hysterese Zusatzheizung ( 60 = 6 Grad)
 FF 08 B5 09 05 0E 7E 00 60 00 F1 00 AA
 
-Verzšgerung Hysterese (14 = 20 Minuten)
+#Verzšgerung Hysterese (14 = 20 Minuten)
 FF 08 B5 09 04 0E E0 01 14 A0 00 AA
 
-EnergieIntegral Zusatzheizung
+#EnergieIntegral Zusatzheizung
 FF 08 B5 09 05 0E 7F 00 70 FE 63 00 AA (-400)
 FF 08 B5 09 05 0E 7F 00 A8 FD 88 00 AA (-600)
 
-Heizung Zusatzheizung
+#Heizung Zusatzheizung
 FF 08 B5 09 04 0E 63 00 00 3A 00 AA (ohne ZH)
 FF 08 B5 09 04 0E 63 00 01 3B 00 AA (mit ZH)
 FF 08 B5 09 04 0E 63 00 02 38 00 AA (nur ZH)
 
-WarmWasser Zusatzheizung
+#WarmWasser Zusatzheizung
 FF 08 B5 09 04 0E 64 00 00 58 00 AA (ohne ZH siehe oben)
 
 
 ### KOMPRESSOR ###
-Kompressorhysterese
+
+#Kompressorhysterese
 FF 08 B5 09 05 0E 7D 00 70 00 B4 00 AA (7 Grad)
 FF 08 B5 09 05 0E 7D 00 80 00 B4 00 AA (8 Grad)
 
-Starts pro Stunde
+#EnergieIntegral Kompressor
+FF 08 B5 09 05 0E 7C 00 60 FF B2 00 AA (-160)
+
+#Starts pro Stunde
 FF 08 B5 09 04 0E 74 00 02 A1 00 AA (2 Starts)
 
-maximale RŸcklauftemperatur HK
+#maximale RŸcklauftemperatur HK
 FF 08 B5 09 05 0E 73 00 80 02 B4 00 AA (40 Grad)
 FF 08 B5 09 05 0E 73 00 20 03 DA 00 AA (50 Grad)
 
 
+### WAERMEQUELLE ###
+
+#zul. maximale Spreizung
+FF 08 B5 09 05 0E 6E 00 A0 00 88 00 AA (10 Grad)
+FF 08 B5 09 05 0E 6E 00 40 01 2E 00 AA (20 Grad)
+
+#Einfrierschutz
+FF 08 B5 09 04 0E 7A 01 F6 0A 00 AA (-10 Grad)
+FF 08 B5 09 04 0E 7A 01 F5 09 00 AA (-11 Grad)
+
+#Vorlauf Quellenpumpe
+FF 08 B5 09 07 0E 76 00 78 00 00 00 7A 00 AA (1 Minute)
+FF 08 B5 09 07 0E 76 00 B4 00 00 00 0B 00 AA (2 Minuten)
+FF 08 B5 09 07 0E 76 00 68 01 00 00 D6 00 AA (3 Minuten)
 
 
+####################################
+### AMU - WAERMEPUMPE - WERKZEUG ###
+####################################
+
+### KALIBRIERUNG ###
+
+#Aussentemperatur
+FF 08 B5 09 05 0E C3 00 08 00 7B 00 AA (+0,5)
+FF 08 B5 09 05 0E C3 00 10 00 50 00 AA (+1)
+FF 08 B5 09 05 0E C3 00 20 00 06 00 AA (+2)
+FF 08 B5 09 05 0E C3 00 F8 FF 11 00 AA (-0,5)
+FF 08 B5 09 05 0E C3 00 FD FF 4B 00 AA (-0,1875)
+
+#Quelle Eintritt
+FF 08 B5 09 05 0E CD 00 10 00 52 00 AA (+1)
+
+#Quelle Austritt
+FF 08 B5 09 05 0E C9 00 10 00 B1 00 AA (+1)
+
+WW-Speicher
+FF 08 B5 09 05 0E C4 00 FD FF 4A 00 AA (-0,1875)
+
+#Vorlauf
+FF 08 B5 09 05 0E CA 00 10 00 53 00 AA (+1)
+
+#RŸcklauf
+FF 08 B5 09 05 0E CB 00 10 00 0D 00 AA (+1)
+
+#Vorlauf VF2
+FF 08 B5 09 05 0E C5 00 10 00 0F 00 AA (+1)
+
+#Kompressor Eintritt
+FF 08 B5 09 05 0E C6 00 03 00 E9 00 AA (+0,1875)
+
+#Kompressor Austritt
+FF 08 B5 09 05 0E C7 00 03 00 B7 00 AA (+0,1875)
+
+#Puffer RL
+FF 08 B5 09 05 0E 34 01 10 00 DD 00 AA (+1)
+
+#Puffer VL
+FF 08 B5 09 05 0E 33 01 10 00 DC 00 AA (+1)
+
+
+##########################
+### AMU - HEIZKREIS 2  ###
+##########################
+
+#Betriebsart (01 = 1)
+FF 50 B5 09 04 0E 2B 00 01 22 00 AA (1)	01=Ein 02=Aus 03=Auto 04=Eco 05=Absenken
+
+#Kreis Typ
+FF 50 B5 09 04 0E 3C 00 01 BB 00 AA (Brenner-/Mischer-Kreis)
+
+#Raumsolltemperatur
+FF 50 B5 09 04 0E 32 00 2C 52 00 AA (22 Grad)
+
+#Absenktemperatur
+FF 50 B5 09 04 0E 33 00 26 4E 00 AA (19 Grad)
+
+#Heizkurve
+FF 50 B5 09 05 0E 35 00 14 00 FC 00 AA (0,20)
+FF 50 B5 09 05 0E 35 00 19 00 BF 00 AA (0,25)
+
+#Aussentemperatur Abschaltgrenze
+FF 50 B5 09 04 0E 36 00 11 37 00 AA (17 Grad)
+
+#minimale Vorlauftemperatur
+FF 50 B5 09 04 0E 30 00 10 42 00 AA (16 Grad)
+
+#maximale Vorlauftemperatur
+FF 50 B5 09 04 0E 31 00 2A 6E 00 AA (42 Grad)
+
+#max. Voraufheizung in Stunden
+FF 50 B5 09 04 0E 38 00 01 E3 00 AA (1 Stunde)
+FF 50 B5 09 04 0E 38 00 02 E0 00 AA (2 Stunden)
+
+
+### KUEHLBETRIEB ###
+
+#Kuehlmodus
+FF 50 B5 09 04 0E 8C 01 02 9A 00 AA (aus)
+FF 50 B5 09 04 0E 8C 01 01 99 00 AA (an)
+FF 50 B5 09 04 0E 8C 01 03 9B 00 AA (auto)
+
+Kuehlbetrieb unterstuetzt
+FF 50 B5 09 04 0E 86 01 00 04 00 AA (nein)
+FF 50 B5 09 04 0E 86 01 01 05 00 AA (ja)
+
+
+
+######################
+### AMU - WW-KREIS ###
+######################
+
+### ZEITFENSTER ###
+
+#Montag
+FF 25 B5 05 09 09 01 66 84 8D 8D 90 90 00 C7 00 AA (17:00 - 22:00)
+#Dienstag
+FF 25 B5 05 09 09 02 0C 90 90 90 90 90 00 4F 00 AA (02:00 - 24:00)
+#Mittwoch
+FF 25 B5 05 09 09 03 66 81 8D 8D 90 90 00 B7 00 AA (17:00 - 21:30)
+
+
+
+# working next days
+#
+#
+#
+#
+#
+#
+
+
+
+##################################
+### ENDE vrDIALOG - TELEGRAMME ###
+##################################
 
 # private
 #gcc -Wall -o "check" "check.c"
