@@ -1,6 +1,6 @@
 CC		= gcc
 LIBS	= 
-CFLAGS	= -Os -g -Wall -DVERSION
+CFLAGS	= -Os -g -Wall
 PRG		= ebusd
 OBJS	= log.o ebus.o main.o
 

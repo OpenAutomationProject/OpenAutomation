@@ -8,216 +8,254 @@
 
 #include "ebus.h"
 
-// Name     Typ              Beschreibung             Aufloesung   Ersatzwert
-// BCD      CHAR                 0    ... +   99      1              FFh
+/*
+ * Name     Typ              Beschreibung             Aufloesung   Ersatzwert
+ * BCD      CHAR                 0    ... +   99      1              FFh
+ */
 
-int bcd_to_int(unsigned char ucSource, int *piTarget)
+int bcd_to_int(unsigned char source, int *target)
 {
-	if ((ucSource & 0x0F) > 0x09 || ((ucSource >> 4) & 0x0F) > 0x09) {
-		*piTarget = (int) (0xFF);
+	if ((source & 0x0F) > 0x09 || ((source >> 4) & 0x0F) > 0x09) {
+		*target = (int) (0xFF);
 		return 0;
 	}
 	else {
-		*piTarget = (int) ( ( ((ucSource & 0xF0) >> 4) * 10) + (ucSource & 0x0F) );
+		*target = (int) ( ( ((source & 0xF0) >> 4) * 10) + (source & 0x0F) );
 		return 1;
 	}
 }
 
-int int_to_bcd(int iSource, unsigned char *pucTarget)
+int int_to_bcd(int source, unsigned char *target)
 {
-	if (iSource > 99) {
-		*pucTarget = (unsigned char) (0xFF);
+	if (source > 99) {
+		*target = (unsigned char) (0xFF);
 		return 0;
-	} else {
-		*pucTarget = (unsigned char) ( ((iSource / 10) << 4) | (iSource % 10) );
+	}
+	else {
+		*target = (unsigned char) ( ((source / 10) << 4) | (source % 10) );
 		return 1;
 	}
 }
 
 
-// Name     Typ              Beschreibung             Aufloesung   Ersatzwert
-// DATA1b   SIGNED CHAR      - 127    ... +  127      1              80h
+/*
+ * Name     Typ              Beschreibung             Aufloesung   Ersatzwert
+ * DATA1b   SIGNED CHAR      - 127    ... +  127      1              80h
+ */
 
-int data1b_to_int(unsigned char ucDATA1b, int *piTarget)
+int data1b_to_int(unsigned char source, int *target)
 {
-	if ((ucDATA1b & 0x80) == 0x80) {
-		*piTarget = (int) (- ( ((unsigned char) (~ ucDATA1b)) + 1) );
+	if ((source & 0x80) == 0x80) {
+		*target = (int) (- ( ((unsigned char) (~ source)) + 1) );
 
-		if (*piTarget  == -0x80)
+		if (*target  == -0x80) {
 			return 0;
-		else
+		}
+		else {
 			return -1;
+		}
 	} else {
-		*piTarget = (int) (ucDATA1b);
+		*target = (int) (source);
 		return 1;
 	}
 }
 
-int int_to_data1b(int iSource, unsigned char *pucTarget)
+int int_to_data1b(int source, unsigned char *target)
 {
-	if (iSource < -127 || iSource > 127) {
-		*pucTarget = (unsigned char) (0x80);
+	if (source < -127 || source > 127) {
+		*target = (unsigned char) (0x80);
 		return 0;
-	} else {
-		if (iSource >= 0) {
-			*pucTarget = (unsigned char) (iSource);
+	}
+	else {
+		if (source >= 0) {
+			*target = (unsigned char) (source);
 			return 1;
-		} else {
-			*pucTarget = (unsigned char) (- (~ (iSource - 1) ) );
+		}
+		else {
+			*target = (unsigned char) (- (~ (source - 1) ) );
 			return -1;
 		}
 	}
 }
 
 
-// Name     Typ              Beschreibung             Aufloesung   Ersatzwert
-// DATA1c   CHAR                 0    ... +  100      0,5            FFh
+/*
+ * Name     Typ              Beschreibung             Aufloesung   Ersatzwert
+ * DATA1c   CHAR                 0    ... +  100      0,5            FFh
+ */
 
-int data1c_to_float(unsigned char ucSource, float *pfTarget)
+int data1c_to_float(unsigned char source, float *target)
 {
-	if (ucSource > 0xC8) {
-		*pfTarget = (float) (0xFF);
+	if (source > 0xC8) {
+		*target = (float) (0xFF);
 		return 0;
-	} else {
-		*pfTarget = (float) (ucSource / 2.0);
+	}
+	else {
+		*target = (float) (source / 2.0);
 		return 1;
 	}
 }
 
-int float_to_data1c(float fSource, unsigned char *pucTarget)
+int float_to_data1c(float source, unsigned char *target)
 {
-	if (fSource < 0.0 || fSource > 100.0) {
-		*pucTarget = (unsigned char) (0xFF);
+	if (source < 0.0 || source > 100.0) {
+		*target = (unsigned char) (0xFF);
 		return 0;
-	} else {
-		*pucTarget = (unsigned char) (fSource * 2.0);
+	}
+	else {
+		*target = (unsigned char) (source * 2.0);
 		return 1;
 	}
 }
 
 
-// Name     Typ              Beschreibung             Aufloesung   Ersatzwert
-// DATA2b   SIGNED INTEGER   - 127,99 ... +  127,99   1/256        8000h
+/*
+ * Name     Typ              Beschreibung             Aufloesung   Ersatzwert
+ * DATA2b   SIGNED INTEGER   - 127,99 ... +  127,99   1/256        8000h
+ */
 
-int data2b_to_float(unsigned char ucSourceLSB, unsigned char ucSourceMSB, float *pfTarget)
+int data2b_to_float(unsigned char source_lsb, unsigned char source_msb, float *target)
 {
-	if ((ucSourceMSB & 0x80) == 0x80) {
-		*pfTarget = (float) (-   ( ((unsigned char) (~ ucSourceMSB)) +
-		                       ( ( ((unsigned char) (~ ucSourceLSB)) + 1) / 256.0) ) );
+	if ((source_msb & 0x80) == 0x80) {
+		*target = (float) (-   ( ((unsigned char) (~ source_msb)) +
+		                     ( ( ((unsigned char) (~ source_lsb)) + 1) / 256.0) ) );
 
-		if (ucSourceMSB  == 0x80 && ucSourceLSB == 0x00)
+		if (source_msb  == 0x80 && source_lsb == 0x00) {
 			return 0;
-		else
+		}
+		else {
 			return -1;
-	} else {
-		*pfTarget = (float) (ucSourceMSB + (ucSourceLSB / 256.0));
+		}
+	}
+	else {
+		*target = (float) (source_msb + (source_lsb / 256.0));
 		return 1;
 	}
 }
 
-int float_to_data2b(float fSource, unsigned char *pucTargetMSB, unsigned char *pucTargetLSB)
+int float_to_data2b(float source, unsigned char *target_lsb, unsigned char *target_msb)
 {
-	if (fSource < -127.999 || fSource > 127.999) {
-		*pucTargetMSB = (unsigned char) (0x80);
-		*pucTargetLSB = (unsigned char) (0x00);
+	if (source < -127.999 || source > 127.999) {
+		*target_msb = (unsigned char) (0x80);
+		*target_lsb = (unsigned char) (0x00);
 		return 0;
-	} else {
-		*pucTargetLSB = (unsigned char) ((fSource - ((unsigned char) fSource)) * 256.0);
+	}
+	else {
+		*target_lsb = (unsigned char) ((source - ((unsigned char) source)) * 256.0);
 
-		if (fSource < 0.0 && *pucTargetLSB != 0x00)
-			*pucTargetMSB = (unsigned char) (fSource - 1);
-		else
-			*pucTargetMSB = (unsigned char) (fSource);
+		if (source < 0.0 && *target_lsb != 0x00) {
+			*target_msb = (unsigned char) (source - 1);
+		}
+		else {
+			*target_msb = (unsigned char) (source);
+		}
 
-		if (fSource >= 0.0)
+		if (source >= 0.0) {
 			return 1;
-		else
+		}
+		else {
 			return -1;
+		}
 	}
 }
 
 
-// Name     Typ              Beschreibung             Aufloesung   Ersatzwert
-// DATA2c   SIGNED INTEGER   -2047,9  ... + 2047,9    1/16         8000h
+/*
+ * Name     Typ              Beschreibung             Aufloesung   Ersatzwert
+ * DATA2c   SIGNED INTEGER   -2047,9  ... + 2047,9    1/16         8000h
+ */
 
-int data2c_to_float(unsigned char ucSourceLSB, unsigned char ucSourceMSB, float *pfTarget)
+int data2c_to_float(unsigned char source_lsb, unsigned char source_msb, float *target)
 {
-	if ((ucSourceMSB & 0x80) == 0x80) {
-		*pfTarget = (float) (- ( ( ( ((unsigned char) (~ ucSourceMSB)) * 16.0) ) +
-		                         ( ( ((unsigned char) (~ ucSourceLSB)) & 0xF0) >> 4) +
-		                       ( ( ( ((unsigned char) (~ ucSourceLSB)) & 0x0F) +1 ) / 16.0) ) );
+	if ((source_msb & 0x80) == 0x80) {
+		*target = (float) (- ( ( ( ((unsigned char) (~ source_msb)) * 16.0) ) +
+		                       ( ( ((unsigned char) (~ source_lsb)) & 0xF0) >> 4) +
+		                     ( ( ( ((unsigned char) (~ source_lsb)) & 0x0F) +1 ) / 16.0) ) );
 
-		if (ucSourceMSB  == 0x80 && ucSourceLSB == 0x00)
+		if (source_msb  == 0x80 && source_lsb == 0x00) {
 			return 0;
-		else
+		}
+		else {
 			return -1;
-	} else {
-		*pfTarget = (float) ( (ucSourceMSB * 16.0) + ((ucSourceLSB & 0xF0) >> 4) + ((ucSourceLSB & 0x0F) / 16.0) );
+		}
+	}
+	else {
+		*target = (float) ( (source_msb * 16.0) + ((source_lsb & 0xF0) >> 4) + ((source_lsb & 0x0F) / 16.0) );
 		return 1;
 	}
 }
 
-int float_to_data2c(float fSource, unsigned char *pucTargetMSB, unsigned char *pucTargetLSB)
+int float_to_data2c(float source, unsigned char *target_lsb, unsigned char *target_msb)
 {
-	if (fSource < -2047.999 || fSource > 2047.999) {
-		*pucTargetMSB = (unsigned char) (0x80);
-		*pucTargetLSB = (unsigned char) (0x00);
+	if (source < -2047.999 || source > 2047.999) {
+		*target_msb = (unsigned char) (0x80);
+		*target_lsb = (unsigned char) (0x00);
 		return 0;
-	} else {
-		*pucTargetLSB = ( ((unsigned char) ( ((unsigned char) fSource) % 16) << 4) +
-		                  ((unsigned char) ( (fSource - ((unsigned char) fSource)) * 16.0)) );
+	}
+	else {
+		*target_lsb = ( ((unsigned char) ( ((unsigned char) source) % 16) << 4) +
+		                ((unsigned char) ( (source - ((unsigned char) source)) * 16.0)) );
 
-		if (fSource < 0.0 && *pucTargetLSB != 0x00)
-			*pucTargetMSB = (unsigned char) ((fSource / 16.0) - 1);
-		else
-			*pucTargetMSB = (unsigned char) (fSource / 16.0);
+		if (source < 0.0 && *target_lsb != 0x00) {
+			*target_msb = (unsigned char) ((source / 16.0) - 1);
+		}
+		else {
+			*target_msb = (unsigned char) (source / 16.0);
+		}
 
-		if (fSource >= 0.0)
+		if (source >= 0.0) {
 			return 1;
-		else
+		}
+		else {
 			return -1;
+		}
 	}
 }
 
 
 
-// CRC Calculation "CRC-8-WCDMA"
-// Polynom "x^8 + x^7 + x^4 + x^3 + x + 1"
+/*
+ * CRC Calculation "CRC-8-WCDMA"
+ * Polynom "x^8 + x^7 + x^4 + x^3 + x + 1"
+ */
 
-unsigned char calc_crc_byte(unsigned char ucByte, unsigned char ucInitCRC)
+unsigned char calc_crc_byte(unsigned char byte, unsigned char init_crc)
 {
-	unsigned char ucCRC;
-	unsigned char ucPolynom;
+	unsigned char crc;
+	unsigned char polynom;
 	int i;
 
-	ucCRC = ucInitCRC;
+	crc = init_crc;
 
 	for (i = 0; i < 8; i++) {
 
-		if (ucCRC & 0x80)
-			ucPolynom = (unsigned char) 0x9B;
-		else
-			ucPolynom = (unsigned char) 0;
+		if (crc & 0x80) {
+			polynom = (unsigned char) 0x9B;
+		}
+		else {
+			polynom = (unsigned char) 0;
+		}
 
-		ucCRC = (unsigned char) ((ucCRC & ~0x80) << 1);
+		crc = (unsigned char) ((crc & ~0x80) << 1);
 
-		if (ucByte & 0x80)
-			ucCRC = (unsigned char) (ucCRC | 1);
+		if (byte & 0x80) {
+			crc = (unsigned char) (crc | 1);
+		}
 
-		ucCRC = (unsigned char) (ucCRC ^ ucPolynom);
-		ucByte = (unsigned char) (ucByte << 1);
+		crc = (unsigned char) (crc ^ polynom);
+		byte = (unsigned char) (byte << 1);
 	}
-	return ucCRC;
+	return crc;
 }
 
-unsigned char calc_crc(unsigned char *pucData, int iDataSize)
+unsigned char calc_crc(unsigned char *bytes, int size)
 {
 	int i;
-	unsigned char ucCRC = 0;
+	unsigned char crc = 0;
 
-	for( i = 0 ; i < iDataSize ; i++, pucData++ ) {
-		ucCRC = calc_crc_byte(*pucData, ucCRC);
+	for( i = 0 ; i < size ; i++, bytes++ ) {
+		crc = calc_crc_byte(*bytes, crc);
 	}
-	return ucCRC;
+	return crc;
 }
 

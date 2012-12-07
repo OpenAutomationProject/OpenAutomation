@@ -178,8 +178,7 @@ cmdline_read(int *argc, char ***argv)
 
 	for (;;) {
 		int i;
-		i = getopt_long(*argc, *argv,
-		    "c:L:l:fp:vh", opts, NULL);
+		i = getopt_long(*argc, *argv, "c:L:l:fp:vh", opts, NULL);
 		if (i == -1) {
 			break;
 		}
@@ -217,14 +216,18 @@ cmdline_read(int *argc, char ***argv)
 
 				for (opt = opts; opt->name; opt++) {
 					size = strlen(opt->name);
-					if (size > max) max = size;
+					if (size > max) {
+						max = size;
+					}
 				}
 
 				for (opt = opts, hlp = opts_help; opt->name; opt++, hlp++) {
 					fprintf(stdout, "  -%c, --%s", opt->val, opt->name);
 					size = strlen(opt->name);
 
-					for (; size < max; size++) fprintf(stdout, " ");
+					for (; size < max; size++) {
+						fprintf(stdout, " ");
+					}
 
 					fprintf(stdout, "  %s\n", *hlp);
 				}
