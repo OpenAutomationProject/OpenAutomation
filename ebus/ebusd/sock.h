@@ -17,27 +17,14 @@
  * along with ebusd. If not, see http://www.gnu.org/licenses/.
  */
 
-#ifndef LOG_H_
-#define LOG_H_
+#ifndef SOCK_H_
+#define SOCK_H_
 
-/*
- * INF = 0 - normal messages
- * WAR = 1 - warnings
- * ERR = 2 - errors
- * DBG = 3 - for debugging purpose
- */
+int socket_init(int port, int *socketfd);
 
-#define INF 0
-#define WAR 1
-#define ERR 2
-#define DBG 3
+int socket_accept(int listenfd, int *datafd);
 
-void log_set_file(FILE *fp);
-void log_set_level(int loglevel);
+int socket_read(int datafd, char msgbuf[], int *msgbuflen);
+int socket_write(int datafd, char msgbuf[], int msgbuflen);
 
-int log_open(const char *logfile, int foreground);
-void log_close();
-
-void log_print_msg(int loglevel, const char *logtxt, ...);
-
-#endif /* LOG_H_ */
+#endif /* SOCK_H_ */

@@ -1,7 +1,20 @@
 /*
- * Author:  Jax Roland
- * Date:    04.12.2012
- * License: GPLv3
+ * Copyright (C) Roland Jax 2012 <roland.jax@liwest.at>
+ *
+ * This file is part of ebusd.
+ *
+ * ebusd is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * ebusd is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with ebusd. If not, see http://www.gnu.org/licenses/.
  */
 
 #include <stdio.h>
@@ -24,7 +37,9 @@ char * log_get_time(char *time);
 void
 log_set_file(FILE *fp)
 {
-	if(log_file_fp) fclose(log_file_fp);
+	if(log_file_fp) {
+		fclose(log_file_fp);
+	}
 	log_file_fp = fp;
 }
 
@@ -46,8 +61,7 @@ log_open(const char *logfile, int foreground)
 
 	if (foreground) {
 		log_set_file(stdout);
-	}
-	else {
+	} else {
 		if (logfile) {
 			if (!(fp = fopen(logfile, "a+"))) {
 				fprintf(stderr, "error opening logfile %s.\n", logfile);
@@ -106,8 +120,7 @@ log_print_msg(int loglevel, const char *logtxt, ...)
 			fprintf(log_file_fp, "%s [%s] %s\n", log_get_time(time), log_level_txt[loglevel], buf);
 			fflush(log_file_fp);
 		}
-	}
-	else {
+	} else {
 		switch (loglevel) {
 			case INF: priority = LOG_ERR; break;
 			case WAR: priority = LOG_WARNING; break;
