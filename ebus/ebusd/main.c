@@ -19,20 +19,19 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include <getopt.h>
-#include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <ctype.h>
 #include <syslog.h>
-#include <string.h>
-#include <errno.h>
 #include <termios.h>
+#include <errno.h>
 
-#include "ebus.h"
 #include "log.h"
-#include "sock.h"
+#include "utils.h"
+#include "ebus.h"
 #include "main.h"
 
 
@@ -45,95 +44,20 @@ static int pidfd = -1; /* pidfile file descriptor */
 static int serialfd = -1; /* serial file descriptor */
 static int socketfd = -1; /* socket file descriptor */
 
-static int loglevel = EBUSD_LOGLEVEL;
-static int foreground = EBUSD_FOREGROUND;
+static int loglevel = DAEMON_LOGLEVEL;
+static int foreground = DAEMON_FOREGROUND;
 
-static const char *confdir = EBUSD_CONFDIR;
-static const char *pidfile = EBUSD_PIDFILE;
-static const char *logfile = EBUSD_LOGFILE;
+static const char *confdir = DAEMON_CONFDIR;
+static const char *pidfile = DAEMON_PIDFILE;
+static const char *logfile = DAEMON_LOGFILE;
 
 static struct termios oldtermios;
 static const char *serial = SERIAL_DEVICE;
 
 static int listenport = SOCKET_PORT;
 
-
 void
-decode_ebus_msg(unsigned char *data, int size)
-{
-	int k = 0;
-	char buf[SERIAL_BUFSIZE];
-	char tmp[4];
-
-	memset(tmp, '\0', sizeof(tmp));
-	memset(buf, '\0', sizeof(buf));
-
-	for (k = 0; k < size; k++) {
-		sprintf(tmp, " %02x", data[k]);
-		strncat(buf, tmp, 3);
-	}
-
-	log_print_msg(DBG, "decode_ebus_msg: %s", buf);
-}
-
-int
-serial_open(const char *device, int *serialfd, struct termios *oldtermios) {
-
-	struct termios newtermios;
-
-	/* open the serial port */
-	if (!serialfd) {
-		log_print_msg(ERR, "Could not open serial device %s - serialfd is NULL", serial);
-		return -1;
-	}
-
-	*serialfd = open(device, O_RDWR | O_NOCTTY | O_NDELAY);
-
-	if (*serialfd == -1) {
-		log_print_msg(ERR, "Could not open serial device %s - serialfd is -1", serial);
-		return -1;
-	}
-
-	fcntl(*serialfd, F_SETFL, 0);
-
-	/* save current settings of serial port */
-	if (oldtermios) {
-		tcgetattr(*serialfd, oldtermios);
-	}
-
-	memset(&newtermios, '\0', sizeof(newtermios));
-
-	/* set new settings of serial port */
-	newtermios.c_cflag = SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
-	newtermios.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-	newtermios.c_iflag = IGNPAR;
-	newtermios.c_oflag &= ~OPOST;
-	newtermios.c_cc[VMIN]  = 1;
-	newtermios.c_cc[VTIME] = 0;
-
-	tcflush(*serialfd, TCIFLUSH);
-
-	/* activate new settings of serial port */
-	tcsetattr(*serialfd, TCSANOW, &newtermios);
-
-	return 0;
-}
-
-int
-serial_close(int *serialfd, struct termios *oldtermios) {
-
-	/* Reset serial device to default settings */
-	tcsetattr(*serialfd, TCSANOW, oldtermios);
-
-	/* Close file descriptor from serial device */
-	close(*serialfd);
-
-	return 0;
-}
-
-void
-signal_handle(int sig)
-{
+signal_handler(int sig) {
 	switch(sig)
 	{
 		case SIGHUP:
@@ -142,7 +66,6 @@ signal_handle(int sig)
 		case SIGINT:
 		case SIGTERM:
 			log_print_msg(INF,  "Daemon exiting");
-			close(pidfd);
 			cleanup(EXIT_SUCCESS);
 			break;
 		default:
@@ -151,40 +74,8 @@ signal_handle(int sig)
 	}
 }
 
-int
-pidfile_open()
-{
-	char pid_str[10];
-
-	/* open pidfile */
-	pidfd = open(pidfile, O_RDWR|O_CREAT, 0600);
-
-	if (pidfd == -1) {
-		log_print_msg(ERR, "Could not open PID file %s, exiting", pidfile);
-		return -1;
-	}
-
-	/* lock file */
-	if (lockf(pidfd, F_TLOCK, 0) == -1) {
-		log_print_msg(ERR, "Could not lock PID file %s, exiting", pidfile);
-		close(pidfd);
-		return -1;
-	}
-
-	/* write PID into pidfile */
-	sprintf(pid_str, "%d\n", getpid());
-
-	if (write(pidfd, pid_str, strlen(pid_str)) == -1) {
-		log_print_msg(ERR, "Could not write PID into file %s, exiting", pidfile);
-		close(pidfd);
-		return -1;
-	}
-
-	return 0;
-}
-
 void
-daemonize(char *workdir, const char *pidfile)
+daemonize()
 {
 	pid_t pid;
 
@@ -212,38 +103,86 @@ daemonize(char *workdir, const char *pidfile)
 		cleanup(EXIT_FAILURE);
 	}
 
-	/* Route I/O connections */
-//	close(STDIN_FILENO);
-//	close(STDOUT_FILENO);
-//	close(STDERR_FILENO);
-
 	/* Change the current working directory.  This prevents the current
 	   directory from being locked; hence not being able to remove it. */
-	if (chdir(workdir) < 0) {
+	if (chdir(DAEMON_WORKDIR) < 0) {
 		/* Log any failure here */
 		log_print_msg(ERR, "chdir(\"/\"): %s", strerror(errno));
 		cleanup(EXIT_FAILURE);
 	}
 
+	/* Route I/O connections */
+	close(STDIN_FILENO);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+
 	/* write pidfile and try to lock it */
-	if (pidfile_open() < 0) {
+	if (pidfile_open(pidfile, &pidfd) == -1) {
 		cleanup(EXIT_FAILURE);
 	} else {
 		pidfile_locked = YES;
-		log_print_msg(DBG, "PID file %s created.", pidfile);
+		log_print_msg(DBG, "PID file %s successfully created.", pidfile);
 	}
 
     /* Cancel certain signals */
-    signal(SIGCHLD, SIG_DFL); /* A child process dies */
+	signal(SIGCHLD, SIG_DFL); /* A child process dies */
     signal(SIGTSTP, SIG_IGN); /* Various TTY signals */
     signal(SIGTTOU, SIG_IGN); /* Ignore TTY background writes */
     signal(SIGTTIN, SIG_IGN); /* Ignore TTY background reads */
 
     /* Trap signals that we expect to receive */
-    signal(SIGHUP,  signal_handle);
-    signal(SIGINT,  signal_handle);
-    signal(SIGTERM, signal_handle);
+    signal(SIGHUP, signal_handler);
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
 
+}
+
+void
+cleanup(int state)
+{
+
+	/* close listing tcp socket */
+	if (socketfd > 0) {
+		if (!close(socketfd)) {
+			log_print_msg(DBG, "TCP port %d successfully closed.", listenport);
+		}
+	}
+
+	/* close serial device */
+	if (serialfd > 0) {
+		if (!serial_close(&serialfd, &oldtermios)) {
+			log_print_msg(DBG, "serial device %s successfully closed.", serial);
+		}
+	}
+
+	if (!foreground) {
+
+		/* delete PID file */
+		if (pidfile_locked) {
+			if (!pidfile_close(pidfile, pidfd)) {
+				log_print_msg(DBG, "PID file %s successfully deleted.", pidfile);
+			}
+
+		}
+
+		/* Reset all signal handlers to default */
+		signal(SIGCHLD, SIG_DFL);
+		signal(SIGTSTP, SIG_DFL);
+		signal(SIGTTOU, SIG_DFL);
+		signal(SIGTTIN, SIG_DFL);
+		signal(SIGHUP,  SIG_DFL);
+		signal(SIGINT,  SIG_DFL);
+		signal(SIGTERM, SIG_DFL);
+
+		/* print end message */
+		log_print_msg(INF, DAEMON_NAME " " DAEMON_VERSION " stopped.");
+		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " stopped.");
+	}
+
+	/* close logging system */
+	log_close();
+
+	exit(state);
 }
 
 void
@@ -300,7 +239,7 @@ cmdline(int *argc, char ***argv)
 				serial = optarg;
 				break;
 			case 'v':
-				fprintf(stdout, EBUSD_DAEMON " " EBUSD_VERSION "\n");
+				fprintf(stdout, DAEMON_NAME " " DAEMON_VERSION "\n");
 				exit(EXIT_SUCCESS);
 			case 'h':
 			default:
@@ -316,60 +255,15 @@ cmdline(int *argc, char ***argv)
 								"  -h --help         Print this message.\n"
 								"\n",
 								progname,
-								EBUSD_CONFDIR,
-								EBUSD_LOGFILE,
-								EBUSD_PIDFILE,
+								DAEMON_CONFDIR,
+								DAEMON_LOGFILE,
+								DAEMON_PIDFILE,
 								SOCKET_PORT,
 								SERIAL_DEVICE);
 				exit(EXIT_FAILURE);
 				break;
 		}
 	}
-}
-
-void
-cleanup(int state)
-{
-
-	/* close listing tcp socket */
-	if (socketfd > 0) {
-		close(socketfd);
-		log_print_msg(DBG, "socketfd %d closed.", socketfd);
-	}
-
-	/* close serial device */
-	if (serialfd > 0) {
-		serial_close(&serialfd, &oldtermios);
-		log_print_msg(DBG, "serialfd %d closed.", serialfd);
-	}
-
-	if (!foreground) {
-
-		/* delete PID file */
-		if (pidfile_locked) {
-			close(pidfd);
-			unlink(pidfile);
-			log_print_msg(DBG, "PID file %s deleted.", pidfile);
-		}
-
-		/* Reset all signal handlers to default */
-		signal(SIGCHLD, SIG_DFL);
-		signal(SIGTSTP, SIG_DFL);
-		signal(SIGTTOU, SIG_DFL);
-		signal(SIGTTIN, SIG_DFL);
-		signal(SIGHUP,  SIG_DFL);
-		signal(SIGINT,  SIG_DFL);
-		signal(SIGTERM, SIG_DFL);
-
-		/* print end message */
-		log_print_msg(INF, EBUSD_DAEMON " " EBUSD_VERSION " stopped.");
-		syslog(LOG_INFO, EBUSD_DAEMON " " EBUSD_VERSION " stopped.");
-	}
-
-	/* close logging system */
-	log_close();
-
-	exit(state);
 }
 
 void
@@ -499,21 +393,26 @@ main(int argc, char * argv[])
 
 	/* to be daemon */
 	if (!foreground) {
-		log_print_msg(INF, EBUSD_DAEMON " " EBUSD_VERSION " started.");
-		syslog(LOG_INFO, EBUSD_DAEMON " " EBUSD_VERSION " started.");
-		daemonize(EBUDS_WORKDIR, pidfile);
+		log_print_msg(INF, DAEMON_NAME " " DAEMON_VERSION " started.");
+		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " started.");
+		daemonize();
 	}
 
 	/* open serial device */
 	if (serial_open(serial, &serialfd, &oldtermios) < 0) {
 		cleanup(EXIT_FAILURE);
+	} else {
+		log_print_msg(DBG, "serial device %s successfully opened.", serial);
 	}
 
 	/* open listing tcp socket */
 	if (socket_init(listenport, &socketfd) < 0) {
 		cleanup(EXIT_FAILURE);
+	} else {
+		log_print_msg(DBG, "TCP port %d successfully opened.", listenport);
 	}
 
+	/* enter main loop */
 	main_loop(serialfd, socketfd);
 
 	cleanup(EXIT_SUCCESS);

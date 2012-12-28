@@ -21,7 +21,7 @@ CC		= gcc
 LIBS	= 
 CFLAGS	= -Os -g -Wall
 PRG		= ebusd
-OBJS	= log.o ebus.o sock.o main.o
+OBJS	= log.o utils.o ebus.o main.o
 
 all: $(PRG)
 

@@ -38,7 +38,6 @@
 #define EBUS_MSG_ACK          0x00
 #define EBUS_MSG_BROADCAST    0xFE
 
-#define BUFFER_SIZE    1024
 
 int bcd_to_int(unsigned char source, int *target);
 int int_to_bcd(int source, unsigned char *target);

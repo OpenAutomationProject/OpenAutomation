@@ -32,6 +32,7 @@
 #define ERR 2
 #define DBG 3
 
+
 void log_set_file(FILE *fp);
 void log_set_level(int loglevel);
 

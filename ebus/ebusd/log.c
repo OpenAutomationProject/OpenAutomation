@@ -18,7 +18,6 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
 #include <sys/time.h>
@@ -65,7 +64,7 @@ log_open(const char *logfile, int foreground)
 		if (logfile) {
 			if (!(fp = fopen(logfile, "a+"))) {
 				fprintf(stderr, "error opening logfile %s.\n", logfile);
-				return EXIT_FAILURE;
+				return -1;
 			}
 
 			log_set_file(fp);
@@ -74,7 +73,7 @@ log_open(const char *logfile, int foreground)
 
 	openlog(NULL, LOG_CONS|LOG_NDELAY|LOG_PID, LOG_DAEMON);
 
-	return EXIT_SUCCESS;
+	return 0;
 }
 
 void

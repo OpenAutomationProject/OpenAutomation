@@ -20,45 +20,27 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-//#include "utils.h"
-//#include "log.h"
-
 #define YES 1
 #define NO  0
 
 
-#define EBUSD_VERSION		"0.0.1"
+#define DAEMON_VERSION		"0.0.1"
+#define DAEMON_NAME			"ebusd"
 
-#define EBUSD_DAEMON		"ebusd"
+#define DAEMON_LOGLEVEL		ERR
+#define DAEMON_FOREGROUND	NO
+#define DAEMON_WORKDIR		"/tmp/"
+#define DAEMON_CONFDIR		"/etc/ebusd/"
+#define DAEMON_PIDFILE		"/var/run/ebusd.pid"
+#define DAEMON_LOGFILE		"/var/log/ebusd.log"
 
-#define EBUSD_LOGLEVEL		ERR
-#define EBUSD_FOREGROUND	NO
-#define EBUDS_WORKDIR		"/tmp/"
-#define EBUSD_CONFDIR		"/etc/ebusd/"
-#define EBUSD_PIDFILE		"/var/run/ebusd.pid"
-#define EBUSD_LOGFILE		"/var/log/ebusd.log"
+void signal_handler(int sig);
 
-#define SERIAL_DEVICE		"/dev/ttyUSB0"
-#define SERIAL_BAUDRATE		B2400
-#define SERIAL_BUFSIZE		512
-
-#define SOCKET_PORT			8888
-#define SOCKET_BUFSIZE		512
-
-void decode_ebus_msg(unsigned char *data, int size);
-
-int serial_open(const char *device, int *serialfd, struct termios *oldtermios);
-int serial_close(int *serialfd, struct termios *oldtermios);
-
-void signal_handle(int sig);
-
-int pidfile_open();
-
-void daemonize(char *workdir, const char *pidfile);
-
-void cmdline(int *argc, char ***argv);
+void daemonize();
 
 void cleanup(int state);
+
+void cmdline(int *argc, char ***argv);
 
 void main_loop(int serialfd, int socketfd);
 
