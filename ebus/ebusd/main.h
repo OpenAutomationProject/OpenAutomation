@@ -42,6 +42,6 @@ void cleanup(int state);
 
 void cmdline(int *argc, char ***argv);
 
-void main_loop(int serialfd, int socketfd);
+void main_loop();
 
 #endif /* MAIN_H_ */

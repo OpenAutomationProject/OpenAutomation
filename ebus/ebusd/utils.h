@@ -32,13 +32,15 @@ void decode_ebus_msg(unsigned char *data, int size);
 
 int serial_open(const char *dev, int *fd, struct termios *oldtermios);
 int serial_close(int *fd, struct termios *oldtermios);
+int serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], int *tmppos);
 
 int pidfile_open(const char *file, int *fd);
 int pidfile_close(const char *file, int fd);
 
-int socket_init(int port, int *socketfd);
+int socket_open(int port, int *fd);
+int socket_close(int fd);
 int socket_accept(int listenfd, int *datafd);
-int socket_read(int datafd, char msgbuf[], int *msgbuflen);
-int socket_write(int datafd, char msgbuf[], int msgbuflen);
+int socket_read(int fd, char buf[], int *buflen);
+int socket_write(int fd, char buf[], int buflen);
 
 #endif /* UTILS_H_ */

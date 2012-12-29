@@ -32,6 +32,16 @@
 #define ERR 2
 #define DBG 3
 
+#define err_if(exp) \
+	if(exp) { log_print_msg(ERR, "%s: %d: %s: Error %s", \
+			__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
+	}
+
+#define err_ret_if(exp, ret) \
+	if(exp) { log_print_msg(ERR, "%s: %d: %s: Error %s", \
+			__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
+			return(ret); \
+	}
 
 void log_set_file(FILE *fp);
 void log_set_level(int loglevel);

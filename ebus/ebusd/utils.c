@@ -27,6 +27,7 @@
 #include <sys/socket.h>
 
 #include "log.h"
+#include "ebus.h"
 #include "utils.h"
 
 void
@@ -44,38 +45,25 @@ decode_ebus_msg(unsigned char *data, int size)
 		strncat(buf, tmp, 3);
 	}
 
-	log_print_msg(DBG, "decode_ebus_msg: %s", buf);
+	log_print_msg(DBG, "%s", buf);
 }
 
 
 int
 serial_open(const char *dev, int *fd, struct termios *oldtermios)
 {
-
+	int ret;
 	struct termios newtermios;
 
-	/* open the serial port */
-	if (!fd) {
-		log_print_msg(ERR, "open serial device %s - errno: %s", dev, strerror(errno));
-		return -1;
-	}
-
 	*fd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
+	err_ret_if(*fd < 0, -1);
 
-	if (*fd == -1) {
-		log_print_msg(ERR, "open serial device %s - errno: %s", dev, strerror(errno));
-		return -1;
-	}
-
-	fcntl(*fd, F_SETFL, 0);
+	ret = fcntl(*fd, F_SETFL, 0);
+	err_ret_if(ret < 0, -1);
 
 	/* save current settings of serial port */
-	if (oldtermios) {
-		if (tcgetattr(*fd, oldtermios) == -1) {
-			log_print_msg(DBG, "get serial device %s settings - errno: %s", dev, strerror(errno));
-			return -1;
-		}
-	}
+	ret = tcgetattr(*fd, oldtermios);
+	err_ret_if(ret < 0, -1);
 
 	memset(&newtermios, '\0', sizeof(newtermios));
 
@@ -87,13 +75,12 @@ serial_open(const char *dev, int *fd, struct termios *oldtermios)
 	newtermios.c_cc[VMIN]  = 1;
 	newtermios.c_cc[VTIME] = 0;
 
-	tcflush(*fd, TCIFLUSH);
+	ret = tcflush(*fd, TCIFLUSH);
+	err_ret_if(ret < 0, -1);
 
 	/* activate new settings of serial port */
-	if (tcsetattr(*fd, TCSANOW, &newtermios) == -1) {
-		log_print_msg(DBG, "set serial device %s settings - errno: %s", dev, strerror(errno));
-		return -1;
-	}
+	ret = tcsetattr(*fd, TCSANOW, &newtermios);
+	err_ret_if(ret < 0, -1);
 
 	return 0;
 }
@@ -101,19 +88,44 @@ serial_open(const char *dev, int *fd, struct termios *oldtermios)
 int
 serial_close(int *fd, struct termios *oldtermios)
 {
+	int ret;
 
-	/* Reset serial device to default settings */
-	if (oldtermios) {
-		if (tcsetattr(*fd, TCSANOW, oldtermios) == -1) {
-			log_print_msg(DBG, "set serial settings - errno: %s", strerror(errno));
-			return -1;
-		}
-	}
+	/* activate old settings of serial port */
+	ret = tcsetattr(*fd, TCSANOW, oldtermios);
+	err_ret_if(ret < 0, -1);
 
 	/* Close file descriptor from serial device */
-	if (close(*fd) == -1) {
-		log_print_msg(DBG, "close serial device - errno: %s", strerror(errno));
-		return -1;
+	ret = close(*fd);
+	err_ret_if(ret < 0, -1);
+
+	return 0;
+}
+
+int
+serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], int *tmppos)
+{
+	int maxlen, i;
+
+	maxlen = *buflen;
+
+	*buflen = read(fd, buf, *buflen);
+	err_ret_if(*buflen < 0 || *buflen > maxlen, -1);
+
+	i = 0;
+	while (i < *buflen) {
+
+		if (buf[i] == EBUS_SYN) {
+			/* skip 0xAA entries */
+			if (*tmppos > 0) {
+				return 1;
+			}
+		} else {
+
+			/* copy input data into buffer */
+			tmpbuf[*tmppos] = buf[i];
+			*tmppos = *tmppos + 1;
+		}
+		i++;
 	}
 
 	return 0;
@@ -123,90 +135,73 @@ serial_close(int *fd, struct termios *oldtermios)
 int
 pidfile_open(const char *file, int *fd)
 {
+	int ret;
 	char pid[10];
 
-	/* open pidfile */
 	*fd = open(file, O_RDWR|O_CREAT, 0600);
+	err_ret_if(*fd < 0, -1);
 
-	if (*fd == -1) {
-		log_print_msg(ERR, "open PID file %s - errno: %s", file, strerror(errno));
-		return -1;
-	}
+	ret = lockf(*fd, F_TLOCK, 0);
+	err_ret_if(ret < 0, -1);
 
-	/* lock file */
-	if (lockf(*fd, F_TLOCK, 0) == -1) {
-		log_print_msg(ERR, "lock PID file %s - errno: %s", file, strerror(errno));
-		close(*fd);
-		return -1;
-	}
-
-	/* write PID into pidfile */
 	sprintf(pid, "%d\n", getpid());
+	ret = write(*fd, pid, strlen(pid));
+	err_ret_if(ret < 0, -1);
 
-	if (write(*fd, pid, strlen(pid)) == -1) {
-		log_print_msg(ERR, "write PID file %s - errno: %s", file, strerror(errno));
-		close(*fd);
-		return -1;
-	}
 	return 0;
 }
 
 int
 pidfile_close(const char *file, int fd)
 {
-	if (close(fd) == -1) {
-		log_print_msg(ERR, "Could not close PID file %s - errno: %s", file, strerror(errno));
-		return -1;
-	}
+	int ret;
 
-	if (unlink(file) == -1) {
-		log_print_msg(ERR, "Could not delete PID file %s - errno: %s", file, strerror(errno));
-		return -1;
-	}
+	ret = close(fd);
+	err_ret_if(ret < 0, -1);
+
+	ret = unlink(file);
+	err_ret_if(ret < 0, -1);
+
 	return 0;
 }
 
 
 int
-socket_init(int port, int *socketfd)
+socket_open(int port, int *fd)
 {
-	int ret;
+	int ret, opt;
 	struct sockaddr_in sock;
-	int opt = 1;
 
-	*socketfd = socket(PF_INET, SOCK_STREAM, 0);
+	*fd = socket(PF_INET, SOCK_STREAM, 0);
+	err_ret_if(fd < 0, -1);
 
-	if (socketfd < 0) {
-		log_print_msg(ERR, "Could not open socket at %d", port);
-		return -1;
-	}
-
+	//todo: verify if this realy work
 	/* prevent "Error Address already in use" error message */
-	ret = setsockopt(*socketfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
-
-	if (ret < 0) {
-		log_print_msg(ERR, "Could not set socket options");
-		return -1;
-	}
+	opt = 1;
+	ret = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
+	err_ret_if(ret < 0, -1);
 
 	memset((char *) &sock, 0, sizeof(sock));
 	sock.sin_family = AF_INET;
 	sock.sin_addr.s_addr = htonl(INADDR_ANY);
 	sock.sin_port = htons(port);
 
-	ret = bind(*socketfd, (struct sockaddr *) &sock, sizeof(sock));
+	ret = bind(*fd, (struct sockaddr *) &sock, sizeof(sock));
+	err_ret_if(ret < 0, -1);
 
-	if (ret != 0) {
-		log_print_msg(ERR, "Could not bind address to socket");
-		return -1;
-	}
+	ret = listen(*fd, 5);
+	err_ret_if(ret < 0, -1);
 
-	ret = listen(*socketfd, 5);
+	return 0;
+}
 
-	if (ret < 0) {
-		log_print_msg(ERR, "Could not set socket to listen mode");
-		return -1;
-	}
+int
+socket_close(int fd)
+{
+	int ret;
+
+	ret = close(fd);
+	err_ret_if(ret < 0, -1);
 
 	return 0;
 }
@@ -218,25 +213,22 @@ socket_accept(int listenfd, int *datafd)
 	socklen_t socklen;
 
 	socklen = sizeof(sock);
+
 	*datafd = accept(listenfd, (struct sockaddr *) &sock, &socklen);
-
-	if (datafd < 0) {
-		log_print_msg(ERR, "accept: %s", strerror(errno));
-		return -1;
-	}
+	err_ret_if(*datafd < 0, -1);
 
 	return 0;
 }
 
 int
-socket_read(int datafd, char msgbuf[], int *msgbuflen)
+socket_read(int fd, char buf[], int *buflen)
 {
-	/* get message */
-	*msgbuflen = read(datafd, msgbuf, *msgbuflen);
+	*buflen = read(fd, buf, *buflen);
+	err_ret_if(*buflen < 0, -1);
 
-	if (*msgbuflen <= 0 || (strncmp("quit", msgbuf ,4) == 0)) {
+	if (strncmp("quit", buf ,4) == 0) {
 		/* close tcp connection */
-		close(datafd);
+		close(fd);
 		return -1;
 	}
 
@@ -244,14 +236,12 @@ socket_read(int datafd, char msgbuf[], int *msgbuflen)
 }
 
 int
-socket_write(int datafd, char msgbuf[], int msgbuflen)
+socket_write(int fd, char buf[], int buflen)
 {
 	int ret;
 
-	ret = write(datafd, msgbuf, msgbuflen);
-	if (ret != msgbuflen) {
-		log_print_msg(ERR, "write: %s", strerror(errno));
-	}
+	ret = write(fd, buf, buflen);
+	err_ret_if(ret < 0, -1);
 
 	return 0;
 }

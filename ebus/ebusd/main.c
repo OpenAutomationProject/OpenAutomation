@@ -61,15 +61,15 @@ signal_handler(int sig) {
 	switch(sig)
 	{
 		case SIGHUP:
-			log_print_msg(INF,  "Received SIGHUP signal.");
+			log_print_msg(INF, "Received SIGHUP signal.");
 			break;
 		case SIGINT:
 		case SIGTERM:
-			log_print_msg(INF,  "Daemon exiting");
+			log_print_msg(INF, "Daemon exiting");
 			cleanup(EXIT_SUCCESS);
 			break;
 		default:
-			log_print_msg(INF,  "Unhandled signal %s", strsignal(sig));
+			log_print_msg(INF, "Unhandled signal %s", strsignal(sig));
 			break;
 	}
 }
@@ -82,7 +82,7 @@ daemonize()
 	/* fork off the parent process */
 	pid = fork();
 	if (pid < 0) {
-		log_print_msg(ERR, "fork: %s", strerror(errno));
+		err_if(1);
 		cleanup(EXIT_FAILURE);
 	}
 	/* If we got a good PID, then we can exit the parent process */
@@ -99,7 +99,7 @@ daemonize()
 	/* Create a new SID for the child process and */
 	/* detach the process from the parent (normally a shell) */
 	if (setsid() < 0) {
-		log_print_msg(ERR, "setsid: %s", strerror(errno));
+		err_if(1);
 		cleanup(EXIT_FAILURE);
 	}
 
@@ -107,7 +107,7 @@ daemonize()
 	   directory from being locked; hence not being able to remove it. */
 	if (chdir(DAEMON_WORKDIR) < 0) {
 		/* Log any failure here */
-		log_print_msg(ERR, "chdir(\"/\"): %s", strerror(errno));
+		err_if(1);
 		cleanup(EXIT_FAILURE);
 	}
 
@@ -119,10 +119,10 @@ daemonize()
 	/* write pidfile and try to lock it */
 	if (pidfile_open(pidfile, &pidfd) == -1) {
 		cleanup(EXIT_FAILURE);
-	} else {
-		pidfile_locked = YES;
-		log_print_msg(DBG, "PID file %s successfully created.", pidfile);
 	}
+
+	pidfile_locked = YES;
+	log_print_msg(DBG, "PID file %s successfully created.", pidfile);
 
     /* Cancel certain signals */
 	signal(SIGCHLD, SIG_DFL); /* A child process dies */
@@ -134,7 +134,6 @@ daemonize()
     signal(SIGHUP, signal_handler);
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
-
 }
 
 void
@@ -143,7 +142,7 @@ cleanup(int state)
 
 	/* close listing tcp socket */
 	if (socketfd > 0) {
-		if (!close(socketfd)) {
+		if (!socket_close(socketfd)) {
 			log_print_msg(DBG, "TCP port %d successfully closed.", listenport);
 		}
 	}
@@ -267,21 +266,20 @@ cmdline(int *argc, char ***argv)
 }
 
 void
-main_loop(int serialfd, int socketfd)
+main_loop()
 {
 	fd_set listenfds;
-	int maxfd;
+	int maxfd, msgpos;
 
-	unsigned char tmpbuf[SERIAL_BUFSIZE];
-	memset(tmpbuf, '\0', sizeof(tmpbuf));
-
-	int j = 0;
+	unsigned char msgbuf[SERIAL_BUFSIZE];
+	memset(msgbuf, '\0', sizeof(msgbuf));
 
 	FD_ZERO(&listenfds);
 	FD_SET(serialfd, &listenfds);
 	FD_SET(socketfd, &listenfds);
 
 	maxfd = socketfd;
+	msgpos = 0;
 
 	/* serialfd should be always lower then socketfd */
 	if (serialfd > socketfd) {
@@ -306,41 +304,26 @@ main_loop(int serialfd, int socketfd)
 			log_print_msg(INF, "get signal at select: %s", strerror(errno));
 			continue;
 		} else if (ret < 0) {
-			log_print_msg(ERR, "select: %s", strerror(errno));
+			err_if(1);
 			cleanup(EXIT_FAILURE);
 		}
 
 		/* new data from serial port? */
 		if (FD_ISSET(serialfd, &readfds)) {
-
 			unsigned char serbuf[SERIAL_BUFSIZE];
-			unsigned char *pserbuf = serbuf;
-			int i = 0;
-			int size = 0;
+			int serbuflen;
 
-			size = read(serialfd, serbuf, SERIAL_BUFSIZE);
+			serbuflen = sizeof(serbuf);
 
-			while (i < size) {
+			/* get message from client */
+			ret = serial_read(serialfd, serbuf, &serbuflen, msgbuf, &msgpos);
 
-				if (pserbuf[i] == EBUS_SYN) {
-					/* skip 0xAA entries */
-					if (j > 0) {
-
-						/* decode ebus messages */
-						decode_ebus_msg(tmpbuf, j);
-
-						memset(tmpbuf, '\0', sizeof(tmpbuf));
-						j = 0;
-					}
-				} else {
-
-					/* copy input data into buffer */
-					tmpbuf[j] = pserbuf[i];
-					j++;
-				}
-				i++;
+			/* a full ebus message is collected - all bytes between 2 ebus sync signs 0xAA */
+			if (ret == 1) {
+				decode_ebus_msg(msgbuf, msgpos);
+				memset(msgbuf, '\0', sizeof(msgbuf));
+				msgpos = 0;
 			}
-
 		}
 
 		/* new incoming connection at TCP port arrived? */
@@ -358,13 +341,12 @@ main_loop(int serialfd, int socketfd)
 
 			if (FD_ISSET(readfd, &readfds)) {
 				char tcpbuf[SOCKET_BUFSIZE];
-				int tcpbuflen;
+				int tcpbuflen = sizeof(tcpbuf);
 
 				/* get message from client */
-				tcpbuflen = sizeof(tcpbuf);
 				ret = socket_read(readfd, tcpbuf, &tcpbuflen);
 
-				if (-1 == ret) {
+				if (ret == -1) {
 					/* remove dead TCP client FD from listenfds */
 					FD_CLR(readfd, &listenfds);
 				} else {
@@ -399,21 +381,21 @@ main(int argc, char * argv[])
 	}
 
 	/* open serial device */
-	if (serial_open(serial, &serialfd, &oldtermios) < 0) {
+	if (serial_open(serial, &serialfd, &oldtermios) == -1) {
 		cleanup(EXIT_FAILURE);
 	} else {
 		log_print_msg(DBG, "serial device %s successfully opened.", serial);
 	}
 
 	/* open listing tcp socket */
-	if (socket_init(listenport, &socketfd) < 0) {
+	if (socket_open(listenport, &socketfd) == -1) {
 		cleanup(EXIT_FAILURE);
 	} else {
 		log_print_msg(DBG, "TCP port %d successfully opened.", listenport);
 	}
 
 	/* enter main loop */
-	main_loop(serialfd, socketfd);
+	main_loop();
 
 	cleanup(EXIT_SUCCESS);
 
