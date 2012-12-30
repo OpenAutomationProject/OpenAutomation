@@ -46,10 +46,12 @@ static int socketfd = -1; /* socket file descriptor */
 
 static int loglevel = DAEMON_LOGLEVEL;
 static int foreground = DAEMON_FOREGROUND;
+static int dump = DAEMON_DUMP;
 
 static const char *confdir = DAEMON_CONFDIR;
 static const char *pidfile = DAEMON_PIDFILE;
 static const char *logfile = DAEMON_LOGFILE;
+static const char *dumpfile = DAEMON_DUMPFILE;
 
 static struct termios oldtermios;
 static const char *serial = SERIAL_DEVICE;
@@ -61,15 +63,15 @@ signal_handler(int sig) {
 	switch(sig)
 	{
 		case SIGHUP:
-			log_print_msg(INF, "Received SIGHUP signal.");
+			log_print_msg(INF, "received SIGHUP");
 			break;
 		case SIGINT:
 		case SIGTERM:
-			log_print_msg(INF, "Daemon exiting");
+			log_print_msg(INF, "daemon exiting");
 			cleanup(EXIT_SUCCESS);
 			break;
 		default:
-			log_print_msg(INF, "Unhandled signal %s", strsignal(sig));
+			log_print_msg(INF, "unknown signal %s", strsignal(sig));
 			break;
 	}
 }
@@ -122,7 +124,7 @@ daemonize()
 	}
 
 	pidfile_locked = YES;
-	log_print_msg(DBG, "PID file %s successfully created.", pidfile);
+	log_print_msg(INF, "pid file %s successfully created.", pidfile);
 
     /* Cancel certain signals */
 	signal(SIGCHLD, SIG_DFL); /* A child process dies */
@@ -143,14 +145,21 @@ cleanup(int state)
 	/* close listing tcp socket */
 	if (socketfd > 0) {
 		if (!socket_close(socketfd)) {
-			log_print_msg(DBG, "TCP port %d successfully closed.", listenport);
+			log_print_msg(INF, "tcp port %d successfully closed.", listenport);
 		}
 	}
 
 	/* close serial device */
 	if (serialfd > 0) {
 		if (!serial_close(&serialfd, &oldtermios)) {
-			log_print_msg(DBG, "serial device %s successfully closed.", serial);
+			log_print_msg(INF, "serial device %s successfully closed.", serial);
+		}
+	}
+
+	/* close dumpfile */
+	if (dump) {
+		if (!dumpfile_close()) {
+			log_print_msg(INF, "dumpfile %s successfully closed.", dumpfile);
 		}
 	}
 
@@ -159,7 +168,7 @@ cleanup(int state)
 		/* delete PID file */
 		if (pidfile_locked) {
 			if (!pidfile_close(pidfile, pidfd)) {
-				log_print_msg(DBG, "PID file %s successfully deleted.", pidfile);
+				log_print_msg(INF, "pid file %s successfully deleted.", pidfile);
 			}
 
 		}
@@ -189,6 +198,8 @@ cmdline(int *argc, char ***argv)
 {
 	static struct option opts[] = {
 		{"confdir",    required_argument, NULL, 'c'},
+		{"dumpfile",   optional_argument, NULL, 'D'},
+		{"dump",       no_argument,       NULL, 'd'},
 		{"foreground", no_argument,       NULL, 'f'},
 		{"logfile",    required_argument, NULL, 'L'},
 		{"loglevel",   required_argument, NULL, 'l'},
@@ -202,13 +213,22 @@ cmdline(int *argc, char ***argv)
 
 	for (;;) {
 		int i;
-		i = getopt_long(*argc, *argv, "c:L:l:fp:P:s:vh", opts, NULL);
+		i = getopt_long(*argc, *argv, "c:D:dfL:l:p:P:s:vh", opts, NULL);
 		if (i == -1) {
 			break;
 		}
 		switch (i) {
 			case 'c':
 				confdir = optarg;
+				break;
+			case 'D':
+				dumpfile = optarg;
+				break;
+			case 'd':
+				dump = YES;
+				break;
+			case 'f':
+				foreground = YES;
 				break;
 			case 'L':
 				logfile = optarg;
@@ -222,9 +242,6 @@ cmdline(int *argc, char ***argv)
 						loglevel = ERR;
 					}
 				}
-				break;
-			case 'f':
-				foreground = 1;
 				break;
 			case 'p':
 				pidfile = optarg;
@@ -242,19 +259,22 @@ cmdline(int *argc, char ***argv)
 				exit(EXIT_SUCCESS);
 			case 'h':
 			default:
-				fprintf(stdout, "Usage: %s [OPTIONS]\n"
-								"  -c --confdir      Set the configuration directory. (def: %s)\n"
-								"  -f --foreground   Run in foreground.\n"
-								"  -L --logfile      Use a specified LOG file. (def: %s)\n"
-								"  -l --loglevel     Set log level. (def: INF | INF=0 WAR=1 ERR=2 DBG=3)\n"
-								"  -p --pidfile      Use a specified PID file. (def: %s)\n"
-								"  -P --listenport   Use a specified listening PORT. (def: %d)\n"
-								"  -s --serial       Use a specified SERIAL device. (def: %s)\n"
-								"  -v --version      Print version information.\n"
-								"  -h --help         Print this message.\n"
+				fprintf(stdout, "\nUsage: %s [OPTIONS]\n"
+								"  -c --confdir      set the configuration directory. (%s)\n"
+								"  -D --dumpfile     use a specified dump file. (%s)\n"
+								"  -d --dump         dump raw ebus messages to dump file.\n"
+								"  -f --foreground   run in foreground.\n"
+								"  -L --logfile      use a specified log file. (%s)\n"
+								"  -l --loglevel     set log level. (INF | INF=0 WAR=1 ERR=2 DBG=3)\n"
+								"  -p --pidfile      use a specified pid file. (%s)\n"
+								"  -P --listenport   use a specified listening port. (%d)\n"
+								"  -s --serial       use a specified serial device. (d%s)\n"
+								"  -v --version      print version information.\n"
+								"  -h --help         print this message.\n"
 								"\n",
 								progname,
 								DAEMON_CONFDIR,
+								DAEMON_DUMPFILE,
 								DAEMON_LOGFILE,
 								DAEMON_PIDFILE,
 								SOCKET_PORT,
@@ -269,7 +289,7 @@ void
 main_loop()
 {
 	fd_set listenfds;
-	int maxfd, msgpos;
+	int maxfd, msglen;
 
 	unsigned char msgbuf[SERIAL_BUFSIZE];
 	memset(msgbuf, '\0', sizeof(msgbuf));
@@ -279,7 +299,7 @@ main_loop()
 	FD_SET(socketfd, &listenfds);
 
 	maxfd = socketfd;
-	msgpos = 0;
+	msglen = 0;
 
 	/* serialfd should be always lower then socketfd */
 	if (serialfd > socketfd) {
@@ -316,13 +336,19 @@ main_loop()
 			serbuflen = sizeof(serbuf);
 
 			/* get message from client */
-			ret = serial_read(serialfd, serbuf, &serbuflen, msgbuf, &msgpos);
+			ret = serial_read(serialfd, serbuf, &serbuflen, msgbuf, &msglen);
 
-			/* a full ebus message is collected - all bytes between 2 ebus sync signs 0xAA */
+			/* a full ebus message is collected (incl. sync sign 0xAA) */
 			if (ret == 1) {
-				decode_ebus_msg(msgbuf, msgpos);
+
+				if (dump) {
+					dumpfile_write(msgbuf,  msglen);
+				}
+
+				decode_ebus_msg(msgbuf, msglen);
+
 				memset(msgbuf, '\0', sizeof(msgbuf));
-				msgpos = 0;
+				msglen = 0;
 			}
 		}
 
@@ -380,18 +406,27 @@ main(int argc, char * argv[])
 		daemonize();
 	}
 
+	/* open dump file */
+	if (dump) {
+		if (dumpfile_open(dumpfile) == -1) {
+			cleanup(EXIT_FAILURE);
+		} else {
+			log_print_msg(INF, "dumpfile %s successfully opened.", dumpfile);
+		}
+	}
+
 	/* open serial device */
 	if (serial_open(serial, &serialfd, &oldtermios) == -1) {
 		cleanup(EXIT_FAILURE);
 	} else {
-		log_print_msg(DBG, "serial device %s successfully opened.", serial);
+		log_print_msg(INF, "serial device %s successfully opened.", serial);
 	}
 
 	/* open listing tcp socket */
 	if (socket_open(listenport, &socketfd) == -1) {
 		cleanup(EXIT_FAILURE);
 	} else {
-		log_print_msg(DBG, "TCP port %d successfully opened.", listenport);
+		log_print_msg(INF, "tcp port %d successfully opened.", listenport);
 	}
 
 	/* enter main loop */

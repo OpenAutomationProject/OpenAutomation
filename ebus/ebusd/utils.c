@@ -30,22 +30,65 @@
 #include "ebus.h"
 #include "utils.h"
 
+
 void
-decode_ebus_msg(unsigned char *data, int size)
+decode_ebus_msg(unsigned char buf[], int buflen)
 {
 	int k = 0;
-	char buf[SERIAL_BUFSIZE];
+	char msg[SERIAL_BUFSIZE];
 	char tmp[4];
 
 	memset(tmp, '\0', sizeof(tmp));
-	memset(buf, '\0', sizeof(buf));
+	memset(msg, '\0', sizeof(msg));
 
-	for (k = 0; k < size; k++) {
-		sprintf(tmp, " %02x", data[k]);
-		strncat(buf, tmp, 3);
+	for (k = 0; k < buflen; k++) {
+		sprintf(tmp, " %02x", buf[k]);
+		strncat(msg, tmp, 3);
 	}
 
-	log_print_msg(DBG, "%s", buf);
+	log_print_msg(DBG, "%s", msg);
+}
+
+
+static FILE *dumpfp = NULL;
+
+int
+dumpfile_open(const char *file)
+{
+	dumpfp = fopen(file, "w");
+	err_ret_if(!dumpfp, -1);
+
+	return 0;
+}
+
+int
+dumpfile_close()
+{
+	int ret;
+
+	ret = fflush(dumpfp);
+	err_ret_if(ret == EOF, -1);
+
+	ret = fclose(dumpfp);
+	err_ret_if(ret == EOF, -1);
+
+	return 0;
+}
+
+int
+dumpfile_write(unsigned char buf[], int buflen)
+{
+	int ret, i;
+
+	for (i = 0; i < buflen; i++) {
+		ret = fputc(buf[i], dumpfp);
+		err_ret_if(ret == EOF, -1);
+	}
+
+	ret = fflush(dumpfp);
+	err_ret_if(ret == EOF, -1);
+
+	return 0;
 }
 
 
@@ -102,7 +145,7 @@ serial_close(int *fd, struct termios *oldtermios)
 }
 
 int
-serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], int *tmppos)
+serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], int *tmplen)
 {
 	int maxlen, i;
 
@@ -113,17 +156,11 @@ serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], in
 
 	i = 0;
 	while (i < *buflen) {
+		tmpbuf[*tmplen] = buf[i];
+		*tmplen += 1;
 
 		if (buf[i] == EBUS_SYN) {
-			/* skip 0xAA entries */
-			if (*tmppos > 0) {
-				return 1;
-			}
-		} else {
-
-			/* copy input data into buffer */
-			tmpbuf[*tmppos] = buf[i];
-			*tmppos = *tmppos + 1;
+			return 1;
 		}
 		i++;
 	}

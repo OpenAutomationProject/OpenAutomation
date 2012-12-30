@@ -27,12 +27,15 @@
 #define SOCKET_PORT			8888
 #define SOCKET_BUFSIZE		1024
 
+void decode_ebus_msg(unsigned char buf[], int buflen);
 
-void decode_ebus_msg(unsigned char *data, int size);
+int dumpfile_open(const char *file);
+int dumpfile_close();
+int dumpfile_write(unsigned char buf[],  int buflen);
 
 int serial_open(const char *dev, int *fd, struct termios *oldtermios);
 int serial_close(int *fd, struct termios *oldtermios);
-int serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], int *tmppos);
+int serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], int *tmplen);
 
 int pidfile_open(const char *file, int *fd);
 int pidfile_close(const char *file, int fd);
