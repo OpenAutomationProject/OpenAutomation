@@ -53,7 +53,7 @@ static const char *pidfile = DAEMON_PIDFILE;
 static const char *logfile = DAEMON_LOGFILE;
 static const char *dumpfile = DAEMON_DUMPFILE;
 
-static struct termios oldtermios;
+static struct termios olddio;
 static const char *serial = SERIAL_DEVICE;
 
 static int listenport = SOCKET_PORT;
@@ -151,7 +151,7 @@ cleanup(int state)
 
 	/* close serial device */
 	if (serialfd > 0) {
-		if (!serial_close(&serialfd, &oldtermios)) {
+		if (!serial_close(&serialfd, &olddio)) {
 			log_print_msg(INF, "serial device %s successfully closed.", serial);
 		}
 	}
@@ -223,6 +223,7 @@ cmdline(int *argc, char ***argv)
 				break;
 			case 'D':
 				dumpfile = optarg;
+				dump = YES;
 				break;
 			case 'd':
 				dump = YES;
@@ -268,7 +269,7 @@ cmdline(int *argc, char ***argv)
 								"  -l --loglevel     set log level. (INF | INF=0 WAR=1 ERR=2 DBG=3)\n"
 								"  -p --pidfile      use a specified pid file. (%s)\n"
 								"  -P --listenport   use a specified listening port. (%d)\n"
-								"  -s --serial       use a specified serial device. (d%s)\n"
+								"  -s --serial       use a specified serial device. (%s)\n"
 								"  -v --version      print version information.\n"
 								"  -h --help         print this message.\n"
 								"\n",
@@ -289,17 +290,14 @@ void
 main_loop()
 {
 	fd_set listenfds;
-	int maxfd, msglen;
-
-	unsigned char msgbuf[SERIAL_BUFSIZE];
-	memset(msgbuf, '\0', sizeof(msgbuf));
+	int maxfd;
 
 	FD_ZERO(&listenfds);
 	FD_SET(serialfd, &listenfds);
 	FD_SET(socketfd, &listenfds);
 
 	maxfd = socketfd;
-	msglen = 0;
+	//msglen = 0;
 
 	/* serialfd should be always lower then socketfd */
 	if (serialfd > socketfd) {
@@ -336,19 +334,9 @@ main_loop()
 			serbuflen = sizeof(serbuf);
 
 			/* get message from client */
-			ret = serial_read(serialfd, serbuf, &serbuflen, msgbuf, &msglen);
-
-			/* a full ebus message is collected (incl. sync sign 0xAA) */
-			if (ret == 1) {
-
-				if (dump) {
-					dumpfile_write(msgbuf,  msglen);
-				}
-
-				decode_ebus_msg(msgbuf, msglen);
-
-				memset(msgbuf, '\0', sizeof(msgbuf));
-				msglen = 0;
+			ret = serial_read(serialfd, serbuf, &serbuflen, dump);
+			if (ret == -1) {
+				log_print_msg(WAR,"serial device reading: *buflen < 0 || *buflen > maxlen");
 			}
 		}
 
@@ -416,7 +404,7 @@ main(int argc, char * argv[])
 	}
 
 	/* open serial device */
-	if (serial_open(serial, &serialfd, &oldtermios) == -1) {
+	if (serial_open(serial, &serialfd, &olddio) == -1) {
 		cleanup(EXIT_FAILURE);
 	} else {
 		log_print_msg(INF, "serial device %s successfully opened.", serial);

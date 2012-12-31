@@ -33,9 +33,9 @@ int dumpfile_open(const char *file);
 int dumpfile_close();
 int dumpfile_write(unsigned char buf[],  int buflen);
 
-int serial_open(const char *dev, int *fd, struct termios *oldtermios);
-int serial_close(int *fd, struct termios *oldtermios);
-int serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], int *tmplen);
+int serial_open(const char *dev, int *fd, struct termios *olddio);
+int serial_close(int *fd, struct termios *olddio);
+int serial_read(int fd, unsigned char buf[], int *buflen, int rawdump);
 
 int pidfile_open(const char *file, int *fd);
 int pidfile_close(const char *file, int fd);

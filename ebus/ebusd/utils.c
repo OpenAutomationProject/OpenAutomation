@@ -41,7 +41,7 @@ decode_ebus_msg(unsigned char buf[], int buflen)
 	memset(tmp, '\0', sizeof(tmp));
 	memset(msg, '\0', sizeof(msg));
 
-	for (k = 0; k < buflen; k++) {
+	for (k = 0; k <= buflen; k++) {
 		sprintf(tmp, " %02x", buf[k]);
 		strncat(msg, tmp, 3);
 	}
@@ -80,7 +80,7 @@ dumpfile_write(unsigned char buf[], int buflen)
 {
 	int ret, i;
 
-	for (i = 0; i < buflen; i++) {
+	for (i = 0; i <= buflen; i++) {
 		ret = fputc(buf[i], dumpfp);
 		err_ret_if(ret == EOF, -1);
 	}
@@ -93,10 +93,10 @@ dumpfile_write(unsigned char buf[], int buflen)
 
 
 int
-serial_open(const char *dev, int *fd, struct termios *oldtermios)
+serial_open(const char *dev, int *fd, struct termios *olddio)
 {
 	int ret;
-	struct termios newtermios;
+	struct termios newtio;
 
 	*fd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
 	err_ret_if(*fd < 0, -1);
@@ -105,36 +105,36 @@ serial_open(const char *dev, int *fd, struct termios *oldtermios)
 	err_ret_if(ret < 0, -1);
 
 	/* save current settings of serial port */
-	ret = tcgetattr(*fd, oldtermios);
+	ret = tcgetattr(*fd, olddio);
 	err_ret_if(ret < 0, -1);
 
-	memset(&newtermios, '\0', sizeof(newtermios));
+	memset(&newtio, '\0', sizeof(newtio));
 
 	/* set new settings of serial port */
-	newtermios.c_cflag = SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
-	newtermios.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-	newtermios.c_iflag = IGNPAR;
-	newtermios.c_oflag &= ~OPOST;
-	newtermios.c_cc[VMIN]  = 1;
-	newtermios.c_cc[VTIME] = 0;
+	newtio.c_cflag = SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
+	newtio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+	newtio.c_iflag = IGNPAR;
+	newtio.c_oflag &= ~OPOST;
+	newtio.c_cc[VMIN]  = 1;
+	newtio.c_cc[VTIME] = 0;
 
 	ret = tcflush(*fd, TCIFLUSH);
 	err_ret_if(ret < 0, -1);
 
 	/* activate new settings of serial port */
-	ret = tcsetattr(*fd, TCSANOW, &newtermios);
+	ret = tcsetattr(*fd, TCSANOW, &newtio);
 	err_ret_if(ret < 0, -1);
 
 	return 0;
 }
 
 int
-serial_close(int *fd, struct termios *oldtermios)
+serial_close(int *fd, struct termios *olddio)
 {
 	int ret;
 
 	/* activate old settings of serial port */
-	ret = tcsetattr(*fd, TCSANOW, oldtermios);
+	ret = tcsetattr(*fd, TCSANOW, olddio);
 	err_ret_if(ret < 0, -1);
 
 	/* Close file descriptor from serial device */
@@ -145,9 +145,15 @@ serial_close(int *fd, struct termios *oldtermios)
 }
 
 int
-serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], int *tmplen)
+serial_read(int fd, unsigned char buf[], int *buflen, int rawdump)
 {
+	static unsigned char msgbuf[SERIAL_BUFSIZE];
+	static int msglen = 0;
 	int maxlen, i;
+
+	if (msglen == 0) {
+		memset(msgbuf, '\0', sizeof(msgbuf));
+	}
 
 	maxlen = *buflen;
 
@@ -156,11 +162,18 @@ serial_read(int fd, unsigned char buf[], int *buflen, unsigned char tmpbuf[], in
 
 	i = 0;
 	while (i < *buflen) {
-		tmpbuf[*tmplen] = buf[i];
-		*tmplen += 1;
+		msgbuf[msglen] = buf[i];
 
-		if (buf[i] == EBUS_SYN) {
-			return 1;
+		/* ebus syn sign is reached - decode ebus message */
+		if (msgbuf[msglen] == EBUS_SYN) {
+			if (rawdump) {
+				dumpfile_write(msgbuf,  msglen);
+			}
+			decode_ebus_msg(msgbuf, msglen);
+			memset(msgbuf, '\0', sizeof(msgbuf));
+			msglen = 0;
+		} else {
+			msglen++;
 		}
 		i++;
 	}
