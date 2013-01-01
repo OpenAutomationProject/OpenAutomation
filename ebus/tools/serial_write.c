@@ -48,25 +48,6 @@ static struct termios oldtio;
 static const char *serial = SERIAL_DEVICE;
 static const char *progname;
 
-
-int
-data2b_to_float(unsigned char source_lsb, unsigned char source_msb, float *target)
-{
-	if ((source_msb & 0x80) == 0x80) {
-		*target = (float) (-   ( ((unsigned char) (~ source_msb)) +
-		                     ( ( ((unsigned char) (~ source_lsb)) + 1) / 256.0) ) );
-
-		if (source_msb  == 0x80 && source_lsb == 0x00) {
-			return 0;
-		} else {
-			return -1;
-		}
-	} else {
-		*target = (float) (source_msb + (source_lsb / 256.0));
-		return 1;
-	}
-}
-
 unsigned char
 calc_crc_byte(unsigned char byte, unsigned char init_crc)
 {
