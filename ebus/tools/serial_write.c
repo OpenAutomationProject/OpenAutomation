@@ -28,25 +28,50 @@
 #include <errno.h>
 #include <getopt.h>
 
-#define EBUS_SYN 			0xAA
-#define EBUS_ACK			0x00
-#define	EBUS_NAK			0xFF
+#define CRC_YES	1
+#define CRC_NO	0
 
-#define SERIAL_DEVICE 		"/dev/ttyUSB0"
-#define SERIAL_BAUDRATE 	B2400
-#define SERIAL_BUFSIZE 		1024
+#define EBUS_SYN 	0xAA
+#define EBUS_ACK	0x00
+#define	EBUS_NAK	0xFF
+
+#define EBUS_MSG_MASTER_MASTER	1
+#define EBUS_MSG_MASTER_SLAVE	2
+#define EBUS_MSG_BROADCAST		3
+
+#define SERIAL_DEVICE 			"/dev/ttyUSB0"
+#define SERIAL_BAUDRATE 		B2400
+#define SERIAL_BUFSIZE_READ		1024
+#define SERIAL_BUFSIZE_WRITE	20
 
 #define err_ret_if(exp, ret) \
 	if(exp) { fprintf(stdout, "%s: %d: %s: Error %s\n", \
 			__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
 			return(ret); \
 	}
-
+	
+#define warn_ret_if(exp, msg, ret) \
+	if(exp) { fprintf(stdout, "%s: %d: %s: Warning %s\n", \
+			__FILE__, __LINE__, __PRETTY_FUNCTION__, msg);\
+			return(ret); \
+	}
 
 static int serialfd = -1;
 static struct termios oldtio;
 static const char *serial = SERIAL_DEVICE;
 static const char *progname;
+
+void
+print_msg(const char pre[], const unsigned char buf[], const int buflen)
+{
+	int i;
+	
+	fprintf(stdout, "%s ", pre);
+	for (i = 0; i < buflen; i++) {
+		fprintf(stdout, "%02x ", buf[i]);
+	}
+	fprintf(stdout, "\n");
+}
 
 unsigned char
 calc_crc_byte(unsigned char byte, unsigned char init_crc)
@@ -126,42 +151,42 @@ serial_open(const char *dev, int *fd, struct termios *olddio)
 }
 
 int
-serial_close(int *fd, struct termios *oldtio)
+serial_close(int fd, struct termios *oldtio)
 {
 	int ret;
 
 	/* activate old settings of serial port */
-	ret = tcsetattr(*fd, TCSANOW, oldtio);
+	ret = tcsetattr(fd, TCSANOW, oldtio);
 	err_ret_if(ret < 0, -1);
 
 	/* Close file descriptor from serial device */
-	ret = close(*fd);
+	ret = close(fd);
 	err_ret_if(ret < 0, -1);
 
 	return 0;
 }
 
 int
-serial_catch_syn()
+serial_ebus_wait_syn(int fd)
 {
-	unsigned char in[SERIAL_BUFSIZE];
-	int inlen, maxlen, i, found;
+	unsigned char buf[SERIAL_BUFSIZE_READ];
+	int buflen, maxlen, i, found;
 	
-	maxlen = sizeof(SERIAL_BUFSIZE);
+	maxlen = sizeof(SERIAL_BUFSIZE_READ);
 	
-	memset(in, '\0', sizeof(in));
-	inlen = sizeof(in);
+	memset(buf, '\0', sizeof(buf));
+	buflen = sizeof(buf);
 	found = 0;
 	
-	/* wait until ebus SYN sign catched*/
+	/* do until SYN read*/
 	do {
-		inlen = read(serialfd, in, inlen);
+		buflen = read(fd, buf, buflen);
 		//err_ret_if(inlen < 0 || inlen > maxlen, -1);
 		
-		if (inlen > 0) {
+		if (buflen > 0) {
 			i = 0;
-			while (i < inlen) {
-				if (in[i] == EBUS_SYN && (i + 1) == inlen) {
+			while (i < buflen) {
+				if (buf[i] == EBUS_SYN && (i + 1) == buflen) {
 					found = 1;
 					break;
 				}
@@ -169,127 +194,157 @@ serial_catch_syn()
 			}
 		}
 	} while (found == 0);
+	
 	fprintf(stdout, "last SYN found\n");
 	return 0;
 }
 
 int
-serial_write(int fd, unsigned char buf[], int buflen, int rawdump)
+serial_ebus_write(int fd, unsigned char buf[], int *buflen, int need_crc, int type)
 {
-	unsigned char in[SERIAL_BUFSIZE], out[SERIAL_BUFSIZE], tmp[SERIAL_BUFSIZE], crc;
-	int inlen, outlen, tmplen, i, j, found, ret;
+	unsigned char crc, ret;
+	
+	if (need_crc == CRC_YES) {
+		crc = calc_crc(buf, *buflen);
+		buf[*buflen] = crc;
+		*buflen += 1;
+	}
+	
+	if (type == EBUS_MSG_BROADCAST) {
+		buf[*buflen] = EBUS_SYN;
+		*buflen += 1;
+	}
+	
+	print_msg("<<<", buf, *buflen);
+	
+	/* write msg to ebus */
+	ret = write(fd, buf, *buflen);
+	err_ret_if(ret < 0, -1);
+	
+	return 0;
+}
 
+int
+serial_ebus_read(int fd, unsigned char buf[], int *buflen, int type)
+{
+	unsigned char in[SERIAL_BUFSIZE_READ], tmp[SERIAL_BUFSIZE_WRITE], crc;
+	int inlen, tmplen, i, j, found;
 	
-	if (!serial_catch_syn()) {
+	memset(in, '\0', sizeof(in));
+	memset(tmp, '\0', sizeof(tmp));
+	
+	inlen = sizeof(in);
+	tmplen = 0;
+	
+	found = 0;
+	j = 0;
+	
+	do {
+		inlen = read(fd, in, inlen);
 		
-		
-		/* prepare message for slave */
-		memset(out, '\0', sizeof(out));
-		outlen = sizeof(buf);
-		memcpy(out, buf, outlen);
-		crc = calc_crc(&out[0], outlen);
-		out[outlen] = crc;
-		outlen++;
+		if (inlen > 0) {
+			i = 0;
+			while (i < inlen) {
 
-		/* write msg to ebus */
-		ret = write(serialfd, out, outlen);
-		err_ret_if(ret < 0, -1);
-		
-		fprintf(stdout, "<<< ");
-		for (i = 0; i < outlen; i++) {
-			fprintf(stdout, "%02x ", out[i]);
-		}
-		fprintf(stdout, "\n");
-	
-	
-	
-	
-		/* wait for answer from slave */
-		memset(in, '\0', sizeof(in));
-		inlen = sizeof(in);
-		memset(tmp, '\0', sizeof(tmp));
-		tmplen = 0;
-		found = 0;
-		j = 0;
-		
-		do {
-			inlen = read(serialfd, in, inlen);
-			
-			if (inlen > 0) {
-				i = 0;
-				while (i < inlen) {
-					/* copy only slaves answer into tmp */
-					if (j >= outlen) {
-						tmp[tmplen] = in[i];
-						
-						/* break loop if slave answer is ff or end of message is reached. */
-						if (tmp[0] == EBUS_NAK || (tmplen == (2 + tmp[1]) && tmplen >= 1)) {
-							found = 1;
-							break;
-						}
-						tmplen++;							
-					}
+				/*
+				 * compare input with send - is this possible?
+				 * or SYN sign received.
+				 */
+				if ((in[i] != buf[j] && j < *buflen) ||
+					in[i] == EBUS_SYN) {
+					found = 2;
+					break;
+				}
+				
+				/* copy only slaves answer into tmp */
+				if (j >= *buflen) {
+					tmp[tmplen] = in[i];
 					
-					/* do we need this? */
-					if (in[i] == EBUS_SYN) {
-						fprintf(stdout, "Hope, we never saw this.");
+					/*
+					 *  break loop if
+					 * - slave answer is ff
+					 * - end of message is reached
+					 * - exit if type is Master Master
+					 */
+					if (tmp[0] == EBUS_NAK || /* */
+						(tmplen == (2 + tmp[1]) && tmplen >= 1) ||
+						type == EBUS_MSG_MASTER_MASTER) {
+						tmplen++;
 						found = 1;
 						break;
 					}
-					
-					i++;
-					j++;
+					tmplen++;							
 				}
+				
+				i++;
+				j++;
 			}
-		} while (found == 0);
-		
-		fprintf(stdout, ">>> ");
-		for (i = 0; i <= tmplen; i++) {
-			fprintf(stdout, "%02x ", tmp[i]);
 		}
-		fprintf(stdout, "\n");
+	} while (found == 0);
 	
+	print_msg(">>>", tmp, tmplen);
 	
-	
-	
-		/* prepare answer to slave */
-		if (tmp[0] == EBUS_ACK) {
-			crc = calc_crc(&tmp[1], tmplen - 1);
-			if (tmp[tmplen] == crc) {		
-				/* send ACK and SYN */
-				memset(out, '\0', sizeof(out));
-				out[0] = EBUS_ACK;
-				out[1] = EBUS_SYN;
-				outlen = 2;
-			}
-		} else {
-			/* send NAK and SYN */
-			memset(out, '\0', sizeof(out));
-			out[0] = EBUS_NAK;
-			out[1] = EBUS_SYN;
-			outlen = 2;
-		}
-		
-		fprintf(stdout, "<<< ");
-		for (i = 0; i < outlen; i++) {
-			fprintf(stdout, "%02x ", out[i]);
-		}
-		fprintf(stdout, "\n");
-			
-		/* write msg to ebus */
-		ret = write(serialfd, out, outlen);
-		err_ret_if(ret < 0, -1);
-		
-		
-		if (!serial_catch_syn()) {
-			return 0;
-		}
-
+	if (found == 2) {
+		warn_ret_if(1, "received and sent message are different or SYN received.", -1);
 	}
+	
+	/* prepare answer to slave */
+	memset(buf, '\0', sizeof(buf));
+	
+	if (type == EBUS_MSG_MASTER_SLAVE) {
+		/* set ACK */
+		buf[0] = EBUS_ACK;
+		
+		/* slave sent ACK */
+		if (tmp[0] == EBUS_ACK) {
+			crc = calc_crc(&tmp[1], tmplen - 2);
+
+			/* CRC from slave NOT OK */
+			if (tmp[tmplen-1] != crc) {	
+				buf[0] = EBUS_NAK;
+			}
+		}
 			
-	return -1;
+		buf[1] = EBUS_SYN;
+		*buflen = 2;
+		
+	} else {
+		buf[0] = EBUS_SYN;
+		*buflen = 1;
+	}
+
+	return 0;
 }
 
+int
+serial_ebus_send_msg(int fd, unsigned char buf[], int buflen, int type)
+{
+	int ret;
+
+	/* wait next SYN */
+	ret = serial_ebus_wait_syn(fd);
+	err_ret_if(ret < 0, -1);
+	
+	/* send message */
+	ret = serial_ebus_write(fd, buf, &buflen, CRC_YES, type);
+	err_ret_if(ret < 0, -1);
+	
+	if (type < EBUS_MSG_BROADCAST) {
+		/* recive answer from slave */
+		ret = serial_ebus_read(fd, buf, &buflen, type);
+		err_ret_if(ret < 0, -1);
+
+		/* send answer to slave */
+		ret = serial_ebus_write(fd, buf, &buflen, CRC_NO, type);
+		err_ret_if(ret < 0, -1);
+	}
+
+	/* wait next SYN */
+	ret = serial_ebus_wait_syn(fd);
+	err_ret_if(ret < 0, -1);
+	
+	return 0;
+}
 
 int
 htoi(char s[])
@@ -323,7 +378,6 @@ htoi(char s[])
  
     return n;
 }
-
 
 void
 cmdline(int *argc, char ***argv)
@@ -363,7 +417,7 @@ main(int argc, char *argv[])
 {
 	int i, j, k, end, in[20], ret;
 	char byte;
-	unsigned char msg[20];
+	unsigned char msg[SERIAL_BUFSIZE_WRITE];
 	
 	progname = (const char *)strrchr(argv[0], '/');
 	progname = progname ? (progname + 1) : argv[0];
@@ -408,33 +462,27 @@ main(int argc, char *argv[])
 					msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
 				}
 				
-				fprintf(stdout, "\n<<< ");
+				fprintf(stdout, "\nin: ");
 				for (i = 0; i < k; i++) {
 					fprintf(stdout, "%02x ", msg[i]);
 				}
 				fprintf(stdout, "\n\n");
 				
-				serial_write(serialfd, msg, sizeof(msg), 0);
+				ret = serial_ebus_send_msg(serialfd, msg, i, EBUS_MSG_MASTER_SLAVE);
+				if (ret < 0) {
+					fprintf(stdout, "Error during sending ebus message.\n");
+				}
 				
 				fprintf(stdout, "\n");
 			}
 			
 		} while (end == 0);
 		
-		
-		
-		
-		ret = serial_close(&serialfd, &oldtio);
+		ret = serial_close(serialfd, &oldtio);
 		if (ret == 0) {
 			fprintf(stdout, "serial device %s successfully closed.\n", serial);
 		}
 	}
-	
-
-	
-
-	
-	
 	
 	return 0;
 }

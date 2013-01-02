@@ -125,6 +125,7 @@ int main() {
 
 	int ii = 0;
 	int jj;
+	int end;
 	
 	int iBCD;
 	int iData1b;
@@ -140,55 +141,64 @@ int main() {
 	unsigned char ucHexByte;
 	unsigned char ucTmp;
 	
-	while(1) {
+	end = 0;
+	do {
 		ii = 0;
 		printf("Input: ");
 		while ((cByte = fgetc(stdin)) != EOF) {
-			if (cByte == '\n')
+			
+			if (cByte == '\n') {
 				break;
+			}
 				
+			if (cByte == 'q') {
+				end = 1;
+				break;
+			}
+			
 			if (ii < sizeof(iData)) {
 				iReturn = htoi(&cByte);
 				if (iReturn != -1) {
 					iData[ii] = iReturn;
 					ii++;
 				}
-			}
-			else
+			} else {
 				break;
+			}
 		}		
 		
-		for(jj=0; jj<ii; jj+=2) {
-			
-			iBCD = 0;
-			iData1b = 0;
-			iReturn = 0;
-			fData1c = 0.0;
-			fData2b = 0.0;
-			fData2c = 0.0;
-			
-			
-			
-			ucHexByte = (unsigned char) (iData[jj]*16 + iData[jj+1]);
-			
-			
-			iReturn = bcd_to_int(ucHexByte, &iBCD);
-			iReturn = data1b_to_int(ucHexByte, &iData1b);
-			
-			iReturn = data1c_to_float(ucHexByte, &fData1c);
-			printf("HEX %02x ->\tiBCD: %3d\tiData1b: %4d\tfData1c: %5.1f", ucHexByte, iBCD, iData1b, fData1c);
-			
-			if (jj == 2) {
-				iReturn = data2b_to_float(ucTmp, ucHexByte, &fData2b);
-				iReturn = data2c_to_float(ucTmp, ucHexByte, &fData2c);
-				printf("\tfData2b: %8.3f\tfData2c: %10.4f\n", fData2b, fData2c);
-			}
-			else {
-				ucTmp = ucHexByte;
-				printf("\n");
+		if (!end) {
+		
+			for(jj=0; jj<ii; jj+=2) {
+				
+				iBCD = 0;
+				iData1b = 0;
+				iReturn = 0;
+				fData1c = 0.0;
+				fData2b = 0.0;
+				fData2c = 0.0;
+
+				ucHexByte = (unsigned char) (iData[jj]*16 + iData[jj+1]);
+				
+				iReturn = bcd_to_int(ucHexByte, &iBCD);
+				iReturn = data1b_to_int(ucHexByte, &iData1b);
+				
+				iReturn = data1c_to_float(ucHexByte, &fData1c);
+				printf("HEX %02x ->\tiBCD: %3d\tiData1b: %4d\tfData1c: %5.1f", ucHexByte, iBCD, iData1b, fData1c);
+				
+				if (jj == 2) {
+					iReturn = data2b_to_float(ucTmp, ucHexByte, &fData2b);
+					iReturn = data2c_to_float(ucTmp, ucHexByte, &fData2c);
+					printf("\tfData2b: %8.3f\tfData2c: %10.4f\n", fData2b, fData2c);
+				}
+				else {
+					ucTmp = ucHexByte;
+					printf("\n");
+				}
 			}
 		}
 
-	}
+	} while (end == 0);
+	
 	return 0;
 }
