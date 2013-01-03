@@ -52,11 +52,11 @@ data1b_to_int(unsigned char source, int *target)
 	if ((source & 0x80) == 0x80) {
 		*target = (int) (- ( ((unsigned char) (~ source)) + 1) );
 
-		if (*target  == -0x80) {
+		if (*target  == -0x80)
 			return 0;
-		} else {
+		else
 			return -1;
-		}
+
 	} else {
 		*target = (int) (source);
 		return 1;
@@ -111,11 +111,11 @@ data2b_to_float(unsigned char source_lsb, unsigned char source_msb, float *targe
 		*target = (float) (-   ( ((unsigned char) (~ source_msb)) +
 		                     ( ( ((unsigned char) (~ source_lsb)) + 1) / 256.0) ) );
 
-		if (source_msb  == 0x80 && source_lsb == 0x00) {
+		if (source_msb  == 0x80 && source_lsb == 0x00)
 			return 0;
-		} else {
+		else
 			return -1;
-		}
+
 	} else {
 		*target = (float) (source_msb + (source_lsb / 256.0));
 		return 1;
@@ -132,17 +132,16 @@ float_to_data2b(float source, unsigned char *target_lsb, unsigned char *target_m
 	} else {
 		*target_lsb = (unsigned char) ((source - ((unsigned char) source)) * 256.0);
 
-		if (source < 0.0 && *target_lsb != 0x00) {
+		if (source < 0.0 && *target_lsb != 0x00)
 			*target_msb = (unsigned char) (source - 1);
-		} else {
+		else
 			*target_msb = (unsigned char) (source);
-		}
 
-		if (source >= 0.0) {
+		if (source >= 0.0)
 			return 1;
-		} else {
+		else
 			return -1;
-		}
+
 	}
 }
 
@@ -154,11 +153,11 @@ data2c_to_float(unsigned char source_lsb, unsigned char source_msb, float *targe
 		                       ( ( ((unsigned char) (~ source_lsb)) & 0xF0) >> 4) +
 		                     ( ( ( ((unsigned char) (~ source_lsb)) & 0x0F) +1 ) / 16.0) ) );
 
-		if (source_msb  == 0x80 && source_lsb == 0x00) {
+		if (source_msb  == 0x80 && source_lsb == 0x00)
 			return 0;
-		} else {
+		else
 			return -1;
-		}
+
 	} else {
 		*target = (float) ( (source_msb * 16.0) + ((source_lsb & 0xF0) >> 4) + ((source_lsb & 0x0F) / 16.0) );
 		return 1;
@@ -176,17 +175,15 @@ float_to_data2c(float source, unsigned char *target_lsb, unsigned char *target_m
 		*target_lsb = ( ((unsigned char) ( ((unsigned char) source) % 16) << 4) +
 		                ((unsigned char) ( (source - ((unsigned char) source)) * 16.0)) );
 
-		if (source < 0.0 && *target_lsb != 0x00) {
+		if (source < 0.0 && *target_lsb != 0x00)
 			*target_msb = (unsigned char) ((source / 16.0) - 1);
-		} else {
+		else
 			*target_msb = (unsigned char) (source / 16.0);
-		}
 
-		if (source >= 0.0) {
+		if (source >= 0.0)
 			return 1;
-		} else {
+		else
 			return -1;
-		}
 	}
 }
 
@@ -208,17 +205,15 @@ calc_crc_byte(unsigned char byte, unsigned char init_crc)
 
 	for (i = 0; i < 8; i++) {
 
-		if (crc & 0x80) {
+		if (crc & 0x80)
 			polynom = (unsigned char) 0x9B;
-		} else {
+		else
 			polynom = (unsigned char) 0;
-		}
 
 		crc = (unsigned char) ((crc & ~0x80) << 1);
 
-		if (byte & 0x80) {
+		if (byte & 0x80)
 			crc = (unsigned char) (crc | 1);
-		}
 
 		crc = (unsigned char) (crc ^ polynom);
 		byte = (unsigned char) (byte << 1);
@@ -232,9 +227,9 @@ calc_crc(unsigned char *bytes, int size)
 	int i;
 	unsigned char crc = 0;
 
-	for( i = 0 ; i < size ; i++, bytes++ ) {
+	for( i = 0 ; i < size ; i++, bytes++ )
 		crc = calc_crc_byte(*bytes, crc);
-	}
+
 	return crc;
 }
 

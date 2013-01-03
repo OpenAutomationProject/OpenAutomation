@@ -20,15 +20,13 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-#define YES 1
-#define NO  0
-
 #define DAEMON_VERSION		"0.0.1"
 #define DAEMON_NAME			"ebusd"
 
 #define DAEMON_LOGLEVEL		ERR
 #define DAEMON_FOREGROUND	NO
 #define DAEMON_DUMP			NO
+#define DAEMON_NOSYN		NO
 
 #define DAEMON_WORKDIR		"/tmp/"
 #define DAEMON_CONFDIR		"/etc/ebusd/"

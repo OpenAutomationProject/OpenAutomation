@@ -36,9 +36,9 @@ char * log_get_time(char *time);
 void
 log_set_file(FILE *fp)
 {
-	if(log_file_fp) {
+	if(log_file_fp)
 		fclose(log_file_fp);
-	}
+
 	log_file_fp = fp;
 }
 
@@ -46,10 +46,26 @@ void
 log_set_level(int loglevel)
 {
 	switch (loglevel) {
-		case INF: log_level = INF; setlogmask(LOG_UPTO(LOG_ERR)); break;
-		case WAR: log_level = WAR; setlogmask(LOG_UPTO(LOG_WARNING)); break;
-		case ERR: log_level = ERR; setlogmask(LOG_UPTO(LOG_INFO)); break;
-		case DBG: log_level = DBG; setlogmask(LOG_UPTO(LOG_DEBUG)); break;
+	case INF:
+		log_level = INF;
+		setlogmask(LOG_UPTO(LOG_ERR));
+		break;
+	case WAR:
+		log_level = WAR;
+		setlogmask(LOG_UPTO(LOG_WARNING));
+		break;
+	case ERR:
+		log_level = ERR;
+		setlogmask(LOG_UPTO(LOG_INFO));
+		break;
+	case DBG:
+		log_level = DBG;
+		setlogmask(LOG_UPTO(LOG_DEBUG));
+		break;
+	default:
+		log_level = INF;
+		setlogmask(LOG_UPTO(LOG_ERR));
+		break;
 	}
 }
 
@@ -96,7 +112,7 @@ log_get_time(char *time)
 	gettimeofday(&tv, NULL);
 	tm = localtime(&tv.tv_sec);
 
-    sprintf(time,"%04d-%02d-%02d %02d:%02d:%02d.%03d",
+    sprintf(time, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
 			tm->tm_year+1900, tm->tm_mon, tm->tm_mday,
 			tm->tm_hour, tm->tm_min, tm->tm_sec, (int)tv.tv_usec/1000);
 
@@ -121,10 +137,21 @@ log_print_msg(int loglevel, const char *logtxt, ...)
 		}
 	} else {
 		switch (loglevel) {
-			case INF: priority = LOG_ERR; break;
-			case WAR: priority = LOG_WARNING; break;
-			case ERR: priority = LOG_INFO; break;
-			case DBG: priority = LOG_DEBUG; break;
+		case INF:
+			priority = LOG_ERR;
+			break;
+		case WAR:
+			priority = LOG_WARNING;
+			break;
+		case ERR:
+			priority = LOG_INFO;
+			break;
+		case DBG:
+			priority = LOG_DEBUG;
+			break;
+		default:
+			priority = LOG_ERR;
+			break;
 		}
 		syslog(priority, "[%s] %s\n", log_level_txt[loglevel], logtxt);
 	}

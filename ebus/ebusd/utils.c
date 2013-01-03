@@ -32,21 +32,23 @@
 
 
 void
-decode_ebus_msg(unsigned char buf[], int buflen)
+debug_ebus_msg(unsigned char buf[], int buflen, int nosyn)
 {
-	int k = 0;
-	char msg[SERIAL_BUFSIZE];
-	char tmp[4];
 
-	memset(tmp, '\0', sizeof(tmp));
-	memset(msg, '\0', sizeof(msg));
+	if (nosyn == NO || (buflen > 1 && *buf != EBUS_SYN)) {
+		int k = 0;
+		char msg[SERIAL_BUFSIZE];
+		char tmp[4];
 
-	for (k = 0; k <= buflen; k++) {
-		sprintf(tmp, " %02x", buf[k]);
-		strncat(msg, tmp, 3);
+		memset(tmp, '\0', sizeof(tmp));
+		memset(msg, '\0', sizeof(msg));
+
+		for (k = 0; k <= buflen; k++) {
+			sprintf(tmp, " %02x", buf[k]);
+			strncat(msg, tmp, 3);
+		}
+		log_print_msg(DBG, "%s", msg);
 	}
-
-	log_print_msg(DBG, "%s", msg);
 }
 
 
@@ -93,7 +95,7 @@ dumpfile_write(unsigned char buf[], int buflen)
 
 
 int
-serial_open(const char *dev, int *fd, struct termios *olddio)
+serial_open(const char *dev, int *fd, struct termios *oldtio)
 {
 	int ret;
 	struct termios newtio;
@@ -105,7 +107,7 @@ serial_open(const char *dev, int *fd, struct termios *olddio)
 	err_ret_if(ret < 0, -1);
 
 	/* save current settings of serial port */
-	ret = tcgetattr(*fd, olddio);
+	ret = tcgetattr(*fd, oldtio);
 	err_ret_if(ret < 0, -1);
 
 	memset(&newtio, '\0', sizeof(newtio));
@@ -129,31 +131,31 @@ serial_open(const char *dev, int *fd, struct termios *olddio)
 }
 
 int
-serial_close(int *fd, struct termios *olddio)
+serial_close(int fd, struct termios *olddio)
 {
 	int ret;
 
 	/* activate old settings of serial port */
-	ret = tcsetattr(*fd, TCSANOW, olddio);
+	ret = tcsetattr(fd, TCSANOW, olddio);
 	err_ret_if(ret < 0, -1);
 
 	/* Close file descriptor from serial device */
-	ret = close(*fd);
+	ret = close(fd);
 	err_ret_if(ret < 0, -1);
 
 	return 0;
 }
 
 int
-serial_read(int fd, unsigned char buf[], int *buflen, int rawdump)
+serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen, int rawdump, int nosyn)
 {
 	static unsigned char msgbuf[SERIAL_BUFSIZE];
 	static int msglen = 0;
 	int maxlen, i;
 
-	if (msglen == 0) {
+	if (msglen == 0)
 		memset(msgbuf, '\0', sizeof(msgbuf));
-	}
+
 
 	maxlen = *buflen;
 
@@ -166,10 +168,10 @@ serial_read(int fd, unsigned char buf[], int *buflen, int rawdump)
 
 		/* ebus syn sign is reached - decode ebus message */
 		if (msgbuf[msglen] == EBUS_SYN) {
-			if (rawdump) {
-				dumpfile_write(msgbuf,  msglen);
-			}
-			decode_ebus_msg(msgbuf, msglen);
+			if (rawdump)
+				dumpfile_write(msgbuf, msglen);
+
+			debug_ebus_msg(msgbuf, msglen, nosyn);
 			memset(msgbuf, '\0', sizeof(msgbuf));
 			msglen = 0;
 		} else {
@@ -217,7 +219,7 @@ pidfile_close(const char *file, int fd)
 
 
 int
-socket_open(int port, int *fd)
+socket_open(int *fd, int port)
 {
 	int ret, opt;
 	struct sockaddr_in sock;
@@ -257,7 +259,7 @@ socket_close(int fd)
 }
 
 int
-socket_accept(int listenfd, int *datafd)
+socket_client_accept(int listenfd, int *datafd)
 {
 	struct sockaddr_in sock;
 	socklen_t socklen;
@@ -271,7 +273,7 @@ socket_accept(int listenfd, int *datafd)
 }
 
 int
-socket_read(int fd, char buf[], int *buflen)
+socket_client_read(int fd, char buf[], int *buflen)
 {
 	*buflen = read(fd, buf, *buflen);
 	err_ret_if(*buflen < 0, -1);
@@ -286,7 +288,7 @@ socket_read(int fd, char buf[], int *buflen)
 }
 
 int
-socket_write(int fd, char buf[], int buflen)
+socket_client_write(int fd, char buf[], int buflen)
 {
 	int ret;
 
