@@ -35,7 +35,7 @@ void
 debug_ebus_msg(unsigned char buf[], int buflen, int nosyn)
 {
 
-	if (nosyn == NO || (buflen > 1 && *buf != EBUS_SYN)) {
+	if (nosyn == NO || buflen > 1) {
 		int k = 0;
 		char msg[SERIAL_BUFSIZE];
 		char tmp[4];
