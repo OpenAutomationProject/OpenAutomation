@@ -54,7 +54,7 @@ print_msg(const char pre[], const unsigned char buf[],
 void
 usage()
 {
-	fprintf(stdout, "\nUsage: %s [OPTION]\n"
+	fprintf(stdout, "\nUsage: %s [OPTION] <message>\n"
 	"  -a --address  set bus address. (%02x)\n"
 	"  -p --prompt   stay on input prompt.\n"
 	"  -r --retry    max retry getting bus. (%d)\n"
