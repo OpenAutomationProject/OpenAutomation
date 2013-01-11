@@ -236,23 +236,25 @@ main(int argc, char *argv[])
 
 		//print_msg(" in:", msg, k, "");
 
+		if (k > 0) {
 
-		ret = serial_open(serial, &serialfd);
-		if (ret < 0)
-			fprintf(stdout, "Error open %s.\n", serial);
-			
-		if (ret == 0) {
-			ret = ebus_send_data(msg, k, type);
-			if (ret == 0) {
-				//fprintf(stdout, "res:");
-				ebus_print_result();
-			}
+			ret = serial_open(serial, &serialfd);
+			if (ret < 0)
+				fprintf(stdout, "Error open %s.\n", serial);
 				
+			if (ret == 0) {
+				ret = ebus_send_data(msg, k, type);
+				if (ret == 0) {
+					//fprintf(stdout, "res:");
+					ebus_print_result();
+				}
+					
+			}
+			
+			ret = serial_close();
+			if (ret < 0)
+				fprintf(stdout, "Error close %s.\n", serial);
 		}
-		
-		ret = serial_close();
-		if (ret < 0)
-			fprintf(stdout, "Error close %s.\n", serial);
 		
 	}
 	
