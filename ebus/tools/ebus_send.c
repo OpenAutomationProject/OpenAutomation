@@ -246,8 +246,11 @@ main(int argc, char *argv[])
 			if (ret == 0) {
 				ret = ebus_send_data(msg, k, type);
 				if (ret == 0) {
-					//fprintf(stdout, "res:");
-					ebus_print_result();
+					if (type == EBUS_MSG_MASTER_SLAVE)
+						ebus_print_result();
+
+					if (type == EBUS_MSG_MASTER_MASTER)
+						fprintf(stdout, " %d\n", ret);
 				}
 					
 			}
