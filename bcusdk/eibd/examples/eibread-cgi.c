@@ -30,8 +30,8 @@
 #include <time.h>
 
 #include <string.h>
-#define MAX_POSTSIZE 4096 /* max post-size */
-#define MAX_GA 1024 /* max number of GAs */
+#define MAX_POSTSIZE 81920 /* max post-size */
+#define MAX_GA 8192 /* max number of GAs */
 #define BUFSIZE 512 /* max buffer of cfgfile-line */
 #define UINT16 65535
 
@@ -40,27 +40,6 @@ int lastpos = 0;
 int timeout = 300;
 int subscribedGA[UINT16];
 int gaDPT[UINT16];
-
-//struct gaconfig_s {
-//  int ga;
-//  int dpt;
-//};
-
-
-
-/*
-char *decodeDPT(const char *data, const int dpt)
-{
-    unsigned int ival;
-    switch (dpt)
-    {
-      case 5:
-        sscanf(data,"%X",&ival);
-        return sprintf("%.1f", ival * 100 / 255);
-    }
-return;
-}
-*/
 
 void
 cgidie (const char *msg)
@@ -161,39 +140,6 @@ int isNumeric(char *str)
   return 1;
 }
 
-#ifdef BETA
-void readConfig()
-{
-  char fname[] = "/etc/wiregate/eibga.conf";
-  FILE* fp;       /*Declare file pointer variable*/
-  char *buf[BUFSIZE], *tok;
-  //char *buf, *tok;
-  int hg,mg,ga;
-  int currentga=0,ptr;
-  if ((fp = fopen(fname,"r")) == NULL)
-  {
-    printf("Error openening cfg\n");
-    return;
-  }
-  while(fgets(buf, BUFSIZE, fp) != NULL)
-  {
-    for(tok = strtok(buf,"\n");tok;tok=strtok(0,"\n"))
-    {
-      if (sscanf(tok,"[%d/%d/%d]",&hg,&mg,&ga) == 3)
-      {
-        currentga=((hg & 0x01f) << 11) | ((mg & 0x07) << 8) | ((ga & 0xff));
-      }
-      else if (currentga && (ptr=strstr(tok,"DPTId")) )
-      {
-          sscanf(tok,"%*s = %d",&gaDPT[currentga]);
-      }
-    }
-  }/*until EOF*/
-  fclose(fp);
-}
-#endif
-
-
 // read parameters
 void readParseCGI()
 {
@@ -285,16 +231,13 @@ main ()
   uchar buf[300];
   uchar buf_gread[200];
   int written = 0;
-  char outbuf[10000];
+  char outbuf[65535];
   char tmpbuf[50];
   time_t tstart;
   tstart = time(NULL);
-  //strcat(outbuf,"Content-Type: application/json\n\n");
-  //printf("Content-Type: application/json\n\n");
   printf("Content-Type: text/plain\r\n\r\n"); //workaround for uhttpd
 
   readParseCGI();
-  //readConfig();
   if (*eiburl == NULL)
     *eiburl = "local:/tmp/eib";
 
@@ -311,8 +254,6 @@ main ()
       {
         dest = i;
         len_gread = EIB_Cache_Read_Sync (con, dest, &src, sizeof (buf_gread), buf_gread, 0);
-        //printf("%d/%d/%d",(dest >> 11) & 0x1f, (dest >> 8) & 0x07, dest & 0xff); //debug
-        //printf(" %d len %d %c",dest,len_gread,buf_gread[1]); //debug
         if (len_gread != -1)
         {
           if (buf_gread[1] & 0xC0)
@@ -372,8 +313,6 @@ main ()
         {
           if (buf_gread[1] & 0xC0)
           {
-              //sprintf (tmpbuf,"%d,\"%s",dest, decodeDPT(buf_gread[j+2],gaDPT[dest]));
-              //sprintf (tmpbuf,"%d,\"YES %02X", dest, buf_gread[1] & 0x3F);
             if (len_gread == 2)
             {
               sprintf (tmpbuf,"\"%d/%d/%d\":\"%02X", (dest >> 11) & 0x1f, (dest >> 8) & 0x07, dest & 0xff, buf_gread[1] & 0x3F);
@@ -388,7 +327,6 @@ main ()
                 sprintf (tmpbuf,"%02X", buf_gread[j+2]);
                 strcat(outbuf,tmpbuf);
               }
-              //printHex (len_gread - 2, buf_gread + 2);
             }
             strcat(outbuf,"\"");
           }
@@ -401,3 +339,4 @@ main ()
   EIBClose (con);
   return 0;
 }
+

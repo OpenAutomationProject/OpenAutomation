@@ -30,8 +30,8 @@
 #include <ctype.h>
 
 #include <string.h>
-#define MAX_POSTSIZE 4096 /* max post-size */
-#define MAX_GA 1024 /* max number of GAs */
+#define MAX_POSTSIZE 81920 /* max post-size */
+#define MAX_GA 8192 /* max number of GAs */
 
 char *eiburl[256];
 char data[50];
@@ -298,9 +298,7 @@ main ()
   if (len == -1)
     cgidie ("Request failed");
   printf ("{'success':%d}\n",len-1); //don't confuse client with leading 0x00
-
-  //printf("size %d %d\n",sizeof(buf),strlen(buf));
-  //printf("buf 0x%02X 0x%02X 0x%02X 0x%02X v:%s l:%d\n" ,buf[1],buf[2],buf[3],buf[4],data,strlen(data));
   EIBClose (con);
   return 0;
 }
+
