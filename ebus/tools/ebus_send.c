@@ -139,7 +139,7 @@ cmdline(int *argc, char ***argv)
 int
 main(int argc, char *argv[])
 {
-	int i, j, k, end, ret, max_argc;
+	int i, j, k, end, ret, val, max_argc;
 	int in[SERIAL_BUFSIZE];
 	char byte;
 	unsigned char msg[SERIAL_BUFSIZE];
@@ -149,6 +149,8 @@ main(int argc, char *argv[])
 
 	max_argc = argc;
 	cmdline(&argc, &argv);
+
+	val = 0;
 
 	if (prompt) {
 
@@ -245,6 +247,7 @@ main(int argc, char *argv[])
 				
 			if (ret == 0) {
 				ret = ebus_send_data(msg, k, type);
+				val = ret;
 				if (ret == 0) {
 					if (type == EBUS_MSG_MASTER_SLAVE)
 						ebus_print_result();
@@ -262,5 +265,5 @@ main(int argc, char *argv[])
 		
 	}
 	
-	return 0;
+	return val;
 }

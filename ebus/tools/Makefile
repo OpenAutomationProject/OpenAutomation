@@ -1,5 +1,5 @@
 #
-# Copyright (C) Roland Jax 2013 <roland.jax@liwest.at>
+# Copyright (C) Roland Jax 2013-2013 <roland.jax@liwest.at>
 #
 # This file is part of libebus.
 #
