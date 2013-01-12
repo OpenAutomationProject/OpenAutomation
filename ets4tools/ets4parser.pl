@@ -18,6 +18,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
 
+# FIXME: 
+# - dump config for https://sites.google.com/site/knxcontroller/project-import
+
 use XML::Simple;
 use Data::Dumper;
 use POSIX;
@@ -120,8 +123,8 @@ print "ETS: ". $proj->{ToolVersion} ."\n";
 #Version-check 4.0.1387.12605
 my @etsversion = split(/\./, $proj->{ToolVersion});
 # changed from 4.0 to 4.1 > 4.1.2 (Build 3013)
-if ($etsversion[1] < 1) {
-	print "error ETS " . $proj->{ToolVersion} . " too old - must be 4.1 or higher\n";
+if ($etsversion[2] < 1387 and $etsversion[1] < 1) {
+	print "error ETS " . $proj->{ToolVersion} . " too old - must be 4.0.3 or higher\n";
 	exit;
 }
 

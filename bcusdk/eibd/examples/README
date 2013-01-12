@@ -1,0 +1,12 @@
+Additional eibd-clients for CV-Backend (eibread/write-cgi)
+
+Mini-Howto:
+* Checkout into bcusdk/eibd/examples
+
+* Adjust Makefile.am:
+-xpropread xpropwrite groupcachelastupdates
++xpropread xpropwrite groupcachelastupdates eibread-cgi eibwrite-cgi
+ 
+-xpropread.c xpropwrite.c groupcachelastupdates.c
++xpropread.c xpropwrite.c groupcachelastupdates.c eibread-cgi.c eibwrite-cgi.c
+
