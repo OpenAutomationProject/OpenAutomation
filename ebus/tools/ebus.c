@@ -72,7 +72,7 @@ int ebus_diff_time(const struct timeval *tact, const struct timeval *tlast,
 void ebus_recv_data_prepare(const unsigned char *buf, int buflen);
 int ebus_recv_data(unsigned char *buf, int *buflen);
 
-int ebus_get_ack(const unsigned char *buf, int buflen);
+int ebus_get_ack(unsigned char *buf, int *buflen);
 
 int ebus_wait_syn(int *skip);
 int ebus_get_bus();
@@ -238,7 +238,7 @@ ebus_set_qq(unsigned char src)
 {
 	qq = src;
 #ifdef DEBUG
-fprintf(stdout,"qq: %02x\n",qq);
+fprintf(stdout,"[%s]\t\t qq: %02x\n",__PRETTY_FUNCTION__,qq);
 #endif		
 }
 
@@ -247,7 +247,7 @@ ebus_set_max_wait(long usec)
 {
 	max_wait = usec;
 #ifdef DEBUG
-fprintf(stdout,"wait: %ld\n",max_wait);
+fprintf(stdout,"[%s]\t\t wait: %ld\n",__PRETTY_FUNCTION__,max_wait);
 #endif	
 }
 
@@ -256,7 +256,7 @@ ebus_set_max_retry(int retry)
 {
 	max_retry = retry;
 #ifdef DEBUG
-fprintf(stdout,"retry: %d\n",max_retry);
+fprintf(stdout,"[%s]\t\t retry: %d\n",__PRETTY_FUNCTION__,max_retry);
 #endif	
 }
 
@@ -367,7 +367,7 @@ ebus_recv_data_prepare(const unsigned char *buf, int buflen)
 	recv_data.len_esc = buflen;
 #ifdef DEBUG
 int i;
-fprintf(stdout, "po1:");
+fprintf(stdout, "[%s] po1:",__PRETTY_FUNCTION__);
 for (i = 0; i < recv_data.len_esc; i++)
 	fprintf(stdout, " %02x", recv_data.msg_esc[i]);
 fprintf(stdout, "\n");
@@ -389,7 +389,7 @@ fprintf(stdout, "\n");
 		crc = 1;
 	}
 #ifdef DEBUG
-fprintf(stdout, "crc_calc: %02x crc_recv: %02x\n",recv_data.crc_calc,recv_data.crc_recv);
+fprintf(stdout, "[%s] crc_calc: %02x crc_recv: %02x\n",__PRETTY_FUNCTION__,recv_data.crc_calc,recv_data.crc_recv);
 #endif
 	/* set recv_data.msg */
 	memcpy(tmp, buf, buflen - crc);
@@ -400,7 +400,7 @@ fprintf(stdout, "crc_calc: %02x crc_recv: %02x\n",recv_data.crc_calc,recv_data.c
 	memcpy(&recv_data.msg[0], tmp, tmplen);
 	recv_data.len = tmplen;
 #ifdef DEBUG
-fprintf(stdout, "po2:");
+fprintf(stdout, "[%s] po2:",__PRETTY_FUNCTION__);
 for (i = 0; i < recv_data.len; i++)
 	fprintf(stdout, " %02x", recv_data.msg[i]);
 fprintf(stdout, "\n");
@@ -420,8 +420,10 @@ ebus_recv_data(unsigned char *buf, int *buflen)
 	unsigned char tmp[SERIAL_BUFSIZE], msg[SERIAL_BUFSIZE];
 	int tmplen, msglen, ret, i, esc, found;
 
+	/* preset msg buffer with not read bytes from ACK */
 	memset(msg, '\0', sizeof(msg));
-	msglen = 0;
+	memcpy(msg, buf, *buflen);
+	msglen = *buflen;
 	
 	esc = 0;
 	found = 99;
@@ -443,7 +445,7 @@ ebus_recv_data(unsigned char *buf, int *buflen)
 				msg[msglen] = tmp[i];
 				msglen++;
 #ifdef DEBUG				
-fprintf(stdout,"recv_data: tmplen: %d tmp [%d]: %02x - msg [%d]: %02x esc: %d\n",tmplen,i,tmp[i],msglen-1,msg[msglen-1],esc);
+fprintf(stdout,"[%s]\t tmplen: %d tmp [%d]: %02x - msg [%d]: %02x esc: %d\n",__PRETTY_FUNCTION__,tmplen,i,tmp[i],msglen-1,msg[msglen-1],esc);
 #endif							
 				/* SYN */
 				if (msg[0] == EBUS_SYN) {
@@ -470,7 +472,7 @@ fprintf(stdout,"recv_data: tmplen: %d tmp [%d]: %02x - msg [%d]: %02x esc: %d\n"
 				 */
 				if (msg[msglen] == EBUS_SYN || msg[0] > 16) {
 #ifdef DEBUG					
-fprintf(stdout,"msg: %02x msglen: %d msg[1]: %02x %d\n",msg[msglen], msglen, msg[1],msg[1]);
+fprintf(stdout,"[%s]\t msg: %02x msglen: %d msg[1]: %02x %d\n",__PRETTY_FUNCTION__,msg[msglen], msglen, msg[1],msg[1]);
 #endif
 					found = -3;
 					break;
@@ -494,7 +496,7 @@ fprintf(stdout,"msg: %02x msglen: %d msg[1]: %02x %d\n",msg[msglen], msglen, msg
 
 /*
  * return value
- * -4 and -5 should be never seen
+ * -4 should be never seen
  * -3 syn received (no answer from slave)
  * -2 send and recv msg are different
  * -1 recv error
@@ -502,7 +504,7 @@ fprintf(stdout,"msg: %02x msglen: %d msg[1]: %02x %d\n",msg[msglen], msglen, msg
  *  1 nak 
  */
 int
-ebus_get_ack(const unsigned char *buf, int buflen)
+ebus_get_ack(unsigned char *buf, int *buflen)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, ret, i, j, found;
@@ -523,32 +525,36 @@ ebus_get_ack(const unsigned char *buf, int buflen)
 			i = 0;
 			while (i < tmplen) {
 #ifdef DEBUG			
-fprintf(stdout,"get_ack: tmplen: %d tmp [%d]: %02x - buf [%d]: %02x\n",tmplen,i,tmp[i],j,buf[j]);
+fprintf(stdout,"[%s]\t\t tmplen: %d tmp [%d]: %02x - buf [%d]: %02x\n",__PRETTY_FUNCTION__,tmplen,i,tmp[i],j,buf[j]);
 #endif				
 				/* compare recv with sent  - is this possible */
-				if (tmp[i] != buf[j] && j < buflen)
+				if (tmp[i] != buf[j] && j < *buflen)
 					return -2;
 				
 				/* compare only slaves answer */
-				if (j > (buflen - 1)) {
+				if (j > (*buflen - 1)) {					
 #ifdef DEBUG					
-fprintf(stdout,"j: %d buflen: %d tmp[%d]: %02x\n",j,buflen,i,tmp[i]);
+fprintf(stdout,"[%s]\t\t j: %d buflen: %d tmp[%d]: %02x\n",__PRETTY_FUNCTION__,j,*buflen,i,tmp[i]);
 #endif					
-					switch (tmp[i]) {
-					/* ACK */	
-					case EBUS_ACK:
-						return 0;
-					/* NAK */	
-					case EBUS_NAK:
-						return 1;
-					/* SYN */	
-					case EBUS_SYN:
-						return -3;
-					/* ??? */	
-					default:
-						return -4;
-					}
 
+					/* ACK */
+					if (tmp[i] == EBUS_ACK)
+						found = 0;
+					
+					/* NAK */
+					else if (tmp[i] == EBUS_NAK)
+						found = 0;
+					
+					/* SYN */
+					else if (tmp[i] == EBUS_SYN)
+						found = -3;
+					
+					/* ??? */
+					else 
+						found = -4;
+					i++;
+					break;
+					
 				}
 				i++;
 				j++;
@@ -556,7 +562,13 @@ fprintf(stdout,"j: %d buflen: %d tmp[%d]: %02x\n",j,buflen,i,tmp[i]);
 		}
 	} while (found == 99);
 
-	return -5;
+	*buflen = tmplen - i;
+
+	memset(buf, '\0', sizeof(buf));
+	for (j = 0; i < tmplen; i++, j++)
+		buf[j] = tmp[i];
+
+	return found;
 }
 
 
@@ -595,7 +607,7 @@ ebus_wait_syn(int *skip)
 				i++;
 			}
 #ifdef DEBUG
-fprintf(stdout, "skip: %d found: %d\n", *skip, found);
+fprintf(stdout, "[%s]\t\t skip: %d found: %d\n",__PRETTY_FUNCTION__, *skip, found);
 #endif
 			if (*skip > 0)
 				*skip -= 1;
@@ -637,7 +649,7 @@ ebus_get_bus()
 		gettimeofday(&tact, NULL);
 		ebus_diff_time(&tact, &tlast, &tdiff);
 #ifdef DEBUG		
-fprintf(stdout, "write: %ld.%06ld\n", tdiff.tv_sec, tdiff.tv_usec);
+fprintf(stdout, "[%s]\t\t write: %ld.%06ld\n",__PRETTY_FUNCTION__, tdiff.tv_sec, tdiff.tv_usec);
 #endif
 		/* wait ~4200 usec */
 		usleep(max_wait - tdiff.tv_usec);
@@ -645,7 +657,7 @@ fprintf(stdout, "write: %ld.%06ld\n", tdiff.tv_sec, tdiff.tv_usec);
 		gettimeofday(&tact, NULL);
 		ebus_diff_time(&tact, &tlast, &tdiff);
 #ifdef DEBUG
-fprintf(stdout, "wait : %ld.%06ld \n", tdiff.tv_sec, tdiff.tv_usec);
+fprintf(stdout, "[%s]\t\t wait : %ld.%06ld \n",__PRETTY_FUNCTION__, tdiff.tv_sec, tdiff.tv_usec);
 #endif
 
 		/* receive 1 byte - must be QQ */
@@ -662,13 +674,11 @@ fprintf(stdout, "wait : %ld.%06ld \n", tdiff.tv_sec, tdiff.tv_usec);
 		skip = 1;
 		retry++;
 #ifdef DEBUG
-fprintf(stdout, "retry: %d\n", retry);
+fprintf(stdout, "[%s]\t\t retry: %d\n",__PRETTY_FUNCTION__, retry);
 #endif		
 	} while (retry < max_retry);
 
-	/*
-	 * reached max retry
-	 */
+	/* reached max retry */
 	return 1;
 }
 
@@ -740,10 +750,10 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 		return -1;
 		
 #ifdef DEBUG
-fprintf(stdout, "got bus\n");
+fprintf(stdout, "[%s]\t got bus\n",__PRETTY_FUNCTION__);
 
 
-fprintf(stdout, "<<< ");
+fprintf(stdout, "[%s]\t <<< ",__PRETTY_FUNCTION__);
 for (i = 0; i < send_data.len; i++)
 	fprintf(stdout, " %02x", send_data.msg[i]);
 fprintf(stdout, "\n");
@@ -768,10 +778,9 @@ fprintf(stdout, "\n");
 	memcpy(tmp, &send_data.msg_esc[1], send_data.len_esc - 1);
 	tmplen = send_data.len_esc - 1;
 
-	/* get ack from bus (we got our sent message too) */
-	ret = ebus_get_ack(tmp, tmplen);
+	ret = ebus_get_ack(tmp, &tmplen);
 #ifdef DEBUG
-fprintf(stdout,"ret: %d\n",ret);
+fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
 #endif
 	if (ret < 0 || ret > 1) {
 		/* free bus */
@@ -795,9 +804,9 @@ fprintf(stdout,"ret: %d\n",ret);
 		memcpy(tmp, &send_data.msg_esc[0], send_data.len_esc);
 		tmplen = send_data.len_esc;
 
-		ret = ebus_get_ack(tmp, tmplen);
+		ret = ebus_get_ack(tmp, &tmplen);		
 #ifdef DEBUG
-fprintf(stdout,"ret: %d\n",ret);
+fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
 #endif		
 		if (ret == 1) {
 			/* free bus */
@@ -821,15 +830,15 @@ fprintf(stdout,"ret: %d\n",ret);
 		return val;
 	}
 
-	/* get data */
-	memset(tmp, '\0', sizeof(tmp));
-	tmplen = 0;
-	
+	/* get data - dont reset buffer */	
 	ret = ebus_recv_data(tmp, &tmplen);
+#ifdef DEBUG
+fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
+#endif	
 	if (ret < 0)
 		return -1;
 #ifdef DEBUG	
-fprintf(stdout, "re%d:", ret);
+fprintf(stdout, "[%s]\t re%d:",__PRETTY_FUNCTION__, ret);
 for (i = 0; i < buflen; i++)
 	fprintf(stdout, " %02x", buf[i]);
 fprintf(stdout, "\n");
@@ -847,9 +856,9 @@ fprintf(stdout, "\n");
 		memset(tmp, '\0', sizeof(tmp));
 		tmplen = 0;
 
-		ret = ebus_get_ack(tmp, tmplen);
+		ret = ebus_get_ack(tmp, &tmplen);		
 #ifdef DEBUG
-fprintf(stdout,"ret: %d\n",ret);
+fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
 #endif
 		/* we compare against nak ! */
 		if (ret != 1) {
@@ -861,17 +870,16 @@ fprintf(stdout,"ret: %d\n",ret);
 			return -1;
 		}
 
-		/* get data */
-		memset(tmp, '\0', sizeof(tmp));
-		tmplen = 0;
-		
+		/* get data - dont reset buffer */
 		ret = ebus_recv_data(tmp, &tmplen);
-		if (ret < 0) {
-			fprintf(stdout,"exit with %d\n",ret);
-			return -1;
-		}
 #ifdef DEBUG
-fprintf(stdout, "re%d:", ret);
+fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
+#endif		
+		if (ret < 0)
+			return -1;
+
+#ifdef DEBUG
+fprintf(stdout, "[%s]\t re%d:",__PRETTY_FUNCTION__, ret);
 for (i = 0; i < buflen; i++)
 	fprintf(stdout, " %02x", buf[i]);
 fprintf(stdout, "\n");
@@ -900,7 +908,7 @@ fprintf(stdout, "\n");
 		return -1;
 			
 #ifdef DEBUG	
-fprintf(stdout, ">>> ");
+fprintf(stdout, "[%s]\t >>> ",__PRETTY_FUNCTION__);
 for (i = 0; i < recv_data.len; i++)
 	fprintf(stdout, " %02x", recv_data.msg[i]);
 fprintf(stdout, "\n");
