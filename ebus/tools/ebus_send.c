@@ -54,7 +54,8 @@ print_msg(const char pre[], const unsigned char buf[],
 void
 usage()
 {
-	fprintf(stdout, "\nUsage: %s [OPTION] <message>\n"
+	fprintf(stdout, "\nUsage: %s [OPTION] <ZZ PB SB NN DBx>\n\n"
+	"  <ZZ PB SB NN DBx>  spaces within message be removed.\n\n"  
 	"  -a --address  set bus address. (%02x)\n"
 	"  -p --prompt   stay on input prompt.\n"
 	"  -r --retry    max retry getting bus. (%d)\n"
