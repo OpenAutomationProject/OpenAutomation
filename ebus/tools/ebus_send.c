@@ -34,7 +34,7 @@
 #define NO   0
 
 static int serialfd = -1;
-static const char *serial = SERIAL_DEVICE;
+static const char *device = SERIAL_DEVICE;
 static const char *progname;
 static int type = EBUS_MSG_MASTER_SLAVE;
 static int prompt = NO;
@@ -57,9 +57,10 @@ usage()
 	fprintf(stdout, "\nUsage: %s [OPTION] <ZZ PB SB NN DBx>\n\n"
 	"  <ZZ PB SB NN DBx>  spaces within message be removed.\n\n"  
 	"  -a --address  set bus address. (%02x)\n"
+	"  -d --device   use a specified serial device. (%s)\n"	
 	"  -p --prompt   stay on input prompt.\n"
 	"  -r --retry    max retry getting bus. (%d)\n"
-	"  -s --serial   use a specified serial device. (%s)\n"
+	"  -s --skip     skipped ACK bytes after get-bus error. (%d)\n"
 	"  -t --type     message type. (%d)\n"
 	"                 1 = Broadcast, 2 = Master-Master, 3 = Master-Slave\n"
 	"  -w --wait     wait time for QQ compare. (~%d usec)\n"
@@ -67,8 +68,9 @@ usage()
 	"\n",
 	progname,
 	EBUS_QQ,
+	device,
 	EBUS_MAX_RETRY,
-	serial,
+	EBUS_SKIP_ACK,
 	type,
 	EBUS_MAX_WAIT);
 }
@@ -78,9 +80,10 @@ cmdline(int *argc, char ***argv)
 {
 	static struct option opts[] = {
 		{"address",    required_argument, NULL, 'a'},
+		{"device",     required_argument, NULL, 'd'},
 		{"prompt",     no_argument,       NULL, 'p'},
 		{"retry",      required_argument, NULL, 'r'},
-		{"serial",     required_argument, NULL, 's'},
+		{"skip",       required_argument, NULL, 's'},
 		{"type",       required_argument, NULL, 't'},
 		{"wait",       required_argument, NULL, 'w'},
 		{"help",       no_argument,       NULL, 'h'},
@@ -90,7 +93,7 @@ cmdline(int *argc, char ***argv)
 	for (;;) {
 		int i;
 
-		i = getopt_long(*argc, *argv, "a:pr:s:t:w:h", opts, NULL);
+		i = getopt_long(*argc, *argv, "a:d:pr:s:t:w:h", opts, NULL);
 
 		if (i == -1) {
 			*argc = optind;			
@@ -107,6 +110,9 @@ cmdline(int *argc, char ***argv)
 				ebus_set_qq((unsigned char) tmp);	
 			}
 			break;
+		case 'd':
+			device = optarg;
+			break;			
 		case 'p':
 			prompt = YES;
 			break;
@@ -116,7 +122,9 @@ cmdline(int *argc, char ***argv)
 			}
 			break;
 		case 's':
-			serial = optarg;
+			if (isdigit(*optarg)) {
+				ebus_set_skip_ack(atoi(optarg));
+			}
 			break;
 		case 't':
 			if (isdigit(*optarg))
@@ -191,9 +199,9 @@ main(int argc, char *argv[])
 
 				//print_msg(" in:", msg, k, "");
 		
-				ret = serial_open(serial, &serialfd);
+				ret = serial_open(device, &serialfd);
 				if (ret < 0)
-					fprintf(stdout, "Error open %s.\n", serial);
+					fprintf(stdout, "Error open %s.\n", device);
 					
 				if (ret == 0) {
 					ret = ebus_send_data(msg, k, type);
@@ -206,7 +214,7 @@ main(int argc, char *argv[])
 				
 				ret = serial_close();
 				if (ret < 0)
-					fprintf(stdout, "Error close %s.\n", serial);
+					fprintf(stdout, "Error close %s.\n", device);
 
 			}
 
@@ -241,9 +249,9 @@ main(int argc, char *argv[])
 
 		if (k > 0) {
 
-			ret = serial_open(serial, &serialfd);
+			ret = serial_open(device, &serialfd);
 			if (ret < 0)
-				fprintf(stdout, "Error open %s.\n", serial);
+				fprintf(stdout, "Error open %s.\n", device);
 				
 			if (ret == 0) {
 				ret = ebus_send_data(msg, k, type);
@@ -260,7 +268,7 @@ main(int argc, char *argv[])
 			
 			ret = serial_close();
 			if (ret < 0)
-				fprintf(stdout, "Error close %s.\n", serial);
+				fprintf(stdout, "Error close %s.\n", device);
 		}
 		
 	}

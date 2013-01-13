@@ -23,8 +23,6 @@
 
 #include <sys/time.h>
 
-//#define DEBUG
-
 /*
  * name     type             description              resolution   substitute value
  * BCD      CHAR                 0    ... +   99      1              FFh
@@ -46,6 +44,7 @@
 #define EBUS_QQ                 0xFF
 #define EBUS_MAX_WAIT           4100
 #define EBUS_MAX_RETRY          3
+#define EBUS_SKIP_ACK           1
 
 #define EBUS_MSG_BROADCAST      1
 #define EBUS_MSG_MASTER_MASTER  2
@@ -66,6 +65,7 @@ int serial_close();
 void ebus_set_qq(unsigned char src);
 void ebus_set_max_wait(long usec);
 void ebus_set_max_retry(int retry);
+void ebus_set_skip_ack(int skip);
 
 /*
  * return value

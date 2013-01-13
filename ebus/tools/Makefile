@@ -17,9 +17,14 @@
 # along with libebus. If not, see http://www.gnu.org/licenses/.
 #
 
+ifeq ($(DEBUG), 1)
+	CFLAGS	= -g -O2 -Wall -DDEBUG
+else
+	CFLAGS	= -g -O2 -Wall
+endif
+
 CC	= gcc
 LIBS	= 
-CFLAGS	= -g -O2 -Wall
 PRG1	= ebus_send
 OBJS1	= ebus.o ebus_send.o
 PRG2	= check

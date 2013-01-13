@@ -52,6 +52,7 @@ static struct recv_data recv_data;
 
 static long max_wait = EBUS_MAX_WAIT;
 static int max_retry = EBUS_MAX_RETRY;
+static int skip_ack = EBUS_SKIP_ACK;
 
 static unsigned char qq = EBUS_QQ;
 
@@ -247,7 +248,7 @@ ebus_set_max_wait(long usec)
 {
 	max_wait = usec;
 #ifdef DEBUG
-fprintf(stdout,"[%s]\t\t wait: %ld\n",__PRETTY_FUNCTION__,max_wait);
+fprintf(stdout,"[%s]\t wait: %ld\n",__PRETTY_FUNCTION__,max_wait);
 #endif	
 }
 
@@ -256,7 +257,16 @@ ebus_set_max_retry(int retry)
 {
 	max_retry = retry;
 #ifdef DEBUG
-fprintf(stdout,"[%s]\t\t retry: %d\n",__PRETTY_FUNCTION__,max_retry);
+fprintf(stdout,"[%s]\t retry: %d\n",__PRETTY_FUNCTION__,max_retry);
+#endif	
+}
+
+void
+ebus_set_skip_ack(int skip)
+{
+	skip_ack = skip;
+#ifdef DEBUG
+fprintf(stdout,"[%s]\t skip: %d\n",__PRETTY_FUNCTION__,skip_ack);
 #endif	
 }
 
@@ -367,7 +377,7 @@ ebus_recv_data_prepare(const unsigned char *buf, int buflen)
 	recv_data.len_esc = buflen;
 #ifdef DEBUG
 int i;
-fprintf(stdout, "[%s] po1:",__PRETTY_FUNCTION__);
+fprintf(stdout, "[%s] po1: ",__PRETTY_FUNCTION__);
 for (i = 0; i < recv_data.len_esc; i++)
 	fprintf(stdout, " %02x", recv_data.msg_esc[i]);
 fprintf(stdout, "\n");
@@ -400,7 +410,7 @@ fprintf(stdout, "[%s] crc_calc: %02x crc_recv: %02x\n",__PRETTY_FUNCTION__,recv_
 	memcpy(&recv_data.msg[0], tmp, tmplen);
 	recv_data.len = tmplen;
 #ifdef DEBUG
-fprintf(stdout, "[%s] po2:",__PRETTY_FUNCTION__);
+fprintf(stdout, "[%s] po2: ",__PRETTY_FUNCTION__);
 for (i = 0; i < recv_data.len; i++)
 	fprintf(stdout, " %02x", recv_data.msg[i]);
 fprintf(stdout, "\n");
@@ -427,7 +437,13 @@ ebus_recv_data(unsigned char *buf, int *buflen)
 	
 	esc = 0;
 	found = 99;
-
+	
+#ifdef DEBUG
+fprintf(stdout,"[%s]\t preset msg buffer msglen: %d ",__PRETTY_FUNCTION__,msglen);
+for (i = 0; i < msglen; i++)
+	fprintf(stdout, " %02x", msg[i]);
+fprintf(stdout, "\n");
+#endif
 	/* do until found necessary string*/
 	do {
 		memset(tmp, '\0', sizeof(tmp));
@@ -671,7 +687,7 @@ fprintf(stdout, "[%s]\t\t wait : %ld.%06ld \n",__PRETTY_FUNCTION__, tdiff.tv_sec
 		if (buf[0] == qq && buflen == 1)
 			return 0;
 
-		skip = 1;
+		skip = skip_ack;
 		retry++;
 #ifdef DEBUG
 fprintf(stdout, "[%s]\t\t retry: %d\n",__PRETTY_FUNCTION__, retry);
@@ -753,7 +769,7 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 fprintf(stdout, "[%s]\t got bus\n",__PRETTY_FUNCTION__);
 
 
-fprintf(stdout, "[%s]\t <<< ",__PRETTY_FUNCTION__);
+fprintf(stdout, "[%s]\t <<<  ",__PRETTY_FUNCTION__);
 for (i = 0; i < send_data.len; i++)
 	fprintf(stdout, " %02x", send_data.msg[i]);
 fprintf(stdout, "\n");
@@ -780,7 +796,10 @@ fprintf(stdout, "\n");
 
 	ret = ebus_get_ack(tmp, &tmplen);
 #ifdef DEBUG
-fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
+fprintf(stdout,"[%s]\t ret: %d tmplen: %d ",__PRETTY_FUNCTION__,ret,tmplen);
+for (i = 0; i < tmplen; i++)
+	fprintf(stdout, " %02x", tmp[i]);
+fprintf(stdout, "\n");
 #endif
 	if (ret < 0 || ret > 1) {
 		/* free bus */
@@ -806,7 +825,10 @@ fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
 
 		ret = ebus_get_ack(tmp, &tmplen);		
 #ifdef DEBUG
-fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
+fprintf(stdout,"[%s]\t ret: %d tmplen: %d ",__PRETTY_FUNCTION__,ret,tmplen);
+for (i = 0; i < tmplen; i++)
+	fprintf(stdout, " %02x", tmp[i]);
+fprintf(stdout, "\n");
 #endif		
 		if (ret == 1) {
 			/* free bus */
@@ -838,7 +860,7 @@ fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
 	if (ret < 0)
 		return -1;
 #ifdef DEBUG	
-fprintf(stdout, "[%s]\t re%d:",__PRETTY_FUNCTION__, ret);
+fprintf(stdout, "[%s]\t re%d: ",__PRETTY_FUNCTION__, ret);
 for (i = 0; i < buflen; i++)
 	fprintf(stdout, " %02x", buf[i]);
 fprintf(stdout, "\n");
@@ -858,7 +880,10 @@ fprintf(stdout, "\n");
 
 		ret = ebus_get_ack(tmp, &tmplen);		
 #ifdef DEBUG
-fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
+fprintf(stdout,"[%s]\t ret: %d tmplen: %d ",__PRETTY_FUNCTION__,ret,tmplen);
+for (i = 0; i < tmplen; i++)
+	fprintf(stdout, " %02x", tmp[i]);
+fprintf(stdout, "\n");
 #endif
 		/* we compare against nak ! */
 		if (ret != 1) {
@@ -879,7 +904,7 @@ fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
 			return -1;
 
 #ifdef DEBUG
-fprintf(stdout, "[%s]\t re%d:",__PRETTY_FUNCTION__, ret);
+fprintf(stdout, "[%s]\t re%d: ",__PRETTY_FUNCTION__, ret);
 for (i = 0; i < buflen; i++)
 	fprintf(stdout, " %02x", buf[i]);
 fprintf(stdout, "\n");
@@ -908,7 +933,7 @@ fprintf(stdout, "\n");
 		return -1;
 			
 #ifdef DEBUG	
-fprintf(stdout, "[%s]\t >>> ",__PRETTY_FUNCTION__);
+fprintf(stdout, "[%s]\t >>>  ",__PRETTY_FUNCTION__);
 for (i = 0; i < recv_data.len; i++)
 	fprintf(stdout, " %02x", recv_data.msg[i]);
 fprintf(stdout, "\n");
