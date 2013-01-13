@@ -430,20 +430,12 @@ ebus_recv_data(unsigned char *buf, int *buflen)
 	unsigned char tmp[SERIAL_BUFSIZE], msg[SERIAL_BUFSIZE];
 	int tmplen, msglen, ret, i, esc, found;
 
-	/* preset msg buffer with not read bytes from ACK */
 	memset(msg, '\0', sizeof(msg));
-	memcpy(msg, buf, *buflen);
-	msglen = *buflen;
+	msglen = 0;
 	
 	esc = 0;
 	found = 99;
 	
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t preset msg buffer msglen: %d ",__PRETTY_FUNCTION__,msglen);
-for (i = 0; i < msglen; i++)
-	fprintf(stdout, " %02x", msg[i]);
-fprintf(stdout, "\n");
-#endif
 	/* do until found necessary string*/
 	do {
 		memset(tmp, '\0', sizeof(tmp));
@@ -451,9 +443,47 @@ fprintf(stdout, "\n");
 
 		ret = serial_recv(tmp, &tmplen);
 		if (ret < 0)
-			return -1;	
+			return -1;
 		
 		if (tmplen > 0) {
+
+			/* preset tmp buffer with not read bytes from get_bus */
+			if (*buflen > 0) {
+
+#ifdef DEBUG
+fprintf(stdout,"[%s]\t input data from get_bus buflen: %d ",__PRETTY_FUNCTION__,*buflen);
+for (i = 0; i < *buflen; i++)
+	fprintf(stdout, " %02x", buf[i]);
+fprintf(stdout, "\n");
+#endif
+				
+				/* save temporary tmp in msg buffer */
+				memcpy(msg, tmp, tmplen);
+				msglen = tmplen;
+
+				/* copy input data into tmp buffer */
+				memset(tmp, '\0', sizeof(tmp));
+				memcpy(tmp, buf, *buflen);
+				tmplen = *buflen;
+
+				/* set input data buffer len to 0 */
+				*buflen = 0;
+
+				/* copy saved bus data back to tmp buffer */
+				memcpy(&tmp[tmplen], msg, msglen);
+				tmplen += msglen;
+
+				/* reset msg buffer */
+				memset(msg, '\0', sizeof(msg));
+				msglen = 0;
+#ifdef DEBUG
+fprintf(stdout,"[%s]\t tmp buffer inkl. preset values tmplen: %d ",__PRETTY_FUNCTION__,tmplen);
+for (i = 0; i < tmplen; i++)
+	fprintf(stdout, " %02x", tmp[i]);
+fprintf(stdout, "\n");
+#endif								
+			}
+			
 			
 			i = 0;
 			while (i < tmplen) {
@@ -694,6 +724,10 @@ fprintf(stdout, "[%s]\t\t retry: %d\n",__PRETTY_FUNCTION__, retry);
 #endif		
 	} while (retry < max_retry);
 
+#ifdef DEBUG
+fprintf(stdout, "[%s]\t\t max retry %d reached, can't get bus.\n",__PRETTY_FUNCTION__,max_retry);
+#endif	
+
 	/* reached max retry */
 	return 1;
 }
@@ -762,7 +796,7 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 	
 	/* fetch AA and send QQ */
 	ret = ebus_get_bus();
-	if (ret < 0)
+	if (ret != 0)
 		return -1;
 		
 #ifdef DEBUG

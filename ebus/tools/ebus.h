@@ -42,7 +42,7 @@
 #define EBUS_BROADCAST          0xFE
 
 #define EBUS_QQ                 0xFF
-#define EBUS_MAX_WAIT           4100
+#define EBUS_MAX_WAIT           4000
 #define EBUS_MAX_RETRY          3
 #define EBUS_SKIP_ACK           1
 
