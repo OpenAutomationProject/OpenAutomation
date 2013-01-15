@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Roland Jax 2012 <roland.jax@liwest.at>
+ * Copyright (C) Roland Jax 2012-2013 <roland.jax@liwest.at>
  *
  * This file is part of ebusd.
  *
@@ -54,7 +54,6 @@ static const char *pidfile = DAEMON_PIDFILE;
 static const char *logfile = DAEMON_LOGFILE;
 static const char *dumpfile = DAEMON_DUMPFILE;
 
-static struct termios oldtio;
 static const char *serial = SERIAL_DEVICE;
 
 static int listenport = SOCKET_PORT;
@@ -148,7 +147,7 @@ cleanup(int state)
 
 	/* close serial device */
 	if (serialfd > 0)
-		if (!serial_close(serialfd, &oldtio))
+		if (!serial_close())
 			log_print_msg(INF, "serial device %s successfully closed.", serial);
 
 	/* close dumpfile */
@@ -398,7 +397,7 @@ main(int argc, char *argv[])
 	}
 
 	/* open serial device */
-	if (serial_open(serial, &serialfd, &oldtio) == -1)
+	if (serial_open(serial, &serialfd) == -1)
 		cleanup(EXIT_FAILURE);
 	else
 		log_print_msg(INF, "serial device %s successfully opened.", serial);

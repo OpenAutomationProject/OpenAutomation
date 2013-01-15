@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Roland Jax 2012 <roland.jax@liwest.at>
+ * Copyright (C) Roland Jax 2012-2013 <roland.jax@liwest.at>
  *
  * This file is part of ebusd.
  *
@@ -23,22 +23,16 @@
 #define YES 1
 #define NO  0
 
-#define SERIAL_DEVICE		"/dev/ttyUSB0"
-#define SERIAL_BAUDRATE		B2400
-#define SERIAL_BUFSIZE		1024
-
 #define SOCKET_PORT			8888
 #define SOCKET_BUFSIZE		1024
 
 void debug_ebus_msg(unsigned char buf[], int buflen, int nosyn);
 
+int serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen, int rawdump, int skipsyn);
+
 int dumpfile_open(const char *file);
 int dumpfile_close();
 int dumpfile_write(unsigned char buf[],  int buflen);
-
-int serial_open(const char *dev, int *fd, struct termios *olddio);
-int serial_close(int fd, struct termios *olddio);
-int serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen, int rawdump, int skipsyn);
 
 int pidfile_open(const char *file, int *fd);
 int pidfile_close(const char *file, int fd);

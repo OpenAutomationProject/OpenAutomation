@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Roland Jax 2012 <roland.jax@liwest.at>
+ * Copyright (C) Roland Jax 2012-2013 <roland.jax@liwest.at>
  *
  * This file is part of ebusd.
  *
@@ -51,6 +51,44 @@ debug_ebus_msg(unsigned char buf[], int buflen, int nosyn)
 	}
 }
 
+int
+serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen, int rawdump, int nosyn)
+{
+	static unsigned char msgbuf[SERIAL_BUFSIZE];
+	static int msglen = 0;
+	int maxlen, i;
+
+	if (msglen == 0)
+		memset(msgbuf, '\0', sizeof(msgbuf));
+
+
+	maxlen = *buflen;
+
+	*buflen = read(fd, buf, *buflen);
+	err_ret_if(*buflen < 0 || *buflen > maxlen, -1);
+
+	i = 0;
+	while (i < *buflen) {
+		msgbuf[msglen] = buf[i];
+
+		/* ebus syn sign is reached - decode ebus message */
+		if (msgbuf[msglen] == EBUS_SYN) {
+			if (rawdump)
+				dumpfile_write(msgbuf, msglen);
+
+			debug_ebus_msg(msgbuf, msglen, nosyn);
+			memset(msgbuf, '\0', sizeof(msgbuf));
+			msglen = 0;
+		} else {
+			msglen++;
+		}
+		i++;
+	}
+
+	return 0;
+}
+
+
 
 static FILE *dumpfp = NULL;
 
@@ -89,103 +127,6 @@ dumpfile_write(unsigned char buf[], int buflen)
 
 	ret = fflush(dumpfp);
 	err_ret_if(ret == EOF, -1);
-
-	return 0;
-}
-
-
-int
-serial_open(const char *dev, int *fd, struct termios *oldtio)
-{
-	int ret;
-	struct termios newtio;
-
-	*fd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
-	err_ret_if(*fd < 0, -1);
-
-	ret = fcntl(*fd, F_SETFL, 0);
-	err_ret_if(ret < 0, -1);
-
-	/* save current settings of serial port */
-	ret = tcgetattr(*fd, oldtio);
-	err_ret_if(ret < 0, -1);
-
-	memset(&newtio, '\0', sizeof(newtio));
-
-	/* set new settings of serial port */
-	//newtio.c_cflag = SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
-	//newtio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-	//newtio.c_iflag = IGNPAR;
-	//newtio.c_oflag &= ~OPOST;
-
-	newtio.c_cflag &= ~(CSIZE | PARENB);
-	newtio.c_cflag |= CS8 | SERIAL_BAUDRATE;
-	newtio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-	newtio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-	newtio.c_oflag &= ~OPOST;
-
-	newtio.c_cc[VMIN]  = 1;
-	newtio.c_cc[VTIME] = 0;
-
-	ret = tcflush(*fd, TCIFLUSH);
-	err_ret_if(ret < 0, -1);
-
-	/* activate new settings of serial port */
-	ret = tcsetattr(*fd, TCSANOW, &newtio);
-	err_ret_if(ret < 0, -1);
-
-	return 0;
-}
-
-int
-serial_close(int fd, struct termios *olddio)
-{
-	int ret;
-
-	/* activate old settings of serial port */
-	ret = tcsetattr(fd, TCSANOW, olddio);
-	err_ret_if(ret < 0, -1);
-
-	/* Close file descriptor from serial device */
-	ret = close(fd);
-	err_ret_if(ret < 0, -1);
-
-	return 0;
-}
-
-int
-serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen, int rawdump, int nosyn)
-{
-	static unsigned char msgbuf[SERIAL_BUFSIZE];
-	static int msglen = 0;
-	int maxlen, i;
-
-	if (msglen == 0)
-		memset(msgbuf, '\0', sizeof(msgbuf));
-
-
-	maxlen = *buflen;
-
-	*buflen = read(fd, buf, *buflen);
-	err_ret_if(*buflen < 0 || *buflen > maxlen, -1);
-
-	i = 0;
-	while (i < *buflen) {
-		msgbuf[msglen] = buf[i];
-
-		/* ebus syn sign is reached - decode ebus message */
-		if (msgbuf[msglen] == EBUS_SYN) {
-			if (rawdump)
-				dumpfile_write(msgbuf, msglen);
-
-			debug_ebus_msg(msgbuf, msglen, nosyn);
-			memset(msgbuf, '\0', sizeof(msgbuf));
-			msglen = 0;
-		} else {
-			msglen++;
-		}
-		i++;
-	}
 
 	return 0;
 }
