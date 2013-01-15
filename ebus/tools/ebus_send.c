@@ -40,8 +40,7 @@ static int type = EBUS_MSG_MASTER_SLAVE;
 static int prompt = NO;
 
 void
-print_msg(const char pre[], const unsigned char buf[],
-		const int buflen, const char post[])
+print_msg(const char *pre, const unsigned char *buf, int buflen, const char *post)
 {
 	int i;
 

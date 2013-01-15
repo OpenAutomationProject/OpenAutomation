@@ -29,6 +29,15 @@
 
 #include "ebus.h"
 
+#define EBUS_SYN                0xAA
+#define EBUS_SYN_ESC_A9         0xA9
+#define EBUS_SYN_ESC_01         0x01
+#define EBUS_SYN_ESC_00         0x00
+
+#define EBUS_ACK                0x00
+#define EBUS_NAK                0xFF
+#define EBUS_BROADCAST          0xFE
+
 struct send_data {
 	unsigned char crc;
 	unsigned char msg[SERIAL_BUFSIZE];

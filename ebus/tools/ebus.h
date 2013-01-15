@@ -32,15 +32,6 @@
  * DATA2c   SIGNED INTEGER   -2047,9  ... + 2047,9    1/16         8000h
  */
 
-#define EBUS_SYN                0xAA
-#define EBUS_SYN_ESC_A9         0xA9
-#define EBUS_SYN_ESC_01         0x01
-#define EBUS_SYN_ESC_00         0x00
-
-#define EBUS_ACK                0x00
-#define EBUS_NAK                0xFF
-#define EBUS_BROADCAST          0xFE
-
 #define EBUS_QQ                 0xFF
 #define EBUS_MAX_WAIT           4000
 #define EBUS_MAX_RETRY          3
