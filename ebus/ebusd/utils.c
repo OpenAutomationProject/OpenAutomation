@@ -113,10 +113,17 @@ serial_open(const char *dev, int *fd, struct termios *oldtio)
 	memset(&newtio, '\0', sizeof(newtio));
 
 	/* set new settings of serial port */
-	newtio.c_cflag = SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
-	newtio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-	newtio.c_iflag = IGNPAR;
+	//newtio.c_cflag = SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
+	//newtio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+	//newtio.c_iflag = IGNPAR;
+	//newtio.c_oflag &= ~OPOST;
+
+	newtio.c_cflag &= ~(CSIZE | PARENB);
+	newtio.c_cflag |= CS8 | SERIAL_BAUDRATE;
+	newtio.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+	newtio.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
 	newtio.c_oflag &= ~OPOST;
+
 	newtio.c_cc[VMIN]  = 1;
 	newtio.c_cc[VTIME] = 0;
 

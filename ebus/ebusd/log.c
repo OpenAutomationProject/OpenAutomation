@@ -113,7 +113,7 @@ log_get_time(char *time)
 	tm = localtime(&tv.tv_sec);
 
     sprintf(time, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
-			tm->tm_year+1900, tm->tm_mon, tm->tm_mday,
+			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
 			tm->tm_hour, tm->tm_min, tm->tm_sec, (int)tv.tv_usec/1000);
 
     return time;
