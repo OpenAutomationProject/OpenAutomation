@@ -20,19 +20,19 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-#define DAEMON_VERSION		"0.0.1"
-#define DAEMON_NAME			"ebusd"
+#define DAEMON_VERSION        "0.0.1"
+#define DAEMON_NAME           "ebusd"
 
-#define DAEMON_LOGLEVEL		ERR
-#define DAEMON_FOREGROUND	NO
-#define DAEMON_DUMP			NO
-#define DAEMON_NOSYN		NO
+#define DAEMON_LOGLEVEL       ERR
+#define DAEMON_FOREGROUND     NO
+#define DAEMON_DUMP           NO
+#define DAEMON_NOSYN          NO
 
-#define DAEMON_WORKDIR		"/tmp/"
-#define DAEMON_CONFDIR		"/etc/ebusd/"
-#define DAEMON_PIDFILE		"/var/run/ebusd.pid"
-#define DAEMON_LOGFILE		"/var/log/ebusd.log"
-#define DAEMON_DUMPFILE		"/tmp/ebusd.bin"
+#define DAEMON_WORKDIR        "/tmp/"
+#define DAEMON_CONFDIR        "/etc/ebusd/"
+#define DAEMON_PIDFILE        "/var/run/ebusd.pid"
+#define DAEMON_LOGFILE        "/var/log/ebusd.log"
+#define DAEMON_DUMPFILE       "/tmp/ebusd.bin"
 
 void signal_handler(int sig);
 

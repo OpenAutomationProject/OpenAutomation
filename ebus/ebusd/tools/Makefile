@@ -17,24 +17,30 @@
 # along with ebusd. If not, see http://www.gnu.org/licenses/.
 #
 
-DIRS = src tools lib
+PRG1	= ebus_send
+OBJ1	= ebus_send.o
 
-BUILDDIRS = $(DIRS:%=build-%)
-CLEANDIRS = $(DIRS:%=clean-%)
+PRG2	= check
+OBJ2	= check.o
 
-all: $(BUILDDIRS)
-$(DIRS): $(BUILDDIRS)
-$(BUILDDIRS):
-	@$(MAKE) -C $(@:build-%=%)
+INCDIR	= -I../lib
+LIBDIR	= -L../lib
 
-build-src: build-lib
-build-tools: build-lib
+CC	= gcc
+CFLAGS	= -g -O2 -Wall $(INCDIR)
+LDFLAGS	= -lebus
 
-clean: $(CLEANDIRS)
-$(CLEANDIRS):
-	@$(MAKE) -C $(@:clean-%=%) clean
+all: $(PRG1) $(PRG2)
 
-.PHONY: subdirs $(BUILDDIRS)
-.PHONY: subdirs $(CLEANDIRS)	
+$(PRG1): $(OBJ1)
+	$(CC) $(CFLAGS) $(OBJ1) $(LIBDIR) $(LDFLAGS) -o $@  
+
+$(PRG2): $(OBJ2)
+	$(CC) $(CFLAGS) $(OBJ2) $(LIBDIR) $(LDFLAGS) -o $@
+ 
+%.o: %.c %h
+	$(CC) $(CFLAGS) -c $<
+clean:
+	-rm -f $(PRG1) $(OBJ1) $(PRG2) $(OBJ2) 
+	
 .PHONY: all clean
-

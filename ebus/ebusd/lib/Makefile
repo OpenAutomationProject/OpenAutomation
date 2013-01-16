@@ -17,24 +17,20 @@
 # along with ebusd. If not, see http://www.gnu.org/licenses/.
 #
 
-DIRS = src tools lib
+LIB	= libebus.a
+OBJ	= ebus.o
 
-BUILDDIRS = $(DIRS:%=build-%)
-CLEANDIRS = $(DIRS:%=clean-%)
+AR	= ar
+CC	= gcc
+CFLAGS	= -g -O2 -Wall
 
-all: $(BUILDDIRS)
-$(DIRS): $(BUILDDIRS)
-$(BUILDDIRS):
-	@$(MAKE) -C $(@:build-%=%)
+$(LIB): $(OBJ)
+	@$(AR) r $(LIB) $(OBJ)
+ 
+%.o: %.c %.h
+	$(CC) $(CFLAGS) -c $<
 
-build-src: build-lib
-build-tools: build-lib
-
-clean: $(CLEANDIRS)
-$(CLEANDIRS):
-	@$(MAKE) -C $(@:clean-%=%) clean
-
-.PHONY: subdirs $(BUILDDIRS)
-.PHONY: subdirs $(CLEANDIRS)	
-.PHONY: all clean
-
+clean:
+	-rm -f $(LIB) $(OBJ)
+	
+.PHONY: clean

@@ -32,7 +32,7 @@
 #include "log.h"
 #include "utils.h"
 #include "ebus.h"
-#include "main.h"
+#include "ebusd.h"
 
 
 /* global variables */
