@@ -17,6 +17,10 @@
  * along with ebusd. If not, see http://www.gnu.org/licenses/.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -7,3 +7,7 @@ ebus_send_CFLAGS = -I$(top_srcdir)/lib
 check_SOURCES = check.c
 check_LDADD = $(top_srcdir)/lib/libebus.a
 check_CFLAGS = -I$(top_srcdir)/lib
+
+distclean-local:
+	-rm -f Makefile.in
+	
