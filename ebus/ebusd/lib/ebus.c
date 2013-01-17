@@ -246,37 +246,25 @@ ebus_htoi(const char *buf)
 void
 ebus_set_qq(unsigned char src)
 {
-	qq = src;
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t\t qq: %02x\n",__PRETTY_FUNCTION__,qq);
-#endif		
+	qq = src;	
 }
 
 void
 ebus_set_max_wait(long usec)
 {
 	max_wait = usec;
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t wait: %ld\n",__PRETTY_FUNCTION__,max_wait);
-#endif	
 }
 
 void
 ebus_set_max_retry(int retry)
 {
 	max_retry = retry;
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t retry: %d\n",__PRETTY_FUNCTION__,max_retry);
-#endif	
 }
 
 void
 ebus_set_skip_ack(int skip)
 {
 	skip_ack = skip;
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t skip: %d\n",__PRETTY_FUNCTION__,skip_ack);
-#endif	
 }
 
 
@@ -384,13 +372,7 @@ ebus_recv_data_prepare(const unsigned char *buf, int buflen)
 	/* set recv_data.msg_esc */
 	memcpy(&recv_data.msg_esc[0], buf, buflen);
 	recv_data.len_esc = buflen;
-#ifdef DEBUG
-int i;
-fprintf(stdout, "[%s] po1: ",__PRETTY_FUNCTION__);
-for (i = 0; i < recv_data.len_esc; i++)
-	fprintf(stdout, " %02x", recv_data.msg_esc[i]);
-fprintf(stdout, "\n");
-#endif
+
 	/* set recv_data.crc_calc and .crc_recv */
 	if (buf[buflen - 2] == EBUS_SYN_ESC_A9) {
 		recv_data.crc_calc = ebus_calc_crc(buf, buflen - 2);
@@ -407,9 +389,7 @@ fprintf(stdout, "\n");
 
 		crc = 1;
 	}
-#ifdef DEBUG
-fprintf(stdout, "[%s] crc_calc: %02x crc_recv: %02x\n",__PRETTY_FUNCTION__,recv_data.crc_calc,recv_data.crc_recv);
-#endif
+
 	/* set recv_data.msg */
 	memcpy(tmp, buf, buflen - crc);
 	tmplen = buflen - crc;
@@ -418,12 +398,7 @@ fprintf(stdout, "[%s] crc_calc: %02x crc_recv: %02x\n",__PRETTY_FUNCTION__,recv_
 
 	memcpy(&recv_data.msg[0], tmp, tmplen);
 	recv_data.len = tmplen;
-#ifdef DEBUG
-fprintf(stdout, "[%s] po2: ",__PRETTY_FUNCTION__);
-for (i = 0; i < recv_data.len; i++)
-	fprintf(stdout, " %02x", recv_data.msg[i]);
-fprintf(stdout, "\n");
-#endif
+
 }
 
 /*
@@ -458,13 +433,6 @@ ebus_recv_data(unsigned char *buf, int *buflen)
 
 			/* preset tmp buffer with not read bytes from get_bus */
 			if (*buflen > 0) {
-
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t input data from get_bus buflen: %d ",__PRETTY_FUNCTION__,*buflen);
-for (i = 0; i < *buflen; i++)
-	fprintf(stdout, " %02x", buf[i]);
-fprintf(stdout, "\n");
-#endif
 				
 				/* save temporary tmp in msg buffer */
 				memcpy(msg, tmp, tmplen);
@@ -484,13 +452,7 @@ fprintf(stdout, "\n");
 
 				/* reset msg buffer */
 				memset(msg, '\0', sizeof(msg));
-				msglen = 0;
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t tmp buffer inkl. preset values tmplen: %d ",__PRETTY_FUNCTION__,tmplen);
-for (i = 0; i < tmplen; i++)
-	fprintf(stdout, " %02x", tmp[i]);
-fprintf(stdout, "\n");
-#endif								
+				msglen = 0;							
 			}
 			
 			
@@ -499,9 +461,7 @@ fprintf(stdout, "\n");
 
 				msg[msglen] = tmp[i];
 				msglen++;
-#ifdef DEBUG				
-fprintf(stdout,"[%s]\t tmplen: %d tmp [%d]: %02x - msg [%d]: %02x esc: %d\n",__PRETTY_FUNCTION__,tmplen,i,tmp[i],msglen-1,msg[msglen-1],esc);
-#endif							
+						
 				/* SYN */
 				if (msg[0] == EBUS_SYN) {
 					found = -2;
@@ -526,9 +486,7 @@ fprintf(stdout,"[%s]\t tmplen: %d tmp [%d]: %02x - msg [%d]: %02x esc: %d\n",__P
 				 * msglen is out of spec. 1 
 				 */
 				if (msg[msglen] == EBUS_SYN || msg[0] > 16) {
-#ifdef DEBUG					
-fprintf(stdout,"[%s]\t msg: %02x msglen: %d msg[1]: %02x %d\n",__PRETTY_FUNCTION__,msg[msglen], msglen, msg[1],msg[1]);
-#endif
+
 					found = -3;
 					break;
 				}
@@ -579,18 +537,13 @@ ebus_get_ack(unsigned char *buf, int *buflen)
 		if (tmplen > 0) {		
 			i = 0;
 			while (i < tmplen) {
-#ifdef DEBUG			
-fprintf(stdout,"[%s]\t\t tmplen: %d tmp [%d]: %02x - buf [%d]: %02x\n",__PRETTY_FUNCTION__,tmplen,i,tmp[i],j,buf[j]);
-#endif				
+			
 				/* compare recv with sent  - is this possible */
 				if (tmp[i] != buf[j] && j < *buflen)
 					return -2;
 				
 				/* compare only slaves answer */
-				if (j > (*buflen - 1)) {					
-#ifdef DEBUG					
-fprintf(stdout,"[%s]\t\t j: %d buflen: %d tmp[%d]: %02x\n",__PRETTY_FUNCTION__,j,*buflen,i,tmp[i]);
-#endif					
+				if (j > (*buflen - 1)) {									
 
 					/* ACK */
 					if (tmp[i] == EBUS_ACK)
@@ -661,9 +614,7 @@ ebus_wait_syn(int *skip)
 				}
 				i++;
 			}
-#ifdef DEBUG
-fprintf(stdout, "[%s]\t\t skip: %d found: %d\n",__PRETTY_FUNCTION__, *skip, found);
-#endif
+
 			if (*skip > 0)
 				*skip -= 1;
 		}
@@ -703,17 +654,12 @@ ebus_get_bus()
 
 		gettimeofday(&tact, NULL);
 		ebus_diff_time(&tact, &tlast, &tdiff);
-#ifdef DEBUG		
-fprintf(stdout, "[%s]\t\t write: %ld.%06ld\n",__PRETTY_FUNCTION__, tdiff.tv_sec, tdiff.tv_usec);
-#endif
+
 		/* wait ~4200 usec */
 		usleep(max_wait - tdiff.tv_usec);
 
 		gettimeofday(&tact, NULL);
 		ebus_diff_time(&tact, &tlast, &tdiff);
-#ifdef DEBUG
-fprintf(stdout, "[%s]\t\t wait : %ld.%06ld \n",__PRETTY_FUNCTION__, tdiff.tv_sec, tdiff.tv_usec);
-#endif
 
 		/* receive 1 byte - must be QQ */
 		memset(buf, '\0', sizeof(buf));
@@ -726,16 +672,10 @@ fprintf(stdout, "[%s]\t\t wait : %ld.%06ld \n",__PRETTY_FUNCTION__, tdiff.tv_sec
 		if (buf[0] == qq && buflen == 1)
 			return 0;
 
-		skip = skip_ack;
 		retry++;
-#ifdef DEBUG
-fprintf(stdout, "[%s]\t\t retry: %d\n",__PRETTY_FUNCTION__, retry);
-#endif		
+		skip = skip_ack + retry;
+	
 	} while (retry < max_retry);
-
-#ifdef DEBUG
-fprintf(stdout, "[%s]\t\t max retry %d reached, can't get bus.\n",__PRETTY_FUNCTION__,max_retry);
-#endif	
 
 	/* reached max retry */
 	return 1;
@@ -807,16 +747,6 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 	ret = ebus_get_bus();
 	if (ret != 0)
 		return -1;
-		
-#ifdef DEBUG
-fprintf(stdout, "[%s]\t got bus\n",__PRETTY_FUNCTION__);
-
-
-fprintf(stdout, "[%s]\t <<<  ",__PRETTY_FUNCTION__);
-for (i = 0; i < send_data.len; i++)
-	fprintf(stdout, " %02x", send_data.msg[i]);
-fprintf(stdout, "\n");
-#endif
 
 	/* send message to slave */
 	ret = serial_send(&send_data.msg_esc[1], send_data.len_esc - 1);
@@ -838,12 +768,7 @@ fprintf(stdout, "\n");
 	tmplen = send_data.len_esc - 1;
 
 	ret = ebus_get_ack(tmp, &tmplen);
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t ret: %d tmplen: %d ",__PRETTY_FUNCTION__,ret,tmplen);
-for (i = 0; i < tmplen; i++)
-	fprintf(stdout, " %02x", tmp[i]);
-fprintf(stdout, "\n");
-#endif
+
 	if (ret < 0 || ret > 1) {
 		/* free bus */
 		ret = serial_send(&syn, 1);	
@@ -867,12 +792,7 @@ fprintf(stdout, "\n");
 		tmplen = send_data.len_esc;
 
 		ret = ebus_get_ack(tmp, &tmplen);		
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t ret: %d tmplen: %d ",__PRETTY_FUNCTION__,ret,tmplen);
-for (i = 0; i < tmplen; i++)
-	fprintf(stdout, " %02x", tmp[i]);
-fprintf(stdout, "\n");
-#endif		
+	
 		if (ret == 1) {
 			/* free bus */
 			ret = serial_send(&syn, 1);	
@@ -897,17 +817,9 @@ fprintf(stdout, "\n");
 
 	/* get data - dont reset buffer */	
 	ret = ebus_recv_data(tmp, &tmplen);
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
-#endif	
 	if (ret < 0)
 		return -1;
-#ifdef DEBUG	
-fprintf(stdout, "[%s]\t re%d: ",__PRETTY_FUNCTION__, ret);
-for (i = 0; i < buflen; i++)
-	fprintf(stdout, " %02x", buf[i]);
-fprintf(stdout, "\n");
-#endif
+
 	ebus_recv_data_prepare(tmp, tmplen);
 
 	/* check crc's from recv_data */
@@ -922,12 +834,7 @@ fprintf(stdout, "\n");
 		tmplen = 0;
 
 		ret = ebus_get_ack(tmp, &tmplen);		
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t ret: %d tmplen: %d ",__PRETTY_FUNCTION__,ret,tmplen);
-for (i = 0; i < tmplen; i++)
-	fprintf(stdout, " %02x", tmp[i]);
-fprintf(stdout, "\n");
-#endif
+
 		/* we compare against nak ! */
 		if (ret != 1) {
 			/* free bus */
@@ -939,19 +846,10 @@ fprintf(stdout, "\n");
 		}
 
 		/* get data - dont reset buffer */
-		ret = ebus_recv_data(tmp, &tmplen);
-#ifdef DEBUG
-fprintf(stdout,"[%s]\t ret: %d\n",__PRETTY_FUNCTION__,ret);
-#endif		
+		ret = ebus_recv_data(tmp, &tmplen);	
 		if (ret < 0)
 			return -1;
 
-#ifdef DEBUG
-fprintf(stdout, "[%s]\t re%d: ",__PRETTY_FUNCTION__, ret);
-for (i = 0; i < buflen; i++)
-	fprintf(stdout, " %02x", buf[i]);
-fprintf(stdout, "\n");
-#endif
 		ebus_recv_data_prepare(tmp, tmplen);
 		
 	}
@@ -975,12 +873,6 @@ fprintf(stdout, "\n");
 	if (ret < 0)
 		return -1;
 			
-#ifdef DEBUG	
-fprintf(stdout, "[%s]\t >>>  ",__PRETTY_FUNCTION__);
-for (i = 0; i < recv_data.len; i++)
-	fprintf(stdout, " %02x", recv_data.msg[i]);
-fprintf(stdout, "\n");
-#endif
 	return val;
 }
 
@@ -1112,8 +1004,9 @@ int
 ebus_data2b_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
 {
 	if ((src_msb & 0x80) == 0x80) {
-		*tgt = (float) (-   ( ((unsigned char) (~ src_msb)) +
-				  ( ( ((unsigned char) (~ src_lsb)) + 1) / 256.0) ) );
+		*tgt = (float)
+			(- ( ((unsigned char) (~ src_msb)) +
+			(  ( ((unsigned char) (~ src_lsb)) + 1) / 256.0) ) );
 
 		if (src_msb  == 0x80 && src_lsb == 0x00)
 			return 0;
@@ -1140,7 +1033,8 @@ ebus_float_to_data2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
 		*tgt_lsb = (unsigned char) (0x00);
 		return 0;
 	} else {
-		*tgt_lsb = (unsigned char) ((src - ((unsigned char) src)) * 256.0);
+		*tgt_lsb = (unsigned char)
+					((src - ((unsigned char) src)) * 256.0);
 
 		if (src < 0.0 && *tgt_lsb != 0x00)
 			*tgt_msb = (unsigned char) (src - 1);
@@ -1165,9 +1059,10 @@ int
 ebus_data2c_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
 {
 	if ((src_msb & 0x80) == 0x80) {
-		*tgt = (float) (- ( ( ( ((unsigned char) (~ src_msb)) * 16.0) ) +
-		                    ( ( ((unsigned char) (~ src_lsb)) & 0xF0) >> 4) +
-		                  ( ( ( ((unsigned char) (~ src_lsb)) & 0x0F) +1 ) / 16.0) ) );
+		*tgt = (float)
+		(- ( ( ( ((unsigned char) (~ src_msb)) * 16.0) ) +
+		     ( ( ((unsigned char) (~ src_lsb)) & 0xF0) >> 4) +
+		   ( ( ( ((unsigned char) (~ src_lsb)) & 0x0F) +1 ) / 16.0) ) );
 
 		if (src_msb  == 0x80 && src_lsb == 0x00)
 			return 0;
@@ -1175,7 +1070,8 @@ ebus_data2c_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
 			return -1;
 
 	} else {
-		*tgt = (float) ( (src_msb * 16.0) + ((src_lsb & 0xF0) >> 4) + ((src_lsb & 0x0F) / 16.0) );
+		*tgt = (float) ( (src_msb * 16.0) + ((src_lsb & 0xF0) >> 4) +
+						((src_lsb & 0x0F) / 16.0) );
 		return 1;
 	}
 }
@@ -1194,8 +1090,9 @@ ebus_float_to_data2c(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
 		*tgt_lsb = (unsigned char) (0x00);
 		return 0;
 	} else {
-		*tgt_lsb = ( ((unsigned char) ( ((unsigned char) src) % 16) << 4) +
-		             ((unsigned char) ( (src - ((unsigned char) src)) * 16.0)) );
+		*tgt_lsb =
+		  ( ((unsigned char) ( ((unsigned char) src) % 16) << 4) +
+		    ((unsigned char) ( (src - ((unsigned char) src)) * 16.0)) );
 
 		if (src < 0.0 && *tgt_lsb != 0x00)
 			*tgt_msb = (unsigned char) ((src / 16.0) - 1);

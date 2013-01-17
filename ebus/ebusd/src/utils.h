@@ -28,7 +28,8 @@
 
 void debug_ebus_msg(unsigned char buf[], int buflen, int nosyn);
 
-int serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen, int rawdump, int skipsyn);
+int serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen,
+						int rawdump, int skipsyn);
 
 int dumpfile_open(const char *file);
 int dumpfile_close();

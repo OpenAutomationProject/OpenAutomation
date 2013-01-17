@@ -24,7 +24,7 @@
 #include <sys/time.h>
 
 /*
- * name     type             description              resolution   substitute value
+ * name     type             description              resolution   substitue
  * BCD      CHAR                 0    ... +   99      1              FFh
  * DATA1b   SIGNED CHAR      - 127    ... +  127      1              80h
  * DATA1c   CHAR                 0    ... +  100      0,5            FFh
@@ -100,11 +100,15 @@ int ebus_int_to_data1b(int src, unsigned char *tgt);
 int ebus_data1c_to_float(unsigned char src, float *tgt);
 int ebus_float_to_data1c(float src, unsigned char *tgt);
 
-int ebus_data2b_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt);
-int ebus_float_to_data2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb);
+int ebus_data2b_to_float(unsigned char src_lsb, unsigned char src_msb,
+								float *tgt);
+int ebus_float_to_data2b(float src, unsigned char *tgt_lsb,
+							unsigned char *tgt_msb);
 
-int ebus_data2c_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt);
-int ebus_float_to_data2c(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb);
+int ebus_data2c_to_float(unsigned char src_lsb, unsigned char src_msb,
+								float *tgt);
+int ebus_float_to_data2c(float src, unsigned char *tgt_lsb,
+							unsigned char *tgt_msb);
 
 /*
  * CRC calculation "CRC-8-WCDMA"

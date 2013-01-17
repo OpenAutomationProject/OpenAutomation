@@ -143,24 +143,30 @@ cleanup(int state)
 	/* close listing tcp socket */
 	if (socketfd > 0)
 		if (!socket_close(socketfd))
-			log_print_msg(INF, "tcp port %d successfully closed.", listenport);
+			log_print_msg(INF,
+				"tcp port %d successfully closed.", listenport);
 
 	/* close serial device */
 	if (serialfd > 0)
 		if (!serial_close())
-			log_print_msg(INF, "serial device %s successfully closed.", serial);
+			log_print_msg(INF,
+				"serial device %s successfully closed.",
+									serial);
 
 	/* close dumpfile */
 	if (dump)
 		if (!dumpfile_close())
-			log_print_msg(INF, "dumpfile %s successfully closed.", dumpfile);
+			log_print_msg(INF,
+				"dumpfile %s successfully closed.", dumpfile);
 
 	if (!foreground) {
 
 		/* delete PID file */
 		if (pidfile_locked)
 			if (!pidfile_close(pidfile, pidfd))
-				log_print_msg(INF, "pid file %s successfully deleted.", pidfile);
+				log_print_msg(INF,
+					"pid file %s successfully deleted.",
+								pidfile);
 
 		/* Reset all signal handlers to default */
 		signal(SIGCHLD, SIG_DFL);
@@ -183,6 +189,32 @@ cleanup(int state)
 }
 
 void
+usage()
+{
+	fprintf(stdout, "\nUsage: %s [OPTIONS]\n"
+	"  -c --confdir      set the configuration directory. (%s)\n"
+	"  -D --dumpfile     use a specified dump file. (%s)\n"
+	"  -d --dump         dump raw ebus messages to dump file.\n"
+	"  -f --foreground   run in foreground.\n"
+	"  -L --logfile      use a specified log file. (%s)\n"
+	"  -l --loglevel     set log level. (INF | INF=0 WAR=1 ERR=2 DBG=3)\n"
+	"  -n --nosyn        discard syn in logfile\n"
+	"  -p --pidfile      use a specified pid file. (%s)\n"
+	"  -P --listenport   use a specified listening port. (%d)\n"
+	"  -s --serial       use a specified serial device. (%s)\n"
+	"  -v --version      print version information.\n"
+	"  -h --help         print this message.\n"
+	"\n",
+	progname,
+	DAEMON_CONFDIR,
+	DAEMON_DUMPFILE,
+	DAEMON_LOGFILE,
+	DAEMON_PIDFILE,
+	SOCKET_PORT,
+	SERIAL_DEVICE);
+}
+
+void
 cmdline(int *argc, char ***argv)
 {
 	static struct option opts[] = {
@@ -201,10 +233,12 @@ cmdline(int *argc, char ***argv)
 		{NULL,         no_argument,       NULL,  0 },
 	};
 
+	static char options[] = "c:D:dfL:l:np:P:s:vh";
+
 	for (;;) {
 		int i;
 
-		i = getopt_long(*argc, *argv, "c:D:dfL:l:np:P:s:vh", opts, NULL);
+		i = getopt_long(*argc, *argv, options, opts, NULL);
 
 		if (i == -1)
 			break;
@@ -253,27 +287,7 @@ cmdline(int *argc, char ***argv)
 			exit(EXIT_SUCCESS);
 		case 'h':
 		default:
-			fprintf(stdout, "\nUsage: %s [OPTIONS]\n"
-							"  -c --confdir      set the configuration directory. (%s)\n"
-							"  -D --dumpfile     use a specified dump file. (%s)\n"
-							"  -d --dump         dump raw ebus messages to dump file.\n"
-							"  -f --foreground   run in foreground.\n"
-							"  -L --logfile      use a specified log file. (%s)\n"
-							"  -l --loglevel     set log level. (INF | INF=0 WAR=1 ERR=2 DBG=3)\n"
-							"  -n --nosyn        discard syn in logfile\n"
-							"  -p --pidfile      use a specified pid file. (%s)\n"
-							"  -P --listenport   use a specified listening port. (%d)\n"
-							"  -s --serial       use a specified serial device. (%s)\n"
-							"  -v --version      print version information.\n"
-							"  -h --help         print this message.\n"
-							"\n",
-							progname,
-							DAEMON_CONFDIR,
-							DAEMON_DUMPFILE,
-							DAEMON_LOGFILE,
-							DAEMON_PIDFILE,
-							SOCKET_PORT,
-							SERIAL_DEVICE);
+			usage();
 			exit(EXIT_FAILURE);
 			break;
 		}
@@ -294,7 +308,8 @@ main_loop()
 
 	/* serialfd should be always lower then socketfd */
 	if (serialfd > socketfd) {
-		log_print_msg(ERR, "serialfd %d > %d socketfd", serialfd, socketfd);
+		log_print_msg(ERR,
+			"serialfd %d > %d socketfd", serialfd, socketfd);
 		cleanup(EXIT_FAILURE);
 	}
 
@@ -312,7 +327,8 @@ main_loop()
 
 		/* ignore signals*/
 		if ((ret < 0) && (errno == EINTR)) {
-			log_print_msg(INF, "get signal at select: %s", strerror(errno));
+			log_print_msg(INF,
+				"get signal at select: %s", strerror(errno));
 			continue;
 		} else if (ret < 0) {
 			err_if(1);
@@ -327,9 +343,11 @@ main_loop()
 			serbuflen = sizeof(serbuf);
 
 			/* get message from client */
-			ret = serial_ebus_get_msg(serialfd, serbuf, &serbuflen, dump, nosyn);
+			ret = serial_ebus_get_msg(serialfd, serbuf, &serbuflen,
+								dump, nosyn);
 			if (ret == -1)
-				log_print_msg(WAR,"serial device reading: *buflen < 0 || *buflen > maxlen");
+				log_print_msg(WAR, "serial device reading: "
+					"*buflen < 0 || *buflen > maxlen");
 
 		}
 
@@ -351,14 +369,16 @@ main_loop()
 				int tcpbuflen = sizeof(tcpbuf);
 
 				/* get message from client */
-				ret = socket_client_read(readfd, tcpbuf, &tcpbuflen);
+				ret = socket_client_read(readfd, tcpbuf,
+								&tcpbuflen);
 
 				if (ret == -1) {
-					/* remove dead TCP client FD from listenfds */
+					/* remove dead TCP client FD */
 					FD_CLR(readfd, &listenfds);
 				} else {
 					/* just echo message to sender */
-					socket_client_write(readfd, tcpbuf, tcpbuflen);
+					socket_client_write(readfd, tcpbuf,
+								tcpbuflen);
 				}
 			}
 		}
@@ -392,7 +412,8 @@ main(int argc, char *argv[])
 		if (dumpfile_open(dumpfile) == -1)
 			cleanup(EXIT_FAILURE);
 		else
-			log_print_msg(INF, "dumpfile %s successfully opened.", dumpfile);
+			log_print_msg(INF,
+				"dumpfile %s successfully opened.", dumpfile);
 
 	}
 
@@ -400,14 +421,16 @@ main(int argc, char *argv[])
 	if (serial_open(serial, &serialfd) == -1)
 		cleanup(EXIT_FAILURE);
 	else
-		log_print_msg(INF, "serial device %s successfully opened.", serial);
+		log_print_msg(INF,
+			"serial device %s successfully opened.", serial);
 
 
 	/* open listing tcp socket */
 	if (socket_open(&socketfd, listenport) == -1)
 		cleanup(EXIT_FAILURE);
 	else
-		log_print_msg(INF, "tcp port %d successfully opened.", listenport);
+		log_print_msg(INF,
+				"tcp port %d successfully opened.", listenport);
 
 
 	/* enter main loop */

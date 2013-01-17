@@ -79,7 +79,8 @@ log_open(const char *logfile, int foreground)
 	} else {
 		if (logfile) {
 			if (!(fp = fopen(logfile, "a+"))) {
-				fprintf(stderr, "error opening logfile %s.\n", logfile);
+				fprintf(stderr, "error opening logfile %s.\n",
+								logfile);
 				return -1;
 			}
 
@@ -112,11 +113,11 @@ log_get_time(char *time)
 	gettimeofday(&tv, NULL);
 	tm = localtime(&tv.tv_sec);
 
-    sprintf(time, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
-			tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-			tm->tm_hour, tm->tm_min, tm->tm_sec, (int)tv.tv_usec/1000);
+	sprintf(time, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+		tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+		tm->tm_hour, tm->tm_min, tm->tm_sec, (int)tv.tv_usec/1000);
 
-    return time;
+	return time;
 }
 
 void
@@ -132,7 +133,8 @@ log_print_msg(int loglevel, const char *logtxt, ...)
 
 	if (log_file_fp) {
 		if (loglevel <= log_level) {
-			fprintf(log_file_fp, "%s [%s] %s\n", log_get_time(time), log_level_txt[loglevel], buf);
+			fprintf(log_file_fp, "%s [%s] %s\n", log_get_time(time),
+						log_level_txt[loglevel], buf);
 			fflush(log_file_fp);
 		}
 	} else {

@@ -1,9 +1,16 @@
 ebus Daemon (ebusd) - README
-----------------------------
+============================
 
-This files contain the source code of ...
+ebus (energy bus) is a serial communication protocoll used in heating systems. 
 
-Please see the INSTALL file for details on how to install
-this program on your computer.
+ebusd connects via a ebus-usb adapter with the ebus. Once it is connected,
+it is able to send and receive message with other bus devices. ebusd will be
+listen on TCP port-xxxx for incoming telnet connections.
+
+The following commands can be received and processed via telnet:
+ * help..print some helping information (try help command)
+ * get...
+ * set...
+
 
 The author can be contacted at roland.jax@liwest.at.

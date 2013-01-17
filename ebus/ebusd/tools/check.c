@@ -77,16 +77,22 @@ int main() {
 				ret = ebus_data1b_to_int(hex, &data1b);
 				
 				ret = ebus_data1c_to_float(hex, &data1c);
-				printf("hex %02x ->\tbcd: %3d\tdata1b: %4d\tdata1c: %5.1f", hex, bcd, data1b, data1c);
+				printf("hex %02x ->\tbcd: %3d\tdata1b: %4d"
+					"\tdata1c: %5.1f",
+					hex, bcd, data1b, data1c);
 
 				
 				if (j == 2) {
-					ret = ebus_data2b_to_float(tmp, hex, &data2b);
-					ret = ebus_data2c_to_float(tmp, hex, &data2c);
+					ret = ebus_data2b_to_float(tmp, hex,
+								&data2b);
+					ret = ebus_data2c_to_float(tmp, hex,
+								&data2c);
 					crc_calc[0] = tmp;
 					crc_calc[1] = hex;
 					crc = ebus_calc_crc(crc_calc,2);
-					printf("\tdata2b: %8.3f\tdata2c: %10.4f\tcrc: %02x\n", data2b, data2c, crc);
+					printf("\tdata2b: %8.3f\tdata2c: %10.4f"
+						"\tcrc: %02x\n",
+						data2b, data2c, crc);
 				}
 				else {
 					tmp = hex;

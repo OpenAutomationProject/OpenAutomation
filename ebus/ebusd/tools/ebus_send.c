@@ -40,7 +40,8 @@ static int type = EBUS_MSG_MASTER_SLAVE;
 static int prompt = NO;
 
 void
-print_msg(const char *pre, const unsigned char *buf, int buflen, const char *post)
+print_msg(const char *pre, const unsigned char *buf, int buflen,
+							const char *post)
 {
 	int i;
 
@@ -194,13 +195,15 @@ main(int argc, char *argv[])
 				memset(msg, '\0', sizeof(msg));
 
 				for (j = 0, k = 0; j < i; j += 2, k++)
-					msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
+					msg[k] = (unsigned char)
+							(in[j]*16 + in[j+1]);
 
 				//print_msg(" in:", msg, k, "");
 		
 				ret = serial_open(device, &serialfd);
 				if (ret < 0)
-					fprintf(stdout, "Error open %s.\n", device);
+					fprintf(stdout, "Error open %s.\n",
+									device);
 					
 				if (ret == 0) {
 					ret = ebus_send_data(msg, k, type);
@@ -213,7 +216,8 @@ main(int argc, char *argv[])
 				
 				ret = serial_close();
 				if (ret < 0)
-					fprintf(stdout, "Error close %s.\n", device);
+					fprintf(stdout, "Error close %s.\n",
+									device);
 
 			}
 

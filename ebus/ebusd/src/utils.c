@@ -52,7 +52,8 @@ debug_ebus_msg(unsigned char buf[], int buflen, int nosyn)
 }
 
 int
-serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen, int rawdump, int nosyn)
+serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen,
+							int rawdump, int nosyn)
 {
 	static unsigned char msgbuf[SERIAL_BUFSIZE];
 	static int msglen = 0;
