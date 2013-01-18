@@ -30,8 +30,8 @@ int main() {
 
 	int i, j, end, ret;
 
-	int bcd, data1b, data[SERIAL_BUFSIZE];
-	float data1c, data2b, data2c;
+	int bcd, d1b, data[SERIAL_BUFSIZE];
+	float d1c, d2b, d2c;
 
 	char byte;
 	
@@ -54,7 +54,7 @@ int main() {
 			}
 			
 			if (i < sizeof(data)) {
-				ret = ebus_htoi(&byte);
+				ret = eb_htoi(&byte);
 				if (ret != -1) {
 					data[i] = ret;
 					i++;
@@ -69,34 +69,30 @@ int main() {
 			for (j = 0; j < i; j += 2) {
 				
 				bcd = 0;
-				data1b = 0;
+				d1b = 0;
 				ret = 0;
-				data1c = 0.0;
-				data2b = 0.0;
-				data2c = 0.0;
+				d1c = 0.0;
+				d2b = 0.0;
+				d2c = 0.0;
 
 				hex = (unsigned char) (data[j]*16 + data[j+1]);
 				
-				ret = ebus_bcd_to_int(hex, &bcd);
-				ret = ebus_data1b_to_int(hex, &data1b);
+				ret = eb_bcd_to_int(hex, &bcd);
+				ret = eb_d1b_to_int(hex, &d1b);
 				
-				ret = ebus_data1c_to_float(hex, &data1c);
-				printf("hex %02x ->\tbcd: %3d\tdata1b: %4d"
-					"\tdata1c: %5.1f",
-					hex, bcd, data1b, data1c);
+				ret = eb_d1c_to_float(hex, &d1c);
+				printf("hex %02x ->\tbcd: %3d\td1b: %4d"
+					"\td1c: %5.1f", hex, bcd, d1b, d1c);
 
 				
 				if (j == 2) {
-					ret = ebus_data2b_to_float(tmp, hex,
-								&data2b);
-					ret = ebus_data2c_to_float(tmp, hex,
-								&data2c);
+					ret = eb_d2b_to_float(tmp, hex, &d2b);
+					ret = eb_d2c_to_float(tmp, hex, &d2c);
 					crc_calc[0] = tmp;
 					crc_calc[1] = hex;
-					crc = ebus_calc_crc(crc_calc,2);
-					printf("\tdata2b: %8.3f\tdata2c: %10.4f"
-						"\tcrc: %02x\n",
-						data2b, data2c, crc);
+					crc = eb_calc_crc(crc_calc,2);
+					printf("\td2b: %8.3f\td2c: %10.4f"
+						"\tcrc: %02x\n", d2b, d2c, crc);
 				}
 				else {
 					tmp = hex;

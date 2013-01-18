@@ -108,10 +108,10 @@ cmdline(int *argc, char ***argv)
 		case 'a':
 			if (isxdigit(*optarg) && strlen(optarg) == 2) {
 				int tmp;
-				tmp = (ebus_htoi(&optarg[0])) * 16 +
-					(ebus_htoi(&optarg[1]));
+				tmp = (eb_htoi(&optarg[0])) * 16 +
+					(eb_htoi(&optarg[1]));
 
-				ebus_set_qq((unsigned char) tmp);	
+				eb_set_qq((unsigned char) tmp);	
 			}
 			break;
 		case 'd':
@@ -122,12 +122,12 @@ cmdline(int *argc, char ***argv)
 			break;
 		case 'r':
 			if (isdigit(*optarg)) {
-				ebus_set_max_retry(atoi(optarg));
+				eb_set_max_retry(atoi(optarg));
 			}
 			break;
 		case 's':
 			if (isdigit(*optarg)) {
-				ebus_set_skip_ack(atoi(optarg));
+				eb_set_skip_ack(atoi(optarg));
 			}
 			break;
 		case 't':
@@ -136,7 +136,7 @@ cmdline(int *argc, char ***argv)
 			break;			
 		case 'w':
 			if (isdigit(*optarg)) {
-				ebus_set_max_wait(atol(optarg));
+				eb_set_max_wait(atol(optarg));
 			}
 			break;
 		case 'h':
@@ -183,7 +183,7 @@ main(int argc, char *argv[])
 
 				if (i < sizeof(in)) {
 
-					ret = ebus_htoi(&byte);
+					ret = eb_htoi(&byte);
 					if (ret != -1) {
 						in[i] = ret;
 						i++;
@@ -210,10 +210,10 @@ main(int argc, char *argv[])
 									device);
 					
 				if (ret == 0) {
-					ret = ebus_send_data(msg, k, type);
+					ret = eb_send_data(msg, k, type);
 					if (ret == 0) {
 						fprintf(stdout, "res:");
-						ebus_print_result();
+						eb_print_result();
 					}
 						
 				}
@@ -238,7 +238,7 @@ main(int argc, char *argv[])
 				byte = argv[k][j];
 				if (i < sizeof(in)) {
 
-					ret = ebus_htoi(&byte);
+					ret = eb_htoi(&byte);
 					if (ret != -1) {
 						in[i] = ret;
 						i++;
@@ -261,11 +261,11 @@ main(int argc, char *argv[])
 				fprintf(stdout, "Error open %s.\n", device);
 				
 			if (ret == 0) {
-				ret = ebus_send_data(msg, k, type);
+				ret = eb_send_data(msg, k, type);
 				val = ret;
 				if (ret == 0) {
 					if (type == EBUS_MSG_MASTER_SLAVE)
-						ebus_print_result();
+						eb_print_result();
 
 					if (type == EBUS_MSG_MASTER_MASTER)
 						fprintf(stdout, " %d\n", ret);

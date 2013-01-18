@@ -76,31 +76,97 @@ static unsigned char syn = EBUS_SYN;
 static int sfd;
 static struct termios oldtio;
 
-
+/**
+ * @brief send bytes to serial device
+ * @param [in] *buf pointer to a byte array
+ * @param [in] buflen length of byte array
+ * @return 0 ok | -1 error
+ */
 int serial_send(const unsigned char *buf, int buflen);
+
+/**
+ * @brief receive bytes from serial device
+ * @param [out] *buf pointer to a byte array received bytes
+ * @param [out] *buflen length of received bytes
+ * @return 0 ok | -1 error
+ */
 int serial_recv(unsigned char *buf, int *buflen);
 
-int ebus_diff_time(const struct timeval *tact, const struct timeval *tlast,
+
+/**
+ * @brief calculate delte time of given time stamps
+ * @param [in] *tact newer time stamp
+ * @param [in] *tlast older time stamp
+ * @param [out] *tdiff calculated time difference
+ * @return 0 positive | -1 negative ??? lol
+ */
+int eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
 							struct timeval *tdiff);
 
-void ebus_recv_data_prepare(const unsigned char *buf, int buflen);
-int ebus_recv_data(unsigned char *buf, int *buflen);
 
-int ebus_get_ack(unsigned char *buf, int *buflen);
-
-int ebus_wait_syn(int *skip);
-int ebus_get_bus();
-
-void ebus_send_data_prepare(const unsigned char *buf, int buflen);
-
-unsigned char ebus_calc_crc_byte(unsigned char byte, unsigned char init_crc);
-
-
-/*
- * return value
- * -1 error
- *  0 ok
+/**
+ * @brief prepare received data
+ * @param [in] *buf pointer to a byte array of received bytes
+ * @param [in] buflen length of received bytes
+ * @return none
  */
+void eb_recv_data_prepare(const unsigned char *buf, int buflen);
+
+/**
+ * @brief receive bytes from serial device
+ * @param [out] *buf pointer to a byte array of received bytes
+ * @param [out] buflen length of received bytes
+ * @return 0 ok | -1 error | -2 syn no answer from slave 
+ * | -3 SYN received after answer from slave
+ */  
+int eb_recv_data(unsigned char *buf, int *buflen);
+
+ /**
+ * @brief receive ACK byte from serial device
+ * @param [out] *buf pointer to a byte array of received bytes
+ * @param [out] buflen length of received bytes
+ * @return 0 ok | 1 negative ACK | -1 error | -2 send and recv msg are different 
+ * | -3 syn received (no answer from slave) | -4 we should never reach this
+ */  
+int eb_get_ack(unsigned char *buf, int *buflen);
+
+
+/**
+ * @brief receive bytes from serial device until SYN byte was received
+ * @param [in] *skip number skipped SYN bytes
+ * @return 0 ok | -1 error
+ */ 
+int eb_wait_syn(int *skip);
+
+/**
+ * @brief try to get bus for sending
+ * \li wait SYN byte, send our ebus address and wait for minimun of ~4200 usec
+ * \li read at least one byte and compare it with sent byte.
+ * @param [out] *skip number skipped SYN bytes
+ * @return 0 ok | -1 error | 1 max retry was reached
+ */  
+int eb_get_bus();
+
+
+/**
+ * @brief prepare send data
+ * @param [in] *buf pointer to a byte array of send bytes
+ * @param [in] buflen length of send bytes
+ * @return none
+ */
+void eb_send_data_prepare(const unsigned char *buf, int buflen);
+
+/**
+ * @brief calculate crc of hex byte
+ * @param [in] byte byte to calculate
+ * @param [in] init_crc start value for calculation
+ * @return new calculated crc byte from byte and init crc byte
+ */
+unsigned char eb_calc_crc_byte(unsigned char byte, unsigned char init_crc);
+
+
+
+
 int
 serial_open(const char *dev, int *fd)
 {
@@ -108,7 +174,7 @@ serial_open(const char *dev, int *fd)
 	struct termios newtio;
 
 	sfd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
-	if (fd < 0)
+	if (sfd < 0)
 		return -1;
 
 	ret = fcntl(sfd, F_SETFL, 0);
@@ -144,11 +210,6 @@ serial_open(const char *dev, int *fd)
 	return 0;
 }
 
-/*
- * return value
- * -1 error
- *  0 ok
- */
 int
 serial_close()
 {
@@ -167,11 +228,6 @@ serial_close()
 	return 0;
 }
 
-/*
- * return value
- * -1 error
- *  0 ok
- */
 int
 serial_send(const unsigned char *buf, int buflen)
 {
@@ -184,11 +240,6 @@ serial_send(const unsigned char *buf, int buflen)
 	return ret;
 }
 
-/*
- * return value
- * -1 error
- *  0 ok
- */
 int
 serial_recv(unsigned char *buf, int *buflen)
 {
@@ -203,12 +254,9 @@ serial_recv(unsigned char *buf, int *buflen)
 }
 
 
-/*
- * return value
- * delta time of two time stamps
- */
+
 int
-ebus_diff_time(const struct timeval *tact, const struct timeval *tlast,
+eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
 							struct timeval *tdiff)
 {
     long diff;
@@ -223,13 +271,8 @@ ebus_diff_time(const struct timeval *tact, const struct timeval *tlast,
 }
 
 
-/*
- * return value
- * int value for hex byte
- * -1 if not
- */
 int
-ebus_htoi(const char *buf)
+eb_htoi(const char *buf)
 {
 	int ret;
 	ret = -1;
@@ -248,32 +291,32 @@ ebus_htoi(const char *buf)
 
 
 void
-ebus_set_qq(unsigned char src)
+eb_set_qq(unsigned char src)
 {
 	qq = src;	
 }
 
 void
-ebus_set_max_wait(long usec)
+eb_set_max_wait(long usec)
 {
 	max_wait = usec;
 }
 
 void
-ebus_set_max_retry(int retry)
+eb_set_max_retry(int retry)
 {
 	max_retry = retry;
 }
 
 void
-ebus_set_skip_ack(int skip)
+eb_set_skip_ack(int skip)
 {
 	skip_ack = skip;
 }
 
 
 void
-ebus_print_result()
+eb_print_result()
 {
 	int i;
 	//fprintf(stdout, ">>> ");
@@ -284,7 +327,7 @@ ebus_print_result()
 
 
 void
-ebus_esc(unsigned char *buf, int *buflen)
+eb_esc(unsigned char *buf, int *buflen)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, i;
@@ -321,7 +364,7 @@ ebus_esc(unsigned char *buf, int *buflen)
 }
 
 void
-ebus_unesc(unsigned char *buf, int *buflen)
+eb_unesc(unsigned char *buf, int *buflen)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, i, found;
@@ -361,9 +404,8 @@ ebus_unesc(unsigned char *buf, int *buflen)
 }
 
 
-
 void
-ebus_recv_data_prepare(const unsigned char *buf, int buflen)
+eb_recv_data_prepare(const unsigned char *buf, int buflen)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, crc;
@@ -379,7 +421,7 @@ ebus_recv_data_prepare(const unsigned char *buf, int buflen)
 
 	/* set recv_data.crc_calc and .crc_recv */
 	if (buf[buflen - 2] == EBUS_SYN_ESC_A9) {
-		recv_data.crc_calc = ebus_calc_crc(buf, buflen - 2);
+		recv_data.crc_calc = eb_calc_crc(buf, buflen - 2);
 		if (buf[buflen - 1] == EBUS_SYN_ESC_01)
 			recv_data.crc_recv = EBUS_SYN;
 		else
@@ -388,7 +430,7 @@ ebus_recv_data_prepare(const unsigned char *buf, int buflen)
 		crc = 2;
 
 	} else {
-		recv_data.crc_calc = ebus_calc_crc(buf, buflen - 1);
+		recv_data.crc_calc = eb_calc_crc(buf, buflen - 1);
 		recv_data.crc_recv = buf[buflen - 1];
 
 		crc = 1;
@@ -398,22 +440,15 @@ ebus_recv_data_prepare(const unsigned char *buf, int buflen)
 	memcpy(tmp, buf, buflen - crc);
 	tmplen = buflen - crc;
 
-	ebus_unesc(tmp, &tmplen);
+	eb_unesc(tmp, &tmplen);
 
 	memcpy(&recv_data.msg[0], tmp, tmplen);
 	recv_data.len = tmplen;
 
 }
 
-/*
- * return value
- * -3 syn received after anser from slave
- * -2 syn received (no answer from slave)
- * -1 recv error
- *  0 got ack and end of msg is received
- */
 int
-ebus_recv_data(unsigned char *buf, int *buflen)
+eb_recv_data(unsigned char *buf, int *buflen)
 {
 	unsigned char tmp[SERIAL_BUFSIZE], msg[SERIAL_BUFSIZE];
 	int tmplen, msglen, ret, i, esc, found;
@@ -510,18 +545,8 @@ ebus_recv_data(unsigned char *buf, int *buflen)
 }
 
 
-
-/*
- * return value
- * -4 should be never seen
- * -3 syn received (no answer from slave)
- * -2 send and recv msg are different
- * -1 recv error
- *  0 ack
- *  1 nak 
- */
 int
-ebus_get_ack(unsigned char *buf, int *buflen)
+eb_get_ack(unsigned char *buf, int *buflen)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, ret, i, j, found;
@@ -584,14 +609,8 @@ ebus_get_ack(unsigned char *buf, int *buflen)
 }
 
 
-
-/*
- * return value
- * -1 error
- *  0 ok
- */
 int
-ebus_wait_syn(int *skip)
+eb_wait_syn(int *skip)
 {
 	unsigned char buf[SERIAL_BUFSIZE];
 	int buflen, ret, i, found;
@@ -627,14 +646,8 @@ ebus_wait_syn(int *skip)
 	return 0;
 }
 
-/*
- * return value
- * -1 error
- *  0 get bus
- *  1 reached max retry
- */
 int
-ebus_get_bus()
+eb_get_bus()
 {
 	unsigned char buf[SERIAL_BUFSIZE];
 	int buflen, ret, skip, retry;
@@ -644,7 +657,7 @@ ebus_get_bus()
 	retry = 0;
 	
 	do {
-		ret = ebus_wait_syn(&skip);
+		ret = eb_wait_syn(&skip);
 		if (ret < 0)
 			return -1;	
 
@@ -657,13 +670,13 @@ ebus_get_bus()
 			return -1;
 
 		gettimeofday(&tact, NULL);
-		ebus_diff_time(&tact, &tlast, &tdiff);
+		eb_diff_time(&tact, &tlast, &tdiff);
 
 		/* wait ~4200 usec */
 		usleep(max_wait - tdiff.tv_usec);
 
 		gettimeofday(&tact, NULL);
-		ebus_diff_time(&tact, &tlast, &tdiff);
+		eb_diff_time(&tact, &tlast, &tdiff);
 
 		/* receive 1 byte - must be QQ */
 		memset(buf, '\0', sizeof(buf));
@@ -687,7 +700,7 @@ ebus_get_bus()
 
 
 void
-ebus_send_data_prepare(const unsigned char *buf, int buflen)
+eb_send_data_prepare(const unsigned char *buf, int buflen)
 {
 	unsigned char crc[2], tmp[SERIAL_BUFSIZE];
 	int tmplen, crclen;
@@ -705,19 +718,19 @@ ebus_send_data_prepare(const unsigned char *buf, int buflen)
 	memcpy(tmp, buf, buflen);
 	tmplen = buflen;	
 	
-	ebus_esc(tmp, &tmplen);
+	eb_esc(tmp, &tmplen);
 
 	memcpy(&send_data.msg_esc[0], &qq, 1);
 	memcpy(&send_data.msg_esc[1], tmp, tmplen);
 	tmplen++;
 
 	memset(crc, '\0', sizeof(crc));
-	send_data.crc = ebus_calc_crc(&send_data.msg_esc[0], tmplen);
+	send_data.crc = eb_calc_crc(&send_data.msg_esc[0], tmplen);
 	crc[0] = send_data.crc;
 
 	if (crc[0] == EBUS_SYN || crc[0] == EBUS_SYN_ESC_A9) {
 		/* esc crc */
-		ebus_esc(crc, &crclen);
+		eb_esc(crc, &crclen);
 		send_data.msg_esc[tmplen] = crc[0];
 		tmplen++;
 		send_data.msg_esc[tmplen] = crc[1];
@@ -731,24 +744,18 @@ ebus_send_data_prepare(const unsigned char *buf, int buflen)
 
 }
 
-/*
- * return value
- * -1 error
- *  0 ACK
- *  1 NAK
- */
 int
-ebus_send_data(const unsigned char *buf, int buflen, int type)
+eb_send_data(const unsigned char *buf, int buflen, int type)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, ret, val, i;
 	ret = 0;
 	i = 0;
 
-	ebus_send_data_prepare(buf, buflen);
+	eb_send_data_prepare(buf, buflen);
 	
 	/* fetch AA and send QQ */
-	ret = ebus_get_bus();
+	ret = eb_get_bus();
 	if (ret != 0)
 		return -1;
 
@@ -771,7 +778,7 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 	memcpy(tmp, &send_data.msg_esc[1], send_data.len_esc - 1);
 	tmplen = send_data.len_esc - 1;
 
-	ret = ebus_get_ack(tmp, &tmplen);
+	ret = eb_get_ack(tmp, &tmplen);
 
 	if (ret < 0 || ret > 1) {
 		/* free bus */
@@ -795,7 +802,7 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 		memcpy(tmp, &send_data.msg_esc[0], send_data.len_esc);
 		tmplen = send_data.len_esc;
 
-		ret = ebus_get_ack(tmp, &tmplen);		
+		ret = eb_get_ack(tmp, &tmplen);		
 	
 		if (ret == 1) {
 			/* free bus */
@@ -820,11 +827,11 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 	}
 
 	/* get data - dont reset buffer */	
-	ret = ebus_recv_data(tmp, &tmplen);
+	ret = eb_recv_data(tmp, &tmplen);
 	if (ret < 0)
 		return -1;
 
-	ebus_recv_data_prepare(tmp, tmplen);
+	eb_recv_data_prepare(tmp, tmplen);
 
 	/* check crc's from recv_data */
 	if (recv_data.crc_calc != recv_data.crc_recv) {
@@ -837,7 +844,7 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 		memset(tmp, '\0', sizeof(tmp));
 		tmplen = 0;
 
-		ret = ebus_get_ack(tmp, &tmplen);		
+		ret = eb_get_ack(tmp, &tmplen);		
 
 		/* we compare against nak ! */
 		if (ret != 1) {
@@ -850,11 +857,11 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 		}
 
 		/* get data - dont reset buffer */
-		ret = ebus_recv_data(tmp, &tmplen);	
+		ret = eb_recv_data(tmp, &tmplen);	
 		if (ret < 0)
 			return -1;
 
-		ebus_recv_data_prepare(tmp, tmplen);
+		eb_recv_data_prepare(tmp, tmplen);
 		
 	}
 
@@ -882,13 +889,8 @@ ebus_send_data(const unsigned char *buf, int buflen, int type)
 
 
 
-/*
- *  return value
- *  0 - substitute value
- *  1 - positive value
- */
 int
-ebus_bcd_to_int(unsigned char src, int *tgt)
+eb_bcd_to_int(unsigned char src, int *tgt)
 {
 	if ((src & 0x0F) > 0x09 || ((src >> 4) & 0x0F) > 0x09) {
 		*tgt = (int) (0xFF);
@@ -899,13 +901,8 @@ ebus_bcd_to_int(unsigned char src, int *tgt)
 	}
 }
 
-/*
- *  return value
- *  0 - substitute value
- *  1 - positive value
- */
 int
-ebus_int_to_bcd(int src, unsigned char *tgt)
+eb_int_to_bcd(int src, unsigned char *tgt)
 {
 	if (src > 99) {
 		*tgt = (unsigned char) (0xFF);
@@ -916,14 +913,9 @@ ebus_int_to_bcd(int src, unsigned char *tgt)
 	}
 }
 
-/*
- *  return value
- * -1 - negative value
- *  0 - substitute value
- *  1 - positive value
- */
+
 int
-ebus_data1b_to_int(unsigned char src, int *tgt)
+eb_d1b_to_int(unsigned char src, int *tgt)
 {
 	if ((src & 0x80) == 0x80) {
 		*tgt = (int) (- ( ((unsigned char) (~ src)) + 1) );
@@ -939,14 +931,8 @@ ebus_data1b_to_int(unsigned char src, int *tgt)
 	}
 }
 
-/*
- *  return value
- * -1 - negative value
- *  0 - substitute value
- *  1 - positive value
- */
 int
-ebus_int_to_data1b(int src, unsigned char *tgt)
+eb_int_to_d1b(int src, unsigned char *tgt)
 {
 	if (src < -127 || src > 127) {
 		*tgt = (unsigned char) (0x80);
@@ -962,14 +948,9 @@ ebus_int_to_data1b(int src, unsigned char *tgt)
 	}
 }
 
-/*
- *  return value
- * -1 - negative value
- *  0 - substitute value
- *  1 - positive value
- */
+
 int
-ebus_data1c_to_float(unsigned char src, float *tgt)
+eb_d1c_to_float(unsigned char src, float *tgt)
 {
 	if (src > 0xC8) {
 		*tgt = (float) (0xFF);
@@ -980,14 +961,8 @@ ebus_data1c_to_float(unsigned char src, float *tgt)
 	}
 }
 
-/*
- *  return value
- * -1 - negative value
- *  0 - substitute value
- *  1 - positive value
- */
 int
-ebus_float_to_data1c(float src, unsigned char *tgt)
+eb_float_to_d1c(float src, unsigned char *tgt)
 {
 	if (src < 0.0 || src > 100.0) {
 		*tgt = (unsigned char) (0xFF);
@@ -998,14 +973,9 @@ ebus_float_to_data1c(float src, unsigned char *tgt)
 	}
 }
 
-/*
- *  return value
- * -1 - negative value
- *  0 - substitute value
- *  1 - positive value
- */
+
 int
-ebus_data2b_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
+eb_d2b_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
 {
 	if ((src_msb & 0x80) == 0x80) {
 		*tgt = (float)
@@ -1023,14 +993,8 @@ ebus_data2b_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
 	}
 }
 
-/*
- *  return value
- * -1 - negative value
- *  0 - substitute value
- *  1 - positive value
- */
 int
-ebus_float_to_data2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
+eb_float_to_d2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
 {
 	if (src < -127.999 || src > 127.999) {
 		*tgt_msb = (unsigned char) (0x80);
@@ -1053,14 +1017,9 @@ ebus_float_to_data2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
 	}
 }
 
-/*
- *  return value
- * -1 - negative value
- *  0 - substitute value
- *  1 - positive value
- */
+
 int
-ebus_data2c_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
+eb_d2c_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
 {
 	if ((src_msb & 0x80) == 0x80) {
 		*tgt = (float)
@@ -1080,14 +1039,8 @@ ebus_data2c_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
 	}
 }
 
-/*
- *  return value
- * -1 - negative value
- *  0 - substitute value
- *  1 - positive value
- */
 int
-ebus_float_to_data2c(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
+eb_float_to_d2c(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
 {
 	if (src < -2047.999 || src > 2047.999) {
 		*tgt_msb = (unsigned char) (0x80);
@@ -1111,18 +1064,9 @@ ebus_float_to_data2c(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
 }
 
 
-/*
- * CRC calculation "CRC-8-WCDMA"
- * Polynom "x^8 + x^7 + x^4 + x^3 + x + 1"
- *
- * crc calculations by http://www.mikrocontroller.net/topic/75698
- * 
- * return value
- * calculated crc byte
- */
 
 unsigned char
-ebus_calc_crc_byte(unsigned char byte, unsigned char init_crc)
+eb_calc_crc_byte(unsigned char byte, unsigned char init_crc)
 {
 	unsigned char crc, polynom;
 	int i;
@@ -1148,13 +1092,13 @@ ebus_calc_crc_byte(unsigned char byte, unsigned char init_crc)
 }
 
 unsigned char
-ebus_calc_crc(const unsigned char *buf, int buflen)
+eb_calc_crc(const unsigned char *buf, int buflen)
 {
 	int i;
 	unsigned char crc = 0;
 
 	for (i = 0 ; i < buflen ; i++, buf++)
-		crc = ebus_calc_crc_byte(*buf, crc);
+		crc = eb_calc_crc_byte(*buf, crc);
 
 	return crc;
 }
