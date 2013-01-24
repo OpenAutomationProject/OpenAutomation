@@ -35,6 +35,8 @@
 #include "utils.h"
 
 
+
+
 void
 debug_ebus_msg(unsigned char buf[], int buflen, int nosyn)
 {
@@ -79,7 +81,7 @@ serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen,
 		/* ebus syn sign is reached - decode ebus message */
 		if (msgbuf[msglen] == EBUS_SYN) {
 			if (rawdump)
-				dumpfile_write(msgbuf, msglen);
+				rawfile_write(msgbuf, msglen);
 
 			debug_ebus_msg(msgbuf, msglen, nosyn);
 			memset(msgbuf, '\0', sizeof(msgbuf));
@@ -95,42 +97,103 @@ serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen,
 
 
 
-static FILE *dumpfp = NULL;
-
-int
-dumpfile_open(const char *file)
+void
+cfg_print(struct config *cfg, int len)
 {
-	dumpfp = fopen(file, "w");
-	err_ret_if(!dumpfp, -1);
+	int i;
 
-	return 0;
+	for (i = 0; i < len; i++) {
+
+		if (cfg[i].key != NULL && cfg[i].tgt != NULL) {
+			fprintf(stdout, "%s = ", cfg[i].key);
+
+			switch (cfg[i].type) {
+			case STR:
+				fprintf(stdout, "%s\n", (char *) cfg[i].tgt);
+				break;
+			case BOL:
+				if (*(int *) cfg[i].tgt == NO)
+					fprintf(stdout, "NO\n");
+				else if (*(int *) cfg[i].tgt == YES)
+					fprintf(stdout, "YES\n");
+				else
+					fprintf(stdout, "UNSET\n");
+				break;
+			case NUM:
+				fprintf(stdout, "%d\n", *(int *) cfg[i].tgt);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+	fprintf(stdout, "\n");	
 }
 
 int
-dumpfile_close()
-{
-	int ret;
+cfgfile_set_param(char *par, struct config *cfg, int len) {
+	int i;
 
-	ret = fflush(dumpfp);
-	err_ret_if(ret == EOF, -1);
+	for (i = 0; i < len; i++) {
+		
+		if (strncasecmp(par, cfg[i].key, strlen(cfg[i].key)) == 0 &&
+		    strlen(par) == strlen(cfg[i].key)) {
 
-	ret = fclose(dumpfp);
-	err_ret_if(ret == EOF, -1);
+			par = strtok(NULL, "\t =\n\r");
 
-	return 0;
-}
-
-int
-dumpfile_write(unsigned char buf[], int buflen)
-{
-	int ret, i;
-
-	for (i = 0; i <= buflen; i++) {
-		ret = fputc(buf[i], dumpfp);
-		err_ret_if(ret == EOF, -1);
+			switch (cfg[i].type) {
+			case STR:
+				if (strlen(cfg[i].tgt) == 0)
+					strncpy(cfg[i].tgt , par, strlen(par));	
+				break;
+			case BOL:
+				if (*(int *) cfg[i].tgt == UNSET) {
+					if (strncasecmp(par, "NO", 2) == 0)
+						*(int *) cfg[i].tgt = NO;
+					else if (strncasecmp(par, "YES", 3) == 0)
+						*(int *) cfg[i].tgt = YES;
+					else
+						*(int *) cfg[i].tgt = UNSET;
+				}				
+				break;
+			case NUM:
+				if (*(int *) cfg[i].tgt == UNSET)
+					*(int *) cfg[i].tgt = atoi(par);	
+				break;
+			default:
+				break;				
+			}
+		
+			return 1;
+		}
 	}
 
-	ret = fflush(dumpfp);
+	return 0;
+}
+
+int
+cfgfile_read(const char *file, struct config *cfg, int len)
+{
+	int ret;
+	char line[CFG_LINELEN];
+	char *par;
+	FILE *fp = NULL;
+
+	/* open config file */
+	fp = fopen(file, "r");
+	err_ret_if(!fp, -1);
+
+	/* read each line and set parameter */
+	while (fgets( line, CFG_LINELEN, fp) != NULL ) {
+		par = strtok(line, "\t =\n\r") ;
+		
+		if (par != NULL && par[0] != '#')
+			cfgfile_set_param(par, cfg, len);
+			
+	}
+
+	/* close config file */
+	ret = fclose(fp);
 	err_ret_if(ret == EOF, -1);
 
 	return 0;
@@ -169,6 +232,50 @@ pidfile_close(const char *file, int fd)
 
 	return 0;
 }
+
+
+
+static FILE *rawfp = NULL;
+
+int
+rawfile_open(const char *file)
+{
+	rawfp = fopen(file, "w");
+	err_ret_if(!rawfp, -1);
+
+	return 0;
+}
+
+int
+rawfile_close()
+{
+	int ret;
+
+	ret = fflush(rawfp);
+	err_ret_if(ret == EOF, -1);
+
+	ret = fclose(rawfp);
+	err_ret_if(ret == EOF, -1);
+
+	return 0;
+}
+
+int
+rawfile_write(unsigned char buf[], int buflen)
+{
+	int ret, i;
+
+	for (i = 0; i <= buflen; i++) {
+		ret = fputc(buf[i], rawfp);
+		err_ret_if(ret == EOF, -1);
+	}
+
+	ret = fflush(rawfp);
+	err_ret_if(ret == EOF, -1);
+
+	return 0;
+}
+
 
 
 int

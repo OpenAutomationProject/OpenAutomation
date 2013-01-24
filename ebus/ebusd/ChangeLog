@@ -1,6 +1,15 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-01-24:
+* Add new directory contrib with daemon configuration file
+* Add functions with cfg_ prefix (utils). These parse 
+  the daemon configuration file and set parameters.
+  Priority of given configuration by:
+	1. commandline argurments
+	2. configuration file
+	3. default configuration (hard coded)
+
 2013-01-17:
 * Initial release
 * Prepare Source to compile with GNU Autotools

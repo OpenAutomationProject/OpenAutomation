@@ -27,10 +27,12 @@
  * DBG = 3 - for debugging purpose
  */
 
-#define INF 0
-#define WAR 1
-#define ERR 2
-#define DBG 3
+enum enum_log {INF, WAR, ERR, DBG};
+
+//~ #define INF 0
+//~ #define WAR 1
+//~ #define ERR 2
+//~ #define DBG 3
 
 #define err_if(exp) \
 	if(exp) { log_print_msg(ERR, "%s: %d: %s: Error %s", \

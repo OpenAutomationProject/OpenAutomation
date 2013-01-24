@@ -18,6 +18,16 @@
  * along with ebusd. If not, see http://www.gnu.org/licenses/.
  */
 
+/**
+ * @file ebus.h
+ * @brief ebus communication functions
+ * @author roland.jax@liwest.at
+ *
+ * @todo missing functions for date, time and ascii
+ *
+ * @version 0.1
+ */
+
 #ifndef EBUS_H_
 #define EBUS_H_
 
@@ -35,9 +45,9 @@
 #define EBUS_SYN                0xAA
 
 #define EBUS_QQ                 0xFF
-#define EBUS_MAX_WAIT           4000
 #define EBUS_MAX_RETRY          3
 #define EBUS_SKIP_ACK           1
+#define EBUS_MAX_WAIT           4000
 
 #define EBUS_MSG_BROADCAST      1
 #define EBUS_MSG_MASTER_MASTER  2

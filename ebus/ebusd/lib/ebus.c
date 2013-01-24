@@ -18,6 +18,17 @@
  * along with ebusd. If not, see http://www.gnu.org/licenses/.
  */
 
+/**
+ * @file ebus.c
+ * @brief ebus communication functions
+ * @author roland.jax@liwest.at
+ *
+ * @todo missing functions for date, time and ascii
+ *
+ * @version 0.1
+ */
+
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -42,23 +53,29 @@
 #define EBUS_NAK                0xFF
 #define EBUS_BROADCAST          0xFE
 
+/**
+ * @brief sending data structure
+ */
 struct send_data {
-	unsigned char crc;
-	unsigned char msg[SERIAL_BUFSIZE];
-	int len;
-	unsigned char msg_esc[SERIAL_BUFSIZE];
-	int len_esc;
+	unsigned char crc; /**< crc of escaped message */
+	unsigned char msg[SERIAL_BUFSIZE]; /**< original message */
+	int len; /**< length of original message */
+	unsigned char msg_esc[SERIAL_BUFSIZE]; /**< esacaped message */
+	int len_esc; /**< length of  esacaped message */
 };
 
 static struct send_data send_data;
 
+/**
+ * @brief receiving data structure
+ */
 struct recv_data {
-	unsigned char crc_recv;
-	unsigned char crc_calc;	
-	unsigned char msg[SERIAL_BUFSIZE];
-	int len;
-	unsigned char msg_esc[SERIAL_BUFSIZE];
-	int len_esc;
+	unsigned char crc_recv; /**< received crc */
+	unsigned char crc_calc;	/**< calculated crc */
+	unsigned char msg[SERIAL_BUFSIZE]; /**< unescaped message */
+	int len; /**< length of unescaped message */
+	unsigned char msg_esc[SERIAL_BUFSIZE]; /**< received message */
+	int len_esc; /**< length of received message */
 };
 
 static struct recv_data recv_data;

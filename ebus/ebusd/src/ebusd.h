@@ -20,27 +20,35 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-#define DAEMON_VERSION        "0.0.1"
 #define DAEMON_NAME           "ebusd"
+#define DAEMON_VERSION        "0.1"
+
 
 #define DAEMON_LOGLEVEL       ERR
 #define DAEMON_FOREGROUND     NO
-#define DAEMON_DUMP           NO
+
 #define DAEMON_NOSYN          NO
 
 #define DAEMON_WORKDIR        "/tmp/"
-#define DAEMON_CONFDIR        "/etc/ebusd/"
+#define DAEMON_CFGDIR         "/etc/ebusd"
+#define DAEMON_CFGFILE        DAEMON_CFGDIR"/ebusd.conf"
 #define DAEMON_PIDFILE        "/var/run/ebusd.pid"
 #define DAEMON_LOGFILE        "/var/log/ebusd.log"
-#define DAEMON_DUMPFILE       "/tmp/ebusd.bin"
+
+#define DAEMON_RAWFILE        "/tmp/ebusd.bin"
+#define DAEMON_RAWDUMP        NO
+
+void usage();
+
+void cmdline(int *argc, char ***argv);
+
+void set_unset();
 
 void signal_handler(int sig);
 
 void daemonize();
 
 void cleanup(int state);
-
-void cmdline(int *argc, char ***argv);
 
 void main_loop();
 

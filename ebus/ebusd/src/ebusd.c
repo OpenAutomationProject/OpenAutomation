@@ -44,23 +44,215 @@ const char *progname;
 
 static int pidfile_locked = NO;
 
-static int pidfd = -1; /* pidfile file descriptor */
-static int serialfd = -1; /* serial file descriptor */
-static int socketfd = -1; /* socket file descriptor */
+static int pidfd = UNSET; /* pidfile file descriptor */
+static int serialfd = UNSET; /* serial file descriptor */
+static int socketfd = UNSET; /* socket file descriptor */
 
-static int loglevel = DAEMON_LOGLEVEL;
-static int foreground = DAEMON_FOREGROUND;
-static int dump = DAEMON_DUMP;
-static int nosyn = DAEMON_NOSYN;
 
-static const char *confdir = DAEMON_CONFDIR;
-static const char *pidfile = DAEMON_PIDFILE;
-static const char *logfile = DAEMON_LOGFILE;
-static const char *dumpfile = DAEMON_DUMPFILE;
+static char address[2];
+static char cfgdir[CFG_LINELEN];
+static char cfgfile[CFG_LINELEN];
+static char device[CFG_LINELEN];
+static int foreground = UNSET;
+static int loglevel = UNSET;
+static char logfile[CFG_LINELEN];
+static int nosyn = UNSET;
+static char pidfile[CFG_LINELEN];
+static int port = UNSET;
+static int rawdump = UNSET;
+static char rawfile[CFG_LINELEN];
+static int max_retry = UNSET;
+static int skip_ack = UNSET;
+static int max_wait = UNSET;
 
-static const char *serial = SERIAL_DEVICE;
 
-static int listenport = SOCKET_PORT;
+static char options[] = "a:c:C:d:fl:L:nP:p:rR:vh";
+
+static struct option opts[] = {
+	{"address",    required_argument, NULL, 'a'},
+	{"cfgfdir",    required_argument, NULL, 'c'},
+	{"cfgfile",    required_argument, NULL, 'C'},
+	{"device",     required_argument, NULL, 'd'},
+	{"foreground", no_argument,       NULL, 'f'},
+	{"loglevel",   required_argument, NULL, 'l'},
+	{"logfile",    required_argument, NULL, 'L'},
+	{"nosyn",      no_argument,       NULL, 'n'},
+	{"pidfile",    required_argument, NULL, 'P'},
+	{"port",       required_argument, NULL, 'p'},
+	{"rawdump",    no_argument,       NULL, 'r'},
+	{"rawfile",    required_argument, NULL, 'R'},
+	{"version",    no_argument,       NULL, 'v'},
+	{"help",       no_argument,       NULL, 'h'},
+	{NULL,         no_argument,       NULL,  0 },
+};
+
+static struct config cfg[] = {
+
+{"address",    STR, &address, "\tbus address (" NUMSTR(EBUS_QQ) ")"},
+{"cfgdir",     STR, &cfgdir, "\tconfiguration directory (" DAEMON_CFGDIR ")"},
+{"cfgfile",    STR, &cfgfile, "\tdaemon configuration file (" DAEMON_CFGFILE ")"},
+{"device",     STR, &device, "\tspecified serial device (" SERIAL_DEVICE ")"},
+{"foreground", BOL, &foreground, "run in foreground"},
+{"loglevel",   NUM, &loglevel, "\tlog level (INF | INF=0 WAR=1 ERR=2 DBG=3)"},
+{"logfile",    STR, &logfile, "\tspecified log file (" DAEMON_LOGFILE ")"},
+{"nosyn",      BOL, &nosyn, "\tdiscard syn in logfile"},
+{"pidfile",    STR, &pidfile, "\tspecified pid file (" DAEMON_PIDFILE ")"},
+{"port",       NUM, &port, "\tspecified port (" NUMSTR(SOCKET_PORT) ")"},
+{"rawdump",    BOL, &rawdump, "\tdump raw ebus data to file"},
+{"rawfile",    STR, &rawfile, "\tspecified raw file (" DAEMON_RAWFILE ")"},	
+{"max_retry",  NUM, &max_retry, NULL},
+{"skip_ack",   NUM, &skip_ack, NULL},
+{"max_wait",   NUM, &max_wait, NULL},
+{"version",    STR, NULL, "\tprint version information"},
+{"help",       STR, NULL, "\tprint this message"}
+};
+
+const int cfglen = sizeof(cfg) / sizeof(cfg[0]);
+
+void
+usage()
+{
+	fprintf(stdout, "\nUsage: %s [OPTIONS]\n", progname);
+
+	int i, skip;
+
+	skip = 0;
+
+	for (i = 0; i < cfglen; i++) {
+		if (cfg[i].info != NULL) {
+			fprintf(stdout, "  -%c --%s\t%s\n",
+				opts[i - skip].val,
+				opts[i - skip].name,
+				cfg[i].info);
+		} else {
+			skip++;
+		}
+	}
+
+	fprintf(stdout, "\n");
+}
+
+void
+cmdline(int *argc, char ***argv)
+{
+	for (;;) {
+		int i;
+
+		i = getopt_long(*argc, *argv, options, opts, NULL);
+
+		if (i == -1)
+			break;
+
+		switch (i) {
+		case 'a':
+			if (strlen(optarg) > 2)
+				strncpy(address, &optarg[strlen(optarg) - 2 ], 2);				
+			else
+				strncpy(address, optarg, strlen(optarg));
+
+			break;			
+		case 'c':
+			strncpy(cfgdir, optarg, strlen(optarg));
+			break;
+		case 'C':
+			strncpy(cfgfile, optarg, strlen(optarg));
+			break;
+		case 'd':
+			strncpy(device, optarg, strlen(optarg));
+			break;			
+		case 'f':
+			foreground = YES;
+			break;
+		case 'l':
+			if (isdigit(*optarg)) {
+				int j = atoi(optarg);
+				if (INF <= j && j <= DBG)
+					loglevel = j;
+				else
+					loglevel = ERR;
+			}
+			break;
+		case 'L':
+			strncpy(logfile, optarg, strlen(optarg));
+			break;
+		case 'n':
+			nosyn = YES;
+			break;
+		case 'P':
+			strncpy(pidfile, optarg, strlen(optarg));
+			break;
+		case 'p':
+			if (isdigit(*optarg))
+				port = atoi(optarg);
+			break;
+		case 'r':
+			rawdump = YES;
+			break;
+		case 'R':
+			strncpy(rawfile, optarg, strlen(optarg));
+			rawdump = YES;
+			break;			
+		case 'v':
+			fprintf(stdout, DAEMON_NAME " " DAEMON_VERSION "\n");
+			exit(EXIT_SUCCESS);
+		case 'h':
+		default:
+			usage();
+			exit(EXIT_FAILURE);
+			break;
+		}
+	}
+}
+
+void
+set_unset()
+{
+
+	if (*address == '\0')
+		strncpy(address , &NUMSTR(EBUS_QQ)[2], 2);
+
+	if (*cfgdir == '\0')
+		strncpy(cfgdir , DAEMON_CFGDIR, strlen(DAEMON_CFGDIR));
+
+	if (*device == '\0')
+		strncpy(device , SERIAL_DEVICE, strlen(SERIAL_DEVICE));
+
+	if (foreground == UNSET)
+		foreground = NO;		
+
+	if (loglevel == UNSET)
+		loglevel = INF;
+
+	if (*logfile == '\0')
+		strncpy(logfile , DAEMON_LOGFILE, strlen(DAEMON_LOGFILE));
+
+	if (nosyn == UNSET)
+		nosyn = NO;
+
+	if (*pidfile == '\0')
+		strncpy(pidfile , DAEMON_PIDFILE, strlen(DAEMON_PIDFILE));
+
+	if (port == UNSET)
+		port = SOCKET_PORT;
+
+	if (rawdump == UNSET)
+		rawdump = NO;
+
+	if (*rawfile == '\0')
+		strncpy(rawfile , DAEMON_RAWFILE, strlen(DAEMON_RAWFILE));
+
+	if (max_retry == UNSET)
+		max_retry = EBUS_MAX_RETRY;
+
+	if (skip_ack == UNSET)
+		skip_ack = EBUS_SKIP_ACK;
+
+	if (max_wait == UNSET)
+		max_wait = EBUS_MAX_WAIT;
+
+		
+}
+
 
 void
 signal_handler(int sig) {
@@ -122,11 +314,13 @@ daemonize()
 	close(STDERR_FILENO);
 
 	/* write pidfile and try to lock it */
-	if (pidfile_open(pidfile, &pidfd) == -1)
+	if (pidfile_open(pidfile, &pidfd) == -1) {
+		log_print_msg(INF, "can't open pidfile: %s\n", pidfile);
 		cleanup(EXIT_FAILURE);
-
-	pidfile_locked = YES;
-	log_print_msg(INF, "pid file %s successfully created.", pidfile);
+	} else {
+		pidfile_locked = YES;
+		log_print_msg(INF, "%s created.", pidfile);
+	}
 
     /* Cancel certain signals */
 	signal(SIGCHLD, SIG_DFL); /* A child process dies */
@@ -147,30 +341,24 @@ cleanup(int state)
 	/* close listing tcp socket */
 	if (socketfd > 0)
 		if (!socket_close(socketfd))
-			log_print_msg(INF,
-				"tcp port %d successfully closed.", listenport);
+			log_print_msg(INF, "port %d closed.", port);
 
 	/* close serial device */
 	if (serialfd > 0)
 		if (!serial_close())
-			log_print_msg(INF,
-				"serial device %s successfully closed.",
-									serial);
+			log_print_msg(INF, "%s closed.", device);
 
-	/* close dumpfile */
-	if (dump)
-		if (!dumpfile_close())
-			log_print_msg(INF,
-				"dumpfile %s successfully closed.", dumpfile);
+	/* close rawfile */
+	if (rawdump)
+		if (!rawfile_close())
+			log_print_msg(INF, "%s closed.", rawfile);
 
 	if (!foreground) {
 
 		/* delete PID file */
 		if (pidfile_locked)
 			if (!pidfile_close(pidfile, pidfd))
-				log_print_msg(INF,
-					"pid file %s successfully deleted.",
-								pidfile);
+				log_print_msg(INF, "%s deleted.", pidfile);
 
 		/* Reset all signal handlers to default */
 		signal(SIGCHLD, SIG_DFL);
@@ -192,111 +380,6 @@ cleanup(int state)
 	exit(state);
 }
 
-void
-usage()
-{
-	fprintf(stdout, "\nUsage: %s [OPTIONS]\n"
-	"  -c --confdir      set the configuration directory. (%s)\n"
-	"  -D --dumpfile     use a specified dump file. (%s)\n"
-	"  -d --dump         dump raw ebus messages to dump file.\n"
-	"  -f --foreground   run in foreground.\n"
-	"  -L --logfile      use a specified log file. (%s)\n"
-	"  -l --loglevel     set log level. (INF | INF=0 WAR=1 ERR=2 DBG=3)\n"
-	"  -n --nosyn        discard syn in logfile\n"
-	"  -p --pidfile      use a specified pid file. (%s)\n"
-	"  -P --listenport   use a specified listening port. (%d)\n"
-	"  -s --serial       use a specified serial device. (%s)\n"
-	"  -v --version      print version information.\n"
-	"  -h --help         print this message.\n"
-	"\n",
-	progname,
-	DAEMON_CONFDIR,
-	DAEMON_DUMPFILE,
-	DAEMON_LOGFILE,
-	DAEMON_PIDFILE,
-	SOCKET_PORT,
-	SERIAL_DEVICE);
-}
-
-void
-cmdline(int *argc, char ***argv)
-{
-	static struct option opts[] = {
-		{"confdir",    required_argument, NULL, 'c'},
-		{"dumpfile",   required_argument, NULL, 'D'},
-		{"dump",       no_argument,       NULL, 'd'},
-		{"foreground", no_argument,       NULL, 'f'},
-		{"logfile",    required_argument, NULL, 'L'},
-		{"loglevel",   required_argument, NULL, 'l'},
-		{"nosyn",      no_argument,       NULL, 'n'},
-		{"pidfile",    required_argument, NULL, 'p'},
-		{"listenport", required_argument, NULL, 'P'},
-		{"serial",     required_argument, NULL, 's'},
-		{"version",    no_argument,       NULL, 'v'},
-		{"help",       no_argument,       NULL, 'h'},
-		{NULL,         no_argument,       NULL,  0 },
-	};
-
-	static char options[] = "c:D:dfL:l:np:P:s:vh";
-
-	for (;;) {
-		int i;
-
-		i = getopt_long(*argc, *argv, options, opts, NULL);
-
-		if (i == -1)
-			break;
-
-		switch (i) {
-		case 'c':
-			confdir = optarg;
-			break;
-		case 'D':
-			dumpfile = optarg;
-			dump = YES;
-			break;
-		case 'd':
-			dump = YES;
-			break;
-		case 'f':
-			foreground = YES;
-			break;
-		case 'L':
-			logfile = optarg;
-			break;
-		case 'l':
-			if (isdigit(*optarg)) {
-				int l = atoi(optarg);
-				if (INF <= l && l <= DBG)
-					loglevel = l;
-				else
-					loglevel = ERR;
-			}
-			break;
-		case 'n':
-			nosyn = YES;
-			break;
-		case 'p':
-			pidfile = optarg;
-			break;
-		case 'P':
-			if (isdigit(*optarg))
-				listenport = atoi(optarg);
-			break;
-		case 's':
-			serial = optarg;
-			break;
-		case 'v':
-			fprintf(stdout, DAEMON_NAME " " DAEMON_VERSION "\n");
-			exit(EXIT_SUCCESS);
-		case 'h':
-		default:
-			usage();
-			exit(EXIT_FAILURE);
-			break;
-		}
-	}
-}
 
 void
 main_loop()
@@ -348,7 +431,7 @@ main_loop()
 
 			/* get message from client */
 			ret = serial_ebus_get_msg(serialfd, serbuf, &serbuflen,
-								dump, nosyn);
+								rawdump, nosyn);
 			if (ret == -1)
 				log_print_msg(WAR, "serial device reading: "
 					"*buflen < 0 || *buflen > maxlen");
@@ -399,6 +482,30 @@ main(int argc, char *argv[])
 
 	/* read command line  */
 	cmdline(&argc, &argv);
+	
+	/* set default cfgfile */
+	if (*cfgfile == '\0')
+		strncpy(cfgfile , DAEMON_CFGFILE, strlen(DAEMON_CFGFILE));
+
+	/* read config file */
+	if (cfgfile_read(cfgfile, cfg, cfglen) == -1)
+		fprintf(stdout, "can't open cfgfile: %s\n", cfgfile);	
+
+	/* set unset configuration */
+	set_unset();
+
+	/* print configuration */
+	/* cfg_print(cfg, cfglen); */
+
+	
+	/* set ebus configuration */
+	int tmp;
+	tmp = (eb_htoi(&address[0])) * 16 + (eb_htoi(&address[1]));
+	eb_set_qq((unsigned char) tmp);
+
+	eb_set_max_retry(max_retry);
+	eb_set_skip_ack(skip_ack);
+	eb_set_max_wait(max_wait);	
 
 	/* open log */
 	log_set_level(loglevel);
@@ -411,31 +518,33 @@ main(int argc, char *argv[])
 		daemonize();
 	}
 
-	/* open dump file */
-	if (dump) {
-		if (dumpfile_open(dumpfile) == -1)
+	/* open raw file */
+	if (rawdump) {
+		if (rawfile_open(rawfile) == -1) {
+			log_print_msg(INF, "can't open rawfile: %s\n", rawfile);
 			cleanup(EXIT_FAILURE);
-		else
-			log_print_msg(INF,
-				"dumpfile %s successfully opened.", dumpfile);
+		} else {
+			log_print_msg(INF, "%s opened.", rawfile);
+		}
 
 	}
 
 	/* open serial device */
-	if (serial_open(serial, &serialfd) == -1)
+	if (serial_open(device, &serialfd) == -1) {
+		log_print_msg(INF, "can't open device: %s", device);
 		cleanup(EXIT_FAILURE);
-	else
-		log_print_msg(INF,
-			"serial device %s successfully opened.", serial);
+	} else {
+		log_print_msg(INF, "%s opened.", device);
+	}
 
 
 	/* open listing tcp socket */
-	if (socket_open(&socketfd, listenport) == -1)
+	if (socket_open(&socketfd, port) == -1) {
+		log_print_msg(INF, "can't open port: %d", port);
 		cleanup(EXIT_FAILURE);
-	else
-		log_print_msg(INF,
-				"tcp port %d successfully opened.", listenport);
-
+	} else {
+		log_print_msg(INF, "port %d opened.", port);
+	}
 
 	/* enter main loop */
 	main_loop();

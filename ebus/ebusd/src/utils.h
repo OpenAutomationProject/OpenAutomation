@@ -20,23 +20,43 @@
 #ifndef UTILS_H_
 #define UTILS_H_
 
-#define YES 1
-#define NO  0
+#define NUMSTR2(s) #s
+#define NUMSTR(s) NUMSTR2(s)
 
-#define SOCKET_PORT			8888
-#define SOCKET_BUFSIZE		1024
+enum enum_number {UNSET = -1, NO, YES};
+
+//~ #define YES 1
+//~ #define NO  0
 
 void debug_ebus_msg(unsigned char buf[], int buflen, int nosyn);
 
 int serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen,
 						int rawdump, int skipsyn);
 
-int dumpfile_open(const char *file);
-int dumpfile_close();
-int dumpfile_write(unsigned char buf[],  int buflen);
+#define CFG_LINELEN   256
+
+enum enum_config {STR, BOL, NUM};
+
+struct config {
+	char *key;
+	int type;
+	void *tgt;
+	char *info;
+};
+
+void cfg_print(struct config *cfg, int len);
+int cfgfile_set_param(char *param, struct config *cfg, int len);
+int cfgfile_read(const char *file, struct config *cfg, int len);
 
 int pidfile_open(const char *file, int *fd);
 int pidfile_close(const char *file, int fd);
+
+int rawfile_open(const char *file);
+int rawfile_close();
+int rawfile_write(unsigned char buf[],  int buflen);
+
+#define SOCKET_PORT      8888
+#define SOCKET_BUFSIZE   1024
 
 int socket_open(int *fd, int port);
 int socket_close(int fd);
