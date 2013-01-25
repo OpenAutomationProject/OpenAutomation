@@ -38,6 +38,10 @@
 #include "ebus.h"
 #include "ebusd.h"
 
+/* for log */
+#define LOGTXT "INF, NOT, WAR, ERR, DBG, EBH, EBS, NET, ALL"
+const char *logtxt[] = {"INF","NOT","WAR","ERR","DBG","EBH","EBS","NET"};
+int logtxtlen = sizeof(logtxt) / sizeof(char*);
 
 /* global variables */
 const char *progname;
@@ -54,19 +58,20 @@ static char cfgdir[CFG_LINELEN];
 static char cfgfile[CFG_LINELEN];
 static char device[CFG_LINELEN];
 static int foreground = UNSET;
-static int loglevel = UNSET;
+static char loglevel[CFG_LINELEN];
 static char logfile[CFG_LINELEN];
 static int nosyn = UNSET;
 static char pidfile[CFG_LINELEN];
 static int port = UNSET;
 static int rawdump = UNSET;
 static char rawfile[CFG_LINELEN];
+static int settings = UNSET;
 static int max_retry = UNSET;
 static int skip_ack = UNSET;
 static int max_wait = UNSET;
 
 
-static char options[] = "a:c:C:d:fl:L:nP:p:rR:vh";
+static char options[] = "a:c:C:d:fl:L:nP:p:rR:svh";
 
 static struct option opts[] = {
 	{"address",    required_argument, NULL, 'a'},
@@ -81,6 +86,7 @@ static struct option opts[] = {
 	{"port",       required_argument, NULL, 'p'},
 	{"rawdump",    no_argument,       NULL, 'r'},
 	{"rawfile",    required_argument, NULL, 'R'},
+	{"settings",   no_argument,       NULL, 's'},
 	{"version",    no_argument,       NULL, 'v'},
 	{"help",       no_argument,       NULL, 'h'},
 	{NULL,         no_argument,       NULL,  0 },
@@ -93,13 +99,14 @@ static struct config cfg[] = {
 {"cfgfile",    STR, &cfgfile, "\tdaemon configuration file (" DAEMON_CFGFILE ")"},
 {"device",     STR, &device, "\tspecified serial device (" SERIAL_DEVICE ")"},
 {"foreground", BOL, &foreground, "run in foreground"},
-{"loglevel",   NUM, &loglevel, "\tlog level (INF | INF=0 WAR=1 ERR=2 DBG=3)"},
+{"loglevel",   STR, &loglevel, "\tlog level (INF | " LOGTXT ")"},
 {"logfile",    STR, &logfile, "\tspecified log file (" DAEMON_LOGFILE ")"},
 {"nosyn",      BOL, &nosyn, "\tdiscard syn in logfile"},
 {"pidfile",    STR, &pidfile, "\tspecified pid file (" DAEMON_PIDFILE ")"},
 {"port",       NUM, &port, "\tspecified port (" NUMSTR(SOCKET_PORT) ")"},
 {"rawdump",    BOL, &rawdump, "\tdump raw ebus data to file"},
-{"rawfile",    STR, &rawfile, "\tspecified raw file (" DAEMON_RAWFILE ")"},	
+{"rawfile",    STR, &rawfile, "\tspecified raw file (" DAEMON_RAWFILE ")"},
+{"settings",   BOL, &settings, "\tprint daemon settings"},
 {"max_retry",  NUM, &max_retry, NULL},
 {"skip_ack",   NUM, &skip_ack, NULL},
 {"max_wait",   NUM, &max_wait, NULL},
@@ -164,13 +171,7 @@ cmdline(int *argc, char ***argv)
 			foreground = YES;
 			break;
 		case 'l':
-			if (isdigit(*optarg)) {
-				int j = atoi(optarg);
-				if (INF <= j && j <= DBG)
-					loglevel = j;
-				else
-					loglevel = ERR;
-			}
+			strncpy(loglevel, optarg, strlen(optarg));
 			break;
 		case 'L':
 			strncpy(logfile, optarg, strlen(optarg));
@@ -191,7 +192,10 @@ cmdline(int *argc, char ***argv)
 		case 'R':
 			strncpy(rawfile, optarg, strlen(optarg));
 			rawdump = YES;
-			break;			
+			break;
+		case 's':
+			settings = YES;
+			break;						
 		case 'v':
 			fprintf(stdout, DAEMON_NAME " " DAEMON_VERSION "\n");
 			exit(EXIT_SUCCESS);
@@ -220,8 +224,8 @@ set_unset()
 	if (foreground == UNSET)
 		foreground = NO;		
 
-	if (loglevel == UNSET)
-		loglevel = INF;
+	if (*loglevel == '\0')
+		strncpy(loglevel , DAEMON_LOGLEVEL, strlen(DAEMON_LOGLEVEL));
 
 	if (*logfile == '\0')
 		strncpy(logfile , DAEMON_LOGFILE, strlen(DAEMON_LOGFILE));
@@ -241,6 +245,9 @@ set_unset()
 	if (*rawfile == '\0')
 		strncpy(rawfile , DAEMON_RAWFILE, strlen(DAEMON_RAWFILE));
 
+	if (settings == UNSET)
+		settings = NO;
+
 	if (max_retry == UNSET)
 		max_retry = EBUS_MAX_RETRY;
 
@@ -258,15 +265,15 @@ void
 signal_handler(int sig) {
 	switch(sig) {
 	case SIGHUP:
-		log_print_msg(INF, "received SIGHUP");
+		log_print(L_NOT, "received SIGHUP");
 		break;
 	case SIGINT:
 	case SIGTERM:
-		log_print_msg(INF, "daemon exiting");
+		log_print(L_INF, "daemon exiting");
 		cleanup(EXIT_SUCCESS);
 		break;
 	default:
-		log_print_msg(INF, "unknown signal %s", strsignal(sig));
+		log_print(L_NOT, "unknown signal %s", strsignal(sig));
 		break;
 	}
 }
@@ -315,11 +322,11 @@ daemonize()
 
 	/* write pidfile and try to lock it */
 	if (pidfile_open(pidfile, &pidfd) == -1) {
-		log_print_msg(INF, "can't open pidfile: %s\n", pidfile);
+		log_print(L_ERR, "can't open pidfile: %s\n", pidfile);
 		cleanup(EXIT_FAILURE);
 	} else {
 		pidfile_locked = YES;
-		log_print_msg(INF, "%s created.", pidfile);
+		log_print(L_INF, "%s created.", pidfile);
 	}
 
     /* Cancel certain signals */
@@ -341,24 +348,24 @@ cleanup(int state)
 	/* close listing tcp socket */
 	if (socketfd > 0)
 		if (!socket_close(socketfd))
-			log_print_msg(INF, "port %d closed.", port);
+			log_print(L_INF, "port %d closed.", port);
 
 	/* close serial device */
 	if (serialfd > 0)
 		if (!serial_close())
-			log_print_msg(INF, "%s closed.", device);
+			log_print(L_INF, "%s closed.", device);
 
 	/* close rawfile */
 	if (rawdump)
 		if (!rawfile_close())
-			log_print_msg(INF, "%s closed.", rawfile);
+			log_print(L_INF, "%s closed.", rawfile);
 
 	if (!foreground) {
 
 		/* delete PID file */
 		if (pidfile_locked)
 			if (!pidfile_close(pidfile, pidfd))
-				log_print_msg(INF, "%s deleted.", pidfile);
+				log_print(L_INF, "%s deleted.", pidfile);
 
 		/* Reset all signal handlers to default */
 		signal(SIGCHLD, SIG_DFL);
@@ -370,7 +377,7 @@ cleanup(int state)
 		signal(SIGTERM, SIG_DFL);
 
 		/* print end message */
-		log_print_msg(INF, DAEMON_NAME " " DAEMON_VERSION " stopped.");
+		log_print(L_ALL, DAEMON_NAME " " DAEMON_VERSION " stopped.");
 		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " stopped.");
 	}
 
@@ -395,8 +402,7 @@ main_loop()
 
 	/* serialfd should be always lower then socketfd */
 	if (serialfd > socketfd) {
-		log_print_msg(ERR,
-			"serialfd %d > %d socketfd", serialfd, socketfd);
+		log_print(L_ERR, "serialfd %d > %d socketfd", serialfd, socketfd);
 		cleanup(EXIT_FAILURE);
 	}
 
@@ -414,7 +420,7 @@ main_loop()
 
 		/* ignore signals*/
 		if ((ret < 0) && (errno == EINTR)) {
-			log_print_msg(INF,
+			log_print(L_NOT,
 				"get signal at select: %s", strerror(errno));
 			continue;
 		} else if (ret < 0) {
@@ -433,7 +439,7 @@ main_loop()
 			ret = serial_ebus_get_msg(serialfd, serbuf, &serbuflen,
 								rawdump, nosyn);
 			if (ret == -1)
-				log_print_msg(WAR, "serial device reading: "
+				log_print(L_WAR, "serial device reading: "
 					"*buflen < 0 || *buflen > maxlen");
 
 		}
@@ -489,13 +495,14 @@ main(int argc, char *argv[])
 
 	/* read config file */
 	if (cfgfile_read(cfgfile, cfg, cfglen) == -1)
-		fprintf(stdout, "can't open cfgfile: %s\n", cfgfile);	
+		fprintf(stderr, "can't open cfgfile: %s\n", cfgfile);	
 
 	/* set unset configuration */
 	set_unset();
 
 	/* print configuration */
-	/* cfg_print(cfg, cfglen); */
+	if (settings)
+		cfg_print(cfg, cfglen);
 
 	
 	/* set ebus configuration */
@@ -508,12 +515,12 @@ main(int argc, char *argv[])
 	eb_set_max_wait(max_wait);	
 
 	/* open log */
-	log_set_level(loglevel);
-	log_open(logfile, foreground);
+	log_level(loglevel, logtxt, logtxtlen);
+	log_open(logfile, foreground, (const char ***) &logtxt, logtxtlen);	
 
 	/* to be daemon */
 	if (!foreground) {
-		log_print_msg(INF, DAEMON_NAME " " DAEMON_VERSION " started.");
+		log_print(L_ALL, DAEMON_NAME " " DAEMON_VERSION " started.");
 		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " started.");
 		daemonize();
 	}
@@ -521,29 +528,29 @@ main(int argc, char *argv[])
 	/* open raw file */
 	if (rawdump) {
 		if (rawfile_open(rawfile) == -1) {
-			log_print_msg(INF, "can't open rawfile: %s\n", rawfile);
+			log_print(L_ERR, "can't open rawfile: %s\n", rawfile);
 			cleanup(EXIT_FAILURE);
 		} else {
-			log_print_msg(INF, "%s opened.", rawfile);
+			log_print(L_INF, "%s opened.", rawfile);
 		}
 
 	}
 
 	/* open serial device */
 	if (serial_open(device, &serialfd) == -1) {
-		log_print_msg(INF, "can't open device: %s", device);
+		log_print(L_ERR, "can't open device: %s", device);
 		cleanup(EXIT_FAILURE);
 	} else {
-		log_print_msg(INF, "%s opened.", device);
+		log_print(L_INF, "%s opened.", device);
 	}
 
 
 	/* open listing tcp socket */
 	if (socket_open(&socketfd, port) == -1) {
-		log_print_msg(INF, "can't open port: %d", port);
+		log_print(L_ERR, "can't open port: %d", port);
 		cleanup(EXIT_FAILURE);
 	} else {
-		log_print_msg(INF, "port %d opened.", port);
+		log_print(L_INF, "port %d opened.", port);
 	}
 
 	/* enter main loop */

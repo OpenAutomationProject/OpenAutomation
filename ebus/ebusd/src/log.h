@@ -20,37 +20,16 @@
 #ifndef LOG_H_
 #define LOG_H_
 
-/*
- * INF = 0 - normal messages
- * WAR = 1 - warnings
- * ERR = 2 - errors
- * DBG = 3 - for debugging purpose
- */
+#define L_NUL 0x00
+#define L_ALL 0xFF
 
-enum enum_log {INF, WAR, ERR, DBG};
 
-//~ #define INF 0
-//~ #define WAR 1
-//~ #define ERR 2
-//~ #define DBG 3
+void log_file(FILE *fp);
+void log_level(char *lvl, const char *txt[], int len);
 
-#define err_if(exp) \
-	if(exp) { log_print_msg(ERR, "%s: %d: %s: Error %s", \
-		__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
-	}
-
-#define err_ret_if(exp, ret) \
-	if(exp) { log_print_msg(ERR, "%s: %d: %s: Error %s", \
-		__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
-		return(ret); \
-	}
-
-void log_set_file(FILE *fp);
-void log_set_level(int loglevel);
-
-int log_open(const char *logfile, int foreground);
+int log_open(const char *logfile, int foreground, const char ***txt, int len);
 void log_close();
 
-void log_print_msg(int loglevel, const char *logtxt, ...);
+void log_print(unsigned char lvl, const char *txt, ...);
 
 #endif /* LOG_H_ */

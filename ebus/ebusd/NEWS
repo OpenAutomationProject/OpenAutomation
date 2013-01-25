@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-01-25:
+* Add autogen.sh script in main dir
+* Logging functions changed from level to class system
+
 2013-01-24:
 * Add example daemon configuration file
 * Add functions for parsing daemon configuration file

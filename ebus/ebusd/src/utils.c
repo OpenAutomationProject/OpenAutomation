@@ -35,8 +35,6 @@
 #include "utils.h"
 
 
-
-
 void
 debug_ebus_msg(unsigned char buf[], int buflen, int nosyn)
 {
@@ -53,7 +51,7 @@ debug_ebus_msg(unsigned char buf[], int buflen, int nosyn)
 			sprintf(tmp, " %02x", buf[k]);
 			strncat(msg, tmp, 3);
 		}
-		log_print_msg(DBG, "%s", msg);
+		log_print(L_EBH, "%s", msg);
 	}
 }
 
@@ -101,6 +99,8 @@ void
 cfg_print(struct config *cfg, int len)
 {
 	int i;
+
+	fprintf(stdout, "\n");
 
 	for (i = 0; i < len; i++) {
 
@@ -235,13 +235,13 @@ pidfile_close(const char *file, int fd)
 
 
 
-static FILE *rawfp = NULL;
+static FILE *_rawfp = NULL;
 
 int
 rawfile_open(const char *file)
 {
-	rawfp = fopen(file, "w");
-	err_ret_if(!rawfp, -1);
+	_rawfp = fopen(file, "w");
+	err_ret_if(!_rawfp, -1);
 
 	return 0;
 }
@@ -251,10 +251,10 @@ rawfile_close()
 {
 	int ret;
 
-	ret = fflush(rawfp);
+	ret = fflush(_rawfp);
 	err_ret_if(ret == EOF, -1);
 
-	ret = fclose(rawfp);
+	ret = fclose(_rawfp);
 	err_ret_if(ret == EOF, -1);
 
 	return 0;
@@ -266,11 +266,11 @@ rawfile_write(unsigned char buf[], int buflen)
 	int ret, i;
 
 	for (i = 0; i <= buflen; i++) {
-		ret = fputc(buf[i], rawfp);
+		ret = fputc(buf[i], _rawfp);
 		err_ret_if(ret == EOF, -1);
 	}
 
-	ret = fflush(rawfp);
+	ret = fflush(_rawfp);
 	err_ret_if(ret == EOF, -1);
 
 	return 0;

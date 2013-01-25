@@ -23,15 +23,35 @@
 #define NUMSTR2(s) #s
 #define NUMSTR(s) NUMSTR2(s)
 
+/* for log */
+#define L_INF 0x01
+#define L_NOT 0x02
+#define L_WAR 0x04
+#define L_ERR 0x08
+#define L_DBG 0x10
+#define L_EBH 0x20
+#define L_EBS 0x40
+#define L_NET 0x80
+
+#define err_if(exp) \
+	if(exp) { log_print(L_ERR, "%s: %d: %s: Error %s", \
+		__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
+	}
+
+#define err_ret_if(exp, ret) \
+	if(exp) { log_print(L_ERR, "%s: %d: %s: Error %s", \
+		__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
+		return(ret); \
+	}
+
 enum enum_number {UNSET = -1, NO, YES};
 
-//~ #define YES 1
-//~ #define NO  0
 
 void debug_ebus_msg(unsigned char buf[], int buflen, int nosyn);
 
 int serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen,
 						int rawdump, int skipsyn);
+
 
 #define CFG_LINELEN   256
 

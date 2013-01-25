@@ -23,20 +23,18 @@
 #define DAEMON_NAME           "ebusd"
 #define DAEMON_VERSION        "0.1"
 
-
-#define DAEMON_LOGLEVEL       ERR
-#define DAEMON_FOREGROUND     NO
-
-#define DAEMON_NOSYN          NO
-
 #define DAEMON_WORKDIR        "/tmp/"
+
 #define DAEMON_CFGDIR         "/etc/ebusd"
 #define DAEMON_CFGFILE        DAEMON_CFGDIR"/ebusd.conf"
-#define DAEMON_PIDFILE        "/var/run/ebusd.pid"
+#define DAEMON_FOREGROUND     NO
+#define DAEMON_LOGLEVEL       "INF"
 #define DAEMON_LOGFILE        "/var/log/ebusd.log"
-
+#define DAEMON_NOSYN          NO
+#define DAEMON_PIDFILE        "/var/run/ebusd.pid"
 #define DAEMON_RAWFILE        "/tmp/ebusd.bin"
 #define DAEMON_RAWDUMP        NO
+
 
 void usage();
 

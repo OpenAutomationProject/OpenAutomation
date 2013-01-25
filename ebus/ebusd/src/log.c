@@ -22,6 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include <time.h>
 #include <sys/time.h>
@@ -29,66 +30,71 @@
 
 #include "log.h"
 
-const char *log_level_txt[] = {"INF","WAR","ERR","DBG"};
+static unsigned char _loglvl = L_NUL;
+static const char ***_logtxt = NULL;
+static int _logtxtlen = 0;
 
-static int log_level = INF;
-static FILE *log_file_fp = NULL;
+static FILE *_logfp = NULL;
 
-char * log_get_time(char *time);
 
+char * log_time(char *time);
+char * log_txt(unsigned char lvl);
 
 void
-log_set_file(FILE *fp)
+log_file(FILE *fp)
 {
-	if(log_file_fp)
-		fclose(log_file_fp);
+	if(_logfp)
+		fclose(_logfp);
 
-	log_file_fp = fp;
+	_logfp = fp;
 }
 
 void
-log_set_level(int loglevel)
+log_level(char *lvl, const char *txt[], int len)
 {
-	switch (loglevel) {
-	case INF:
-		log_level = INF;
-		setlogmask(LOG_UPTO(LOG_ERR));
-		break;
-	case WAR:
-		log_level = WAR;
-		setlogmask(LOG_UPTO(LOG_WARNING));
-		break;
-	case ERR:
-		log_level = ERR;
-		setlogmask(LOG_UPTO(LOG_INFO));
-		break;
-	case DBG:
-		log_level = DBG;
-		setlogmask(LOG_UPTO(LOG_DEBUG));
-		break;
-	default:
-		log_level = INF;
-		setlogmask(LOG_UPTO(LOG_ERR));
-		break;
+	unsigned char tmp;
+	int i;
+	char *par;
+	
+	_loglvl = L_NUL;
+	
+	par = strtok(lvl, ", ");
+	while (par) {
+		if (strncasecmp(par, "ALL", 3) == 0) {
+			_loglvl = L_ALL;
+			break;
+		}	
+		
+		tmp = 0x01;
+		for (i = 0; i < len; i++) {
+			if (strncasecmp(par, txt[i], 3) == 0) {
+				_loglvl |= (tmp << i);
+				break;
+			}
+		}
+		par = strtok(NULL, ", ");
 	}
 }
 
 int
-log_open(const char *logfile, int foreground)
+log_open(const char *file, int foreground, const char ***txt, int len)
 {
 	FILE *fp = NULL;
+	
+	_logtxt = txt;
+	_logtxtlen = len;
 
 	if (foreground) {
-		log_set_file(stdout);
+		log_file(stdout);
 	} else {
-		if (logfile) {
-			if (!(fp = fopen(logfile, "a+"))) {
-				fprintf(stderr, "error opening logfile %s.\n",
-								logfile);
+		if (file) {
+			if (!(fp = fopen(file, "a+"))) {
+				fprintf(stderr, "can't open logfile: %s\n", file);
+
 				return -1;
 			}
 
-			log_set_file(fp);
+			log_file(fp);
 		}
 	}
 
@@ -100,16 +106,16 @@ log_open(const char *logfile, int foreground)
 void
 log_close()
 {
-	if (log_file_fp) {
-		fflush(log_file_fp);
-		fclose(log_file_fp);
+	if (_logfp) {
+		fflush(_logfp);
+		fclose(_logfp);
 	}
 
 	closelog();
 }
 
 char *
-log_get_time(char *time)
+log_time(char *time)
 {
 	struct timeval tv;
 	struct tm *tm;
@@ -117,49 +123,58 @@ log_get_time(char *time)
 	gettimeofday(&tv, NULL);
 	tm = localtime(&tv.tv_sec);
 
-	sprintf(time, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+	sprintf(time, "%04d-%02d-%02d %02d:%02d:%02d.%03ld",
 		tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-		tm->tm_hour, tm->tm_min, tm->tm_sec, (int)tv.tv_usec/1000);
+		tm->tm_hour, tm->tm_min, tm->tm_sec, tv.tv_usec/1000);
 
 	return time;
 }
 
+char *
+log_txt(unsigned char lvl)
+{
+	char *type = NULL;
+	if (_logtxtlen > 0) {
+		unsigned char tmp;
+		int i;
+		
+		tmp = 0x01;
+		for (i = 0; i < _logtxtlen; i++) {
+			if (lvl == L_ALL) {
+				type = "ALL";
+				break;
+			}	
+					
+			if ((lvl & (tmp << i)) != 0x00 &&
+				(_loglvl & (tmp << i)) != 0x00) {
+				type = (char *)_logtxt[i];
+				break;
+			}
+		}
+	}
+	return type;	
+}
+
 void
-log_print_msg(int loglevel, const char *logtxt, ...)
+log_print(unsigned char lvl, const char *txt, ...)
 {
 	char time[24];
 	char buf[512];
-	int priority = ERR;
 	va_list ap;
 
-	va_start(ap, logtxt);
-	vsprintf(buf, logtxt, ap);
+	va_start(ap, txt);
+	vsprintf(buf, txt, ap);
 
-	if (log_file_fp) {
-		if (loglevel <= log_level) {
-			fprintf(log_file_fp, "%s [%s] %s\n", log_get_time(time),
-						log_level_txt[loglevel], buf);
-			fflush(log_file_fp);
+	if ((_loglvl & lvl) != 0x00) {
+		if (_logfp) {
+			fprintf(_logfp, "%s [0x%02x %s] %s\n",
+					log_time(time), lvl , log_txt(lvl), buf);								
+			fflush(_logfp);
+
+		} else {
+			syslog(LOG_INFO, "[0x%02x %s] %s\n",
+							lvl, log_txt(lvl), buf);
 		}
-	} else {
-		switch (loglevel) {
-		case INF:
-			priority = LOG_ERR;
-			break;
-		case WAR:
-			priority = LOG_WARNING;
-			break;
-		case ERR:
-			priority = LOG_INFO;
-			break;
-		case DBG:
-			priority = LOG_DEBUG;
-			break;
-		default:
-			priority = LOG_ERR;
-			break;
-		}
-		syslog(priority, "[%s] %s\n", log_level_txt[loglevel], logtxt);
 	}
 
 	va_end(ap);

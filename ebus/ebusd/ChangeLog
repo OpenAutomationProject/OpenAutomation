@@ -1,6 +1,13 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-01-25:
+* Add autogen.sh script in main dir. Just type ./autogen.sh for build all.
+* Logging functions changed from level to class system. The advantage of this
+  system is that different classes can be easily mixed together.
+  There are now 8 classes: INF, NOT, WAR, ERR, DBG, EBH, EBS, NET
+  and ALL for just all messages.
+
 2013-01-24:
 * Add new directory contrib with daemon configuration file
 * Add functions with cfg_ prefix (utils). These parse 
