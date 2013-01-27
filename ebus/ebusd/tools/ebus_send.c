@@ -204,7 +204,7 @@ main(int argc, char *argv[])
 
 				//print_msg(" in:", msg, k, "");
 		
-				ret = serial_open(device, &serialfd);
+				ret = eb_serial_open(device, &serialfd);
 				if (ret < 0)
 					fprintf(stdout, "Error open %s.\n",
 									device);
@@ -218,7 +218,7 @@ main(int argc, char *argv[])
 						
 				}
 				
-				ret = serial_close();
+				ret = eb_serial_close();
 				if (ret < 0)
 					fprintf(stdout, "Error close %s.\n",
 									device);
@@ -256,7 +256,7 @@ main(int argc, char *argv[])
 
 		if (k > 0) {
 
-			ret = serial_open(device, &serialfd);
+			ret = eb_serial_open(device, &serialfd);
 			if (ret < 0)
 				fprintf(stdout, "Error open %s.\n", device);
 				
@@ -273,7 +273,7 @@ main(int argc, char *argv[])
 					
 			}
 			
-			ret = serial_close();
+			ret = eb_serial_close();
 			if (ret < 0)
 				fprintf(stdout, "Error close %s.\n", device);
 		}

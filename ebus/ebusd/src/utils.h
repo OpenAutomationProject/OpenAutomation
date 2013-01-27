@@ -47,10 +47,6 @@
 enum enum_number {UNSET = -1, NO, YES};
 
 
-void print_ebus_msg(const unsigned char *buf, int buflen);
-
-
-
 #define CFG_LINELEN   256
 
 enum enum_config {STR, BOL, NUM};

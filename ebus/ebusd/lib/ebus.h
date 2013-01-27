@@ -64,13 +64,30 @@
  * @param [out] *fd file descriptor from opened serial device
  * @return 0 ok | -1 error
  */
-int serial_open(const char *dev, int *fd);
+int eb_serial_open(const char *dev, int *fd);
 
 /**
  * @brief close a serial device and set settings to default.
  * @return 0 ok | -1 error
  */
-int serial_close();
+int eb_serial_close();
+
+/**
+ * @brief send bytes to serial device
+ * @param [in] *buf pointer to a byte array
+ * @param [in] buflen length of byte array
+ * @return 0 ok | -1 error
+ */
+int eb_serial_send(const unsigned char *buf, int buflen);
+
+/**
+ * @brief receive bytes from serial device
+ * @param [out] *buf pointer to a byte array received bytes
+ * @param [out] *buflen length of received bytes
+ * @return 0 ok | -1 error
+ */
+int eb_serial_recv(unsigned char *buf, int *buflen);
+
 
 /**
  * @brief set own ebus address
@@ -127,20 +144,6 @@ void eb_print_result();
  * @return 0 ok | 1 neg. ACK from Slave | -1 error
  */ 
 int eb_send_data(const unsigned char *buf, int buflen, int type);
-
-/**
- * @brief scan ebus for cycle ebus data
- *
- * \li Given input data will be prepared (escape, crc) and send to ebus.
- * \li Answer will be received, prepared (unescape, crc) and return result.
- * 
- * @param [out] *buf pointer to a byte array
- * @param [out] buflen length of byte array
- * @param [out] *msg pointer to a byte array with full ebus msg
- * @param [out] msglen length of byte array with full ebus msg
- * @return 0 ok | 1 msg complete | -1 error
- */ 
-int eb_scan_bus(unsigned char *buf, int *buflen, unsigned char *msg, int *msglen);
 
 
 /**

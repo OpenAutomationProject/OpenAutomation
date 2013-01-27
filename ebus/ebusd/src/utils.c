@@ -36,24 +36,6 @@
 
 
 void
-print_ebus_msg(const unsigned char *buf, int buflen)
-{
-	int i = 0;
-	char msg[SERIAL_BUFSIZE];
-	char tmp[4];
-
-	memset(tmp, '\0', sizeof(tmp));
-	memset(msg, '\0', sizeof(msg));
-
-	for (i = 0; i < buflen; i++) {
-		sprintf(tmp, " %02x", buf[i]);
-		strncat(msg, tmp, 3);
-	}
-	log_print(L_EBH, "%s", msg);
-}
-
-
-void
 cfg_print(struct config *cfg, int len)
 {
 	int i;

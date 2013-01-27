@@ -352,7 +352,7 @@ cleanup(int state)
 
 	/* close serial device */
 	if (serialfd > 0)
-		if (!serial_close())
+		if (!eb_serial_close())
 			log_print(L_INF, "%s closed.", device);
 
 	/* close rawfile */
@@ -389,14 +389,87 @@ cleanup(int state)
 
 
 void
+print_ebus_msg(const unsigned char *buf, int buflen)
+{
+	int i = 0;
+	char msg[SERIAL_BUFSIZE];
+	char tmp[4];
+
+	memset(tmp, '\0', sizeof(tmp));
+	memset(msg, '\0', sizeof(msg));
+	
+	for (i = 0; i < buflen; i++) {
+		sprintf(tmp, " %02x", buf[i]);
+		strncat(msg, tmp, 3);
+	}
+	log_print(L_EBH, "%s", msg);
+}
+
+int
+parse_cycle_data(unsigned char *buf, int *buflen)
+{
+	static unsigned char msg[SERIAL_BUFSIZE];
+	static int msglen = 0;
+	int ret, i;
+
+	if (msglen == 0)
+		memset(msg, '\0', sizeof(msg));
+
+	/* get new data */
+	ret = eb_serial_recv(buf, buflen);
+	
+	if (ret < 0) {
+		log_print(L_WAR, "error read serial device");
+		return -1;
+	}
+
+	if (*buflen > SERIAL_BUFSIZE) {
+		log_print(L_WAR, "read data len > %d", SERIAL_BUFSIZE);
+		return -2;
+	}
+
+	/* print bus */
+	if (showraw == YES)
+		print_ebus_msg(buf, *buflen);
+
+	/* dump raw data*/
+	if (rawdump == YES) {
+		ret = rawfile_write(buf, *buflen);
+		if (ret < 0)
+			log_print(L_WAR, "can't write rawdata");
+	}
+
+	i = 0;
+	while (i < *buflen) {
+		if (buf[i] != EBUS_SYN) {
+			msg[msglen] = buf[i];
+			msglen++;
+		}
+
+		/* ebus syn sign is reached - decode ebus message */
+		if (buf[i] == EBUS_SYN && msglen > 0) {
+			print_ebus_msg(msg, msglen);
+			memset(msg, '\0', sizeof(msg));
+			msglen = 0;
+		}
+		
+		i++;
+	}
+
+	return 0;
+}
+
+
+void
 main_loop()
 {
-	unsigned char msgbuf[SERIAL_BUFSIZE];
-	int msgbuflen, maxfd;
+	//~ unsigned char msgbuf[SERIAL_BUFSIZE];
+	//~ int msgbuflen
+	int maxfd;
 	fd_set listenfds;
 
-	memset(msgbuf, '\0', sizeof(msgbuf));
-	msgbuflen = 0;
+	//~ memset(msgbuf, '\0', sizeof(msgbuf));
+	//~ msgbuflen = 0;
 
 	FD_ZERO(&listenfds);
 	FD_SET(serialfd, &listenfds);
@@ -441,28 +514,8 @@ main_loop()
 			serbuflen = sizeof(serbuf);
 
 			/* get message from client */
-			ret = eb_scan_bus(serbuf, &serbuflen, msgbuf, &msgbuflen);					
-			if (ret == -1)
-				log_print(L_WAR, "error read serial device");
+			parse_cycle_data(serbuf, &serbuflen);
 				
-			/* print bus */
-			if (showraw == YES)
-				print_ebus_msg(serbuf, serbuflen);
-
-			/* print msg */ 
-			if (ret > 0) {
-				print_ebus_msg(msgbuf, msgbuflen);
-				memset(msgbuf, '\0', sizeof(msgbuf));
-				msgbuflen = 0;
-			}
-
-			/* dump raw data*/
-			if (rawdump == YES) {
-				ret = rawfile_write(serbuf, serbuflen);
-				if (ret < 0)
-					log_print(L_WAR, "can't write rawdata");
-			}
-
 		}
 
 		/* new incoming connection at TCP port arrived? */
@@ -561,7 +614,7 @@ main(int argc, char *argv[])
 	}
 
 	/* open serial device */
-	if (serial_open(device, &serialfd) == -1) {
+	if (eb_serial_open(device, &serialfd) == -1) {
 		log_print(L_ERR, "can't open device: %s", device);
 		cleanup(EXIT_FAILURE);
 	} else {

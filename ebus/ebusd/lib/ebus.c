@@ -93,22 +93,6 @@ static unsigned char syn = EBUS_SYN;
 static int sfd;
 static struct termios oldtio;
 
-/**
- * @brief send bytes to serial device
- * @param [in] *buf pointer to a byte array
- * @param [in] buflen length of byte array
- * @return 0 ok | -1 error
- */
-int serial_send(const unsigned char *buf, int buflen);
-
-/**
- * @brief receive bytes from serial device
- * @param [out] *buf pointer to a byte array received bytes
- * @param [out] *buflen length of received bytes
- * @return 0 ok | -1 error
- */
-int serial_recv(unsigned char *buf, int *buflen);
-
 
 /**
  * @brief calculate delte time of given time stamps
@@ -184,7 +168,7 @@ unsigned char eb_calc_crc_byte(unsigned char byte, unsigned char init_crc);
 
 
 int
-serial_open(const char *dev, int *fd)
+eb_serial_open(const char *dev, int *fd)
 {
 	int ret;
 	struct termios newtio;
@@ -227,7 +211,7 @@ serial_open(const char *dev, int *fd)
 }
 
 int
-serial_close()
+eb_serial_close()
 {
 	int ret;
 
@@ -245,7 +229,7 @@ serial_close()
 }
 
 int
-serial_send(const unsigned char *buf, int buflen)
+eb_serial_send(const unsigned char *buf, int buflen)
 {
 	int ret;
 	
@@ -257,7 +241,7 @@ serial_send(const unsigned char *buf, int buflen)
 }
 
 int
-serial_recv(unsigned char *buf, int *buflen)
+eb_serial_recv(unsigned char *buf, int *buflen)
 {
 	//tcflush(sfd, TCIOFLUSH);
 	/* read msg from ebus device */
@@ -479,7 +463,7 @@ eb_recv_data(unsigned char *buf, int *buflen)
 		memset(tmp, '\0', sizeof(tmp));
 		tmplen = sizeof(tmp);
 
-		ret = serial_recv(tmp, &tmplen);
+		ret = eb_serial_recv(tmp, &tmplen);
 		if (ret < 0)
 			return -1;
 		
@@ -488,7 +472,7 @@ eb_recv_data(unsigned char *buf, int *buflen)
 			/* preset tmp buffer with not read bytes from get_bus */
 			if (*buflen > 0) {
 				
-				/* save temporary tmp in msg buffer */
+				/* save temporarily tmp in msg buffer */
 				memcpy(msg, tmp, tmplen);
 				msglen = tmplen;
 
@@ -574,7 +558,7 @@ eb_get_ack(unsigned char *buf, int *buflen)
 		memset(tmp, '\0', sizeof(tmp));
 		tmplen = sizeof(tmp);
 
-		ret = serial_recv(tmp, &tmplen);
+		ret = eb_serial_recv(tmp, &tmplen);
 		if (ret < 0)
 			return -1;
 		
@@ -637,7 +621,7 @@ eb_wait_syn(int *skip)
 		memset(buf, '\0', sizeof(buf));
 		buflen = sizeof(buf);
 
-		ret = serial_recv(buf, &buflen);
+		ret = eb_serial_recv(buf, &buflen);
 		if (ret < 0)
 			return -1;
 
@@ -680,7 +664,7 @@ eb_get_bus()
 		gettimeofday(&tlast, NULL);
 
 		/* send QQ */
-		ret = serial_send(&qq, 1);
+		ret = eb_serial_send(&qq, 1);
 		if (ret < 0)
 			return -1;
 
@@ -696,7 +680,7 @@ eb_get_bus()
 		/* receive 1 byte - must be QQ */
 		memset(buf, '\0', sizeof(buf));
 		buflen = sizeof(buf);
-		ret = serial_recv(buf, &buflen);
+		ret = eb_serial_recv(buf, &buflen);
 		if (ret < 0)
 			return -1;
 
@@ -775,13 +759,13 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		return -1;
 
 	/* send message to slave */
-	ret = serial_send(&send_data.msg_esc[1], send_data.len_esc - 1);
+	ret = eb_serial_send(&send_data.msg_esc[1], send_data.len_esc - 1);
 	if (ret < 0)
 		return -1;
 
 	if (type == EBUS_MSG_BROADCAST) {
 		/* SYN bus */
-		ret = serial_send(&syn, 1);
+		ret = eb_serial_send(&syn, 1);
 		if (ret < 0)
 			return -1;
 		
@@ -797,7 +781,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 
 	if (ret < 0 || ret > 1) {
 		/* free bus */
-		ret = serial_send(&syn, 1);	
+		ret = eb_serial_send(&syn, 1);	
 		if (ret < 0)
 			return -1;
 	
@@ -808,7 +792,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	if (ret == 1) {
 			
 		/* send message to slave */
-		ret = serial_send(&send_data.msg_esc[0], send_data.len_esc);
+		ret = eb_serial_send(&send_data.msg_esc[0], send_data.len_esc);
 		if (ret < 0)
 			return -1;
 
@@ -821,7 +805,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	
 		if (ret == 1) {
 			/* free bus */
-			ret = serial_send(&syn, 1);	
+			ret = eb_serial_send(&syn, 1);	
 			if (ret < 0)
 				return -1;
 		
@@ -834,7 +818,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		val = ret;
 	
 		/* free bus */
-		ret = serial_send(&syn, 1);
+		ret = eb_serial_send(&syn, 1);
 		if (ret < 0)
 			return -1;
 
@@ -851,7 +835,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	/* check crc's from recv_data */
 	if (recv_data.crc_calc != recv_data.crc_recv) {
 		/* send message to slave */
-		ret = serial_send(&nak, 1);
+		ret = eb_serial_send(&nak, 1);
 		if (ret < 0)
 			return -1;
 
@@ -864,7 +848,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		/* we compare against nak ! */
 		if (ret != 1) {
 			/* free bus */
-			ret = serial_send(&syn, 1);	
+			ret = eb_serial_send(&syn, 1);	
 			if (ret < 0)
 				return -1;
 		
@@ -881,13 +865,13 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	}
 
 	if (recv_data.crc_calc != recv_data.crc_recv) {
-		ret = serial_send(&nak, 1);		
+		ret = eb_serial_send(&nak, 1);		
 		if (ret < 0)
 			return -1;
 		
 		val = 1;
 	} else {
-		ret = serial_send(&ack, 1);
+		ret = eb_serial_send(&ack, 1);
 		if (ret < 0)
 			return -1;
 			
@@ -895,58 +879,12 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	}
 
 	/* free bus */
-	ret = serial_send(&syn, 1);;	
+	ret = eb_serial_send(&syn, 1);;	
 	if (ret < 0)
 		return -1;
 			
 	return val;
 }
-
-
-
-int
-eb_scan_bus(unsigned char *buf, int *buflen, unsigned char *msg, int *msglen)
-{
-	static unsigned char tmp[SERIAL_BUFSIZE];
-	static int tmplen = 0;
-	int ret, i;
-
-	if (tmplen > 0) {
-		memcpy(msg, tmp, tmplen);
-		*msglen = tmplen;
-	}
-
-	memset(tmp, '\0', sizeof(tmp));
-	tmplen = 0;
-	
-	ret = serial_recv(buf, buflen);
-	if (ret < 0)
-		return -1;
-
-	i = 0;
-	while (i < *buflen) {
-		/* temporarily  save bytes from input buffer */
-		if (ret > 0) {
-			tmp[tmplen] = buf[i];
-			tmplen++;
-		}
-		
-		if (buf[i] != EBUS_SYN) {
-			msg[*msglen] = buf[i];
-			*msglen += 1;
-		}
-		
-		/* get ebus syn sign - 1 message complete */
-		if (buf[i] == EBUS_SYN && *msglen > 0)
-			ret++;
-
-		i++;
-	}
-	
-	return ret;
-}
-
-
 
 
 int

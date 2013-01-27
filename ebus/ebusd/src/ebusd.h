@@ -48,6 +48,10 @@ void daemonize();
 
 void cleanup(int state);
 
+void print_ebus_msg(const unsigned char *buf, int buflen);
+
+int parse_cycle_data(unsigned char *buf, int *buflen);
+
 void main_loop();
 
 #endif /* MAIN_H_ */
