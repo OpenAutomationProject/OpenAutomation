@@ -60,18 +60,18 @@ static char device[CFG_LINELEN];
 static int foreground = UNSET;
 static char loglevel[CFG_LINELEN];
 static char logfile[CFG_LINELEN];
-static int nosyn = UNSET;
 static char pidfile[CFG_LINELEN];
 static int port = UNSET;
 static int rawdump = UNSET;
 static char rawfile[CFG_LINELEN];
+static int showraw = UNSET;
 static int settings = UNSET;
 static int max_retry = UNSET;
 static int skip_ack = UNSET;
 static int max_wait = UNSET;
 
 
-static char options[] = "a:c:C:d:fl:L:nP:p:rR:svh";
+static char options[] = "a:c:C:d:fl:L:P:p:rR:sSvh";
 
 static struct option opts[] = {
 	{"address",    required_argument, NULL, 'a'},
@@ -81,12 +81,12 @@ static struct option opts[] = {
 	{"foreground", no_argument,       NULL, 'f'},
 	{"loglevel",   required_argument, NULL, 'l'},
 	{"logfile",    required_argument, NULL, 'L'},
-	{"nosyn",      no_argument,       NULL, 'n'},
 	{"pidfile",    required_argument, NULL, 'P'},
 	{"port",       required_argument, NULL, 'p'},
 	{"rawdump",    no_argument,       NULL, 'r'},
 	{"rawfile",    required_argument, NULL, 'R'},
-	{"settings",   no_argument,       NULL, 's'},
+	{"showraw",    no_argument,       NULL, 's'},	
+	{"settings",   no_argument,       NULL, 'S'},
 	{"version",    no_argument,       NULL, 'v'},
 	{"help",       no_argument,       NULL, 'h'},
 	{NULL,         no_argument,       NULL,  0 },
@@ -101,11 +101,11 @@ static struct config cfg[] = {
 {"foreground", BOL, &foreground, "run in foreground"},
 {"loglevel",   STR, &loglevel, "\tlog level (INF | " LOGTXT ")"},
 {"logfile",    STR, &logfile, "\tspecified log file (" DAEMON_LOGFILE ")"},
-{"nosyn",      BOL, &nosyn, "\tdiscard syn in logfile"},
 {"pidfile",    STR, &pidfile, "\tspecified pid file (" DAEMON_PIDFILE ")"},
 {"port",       NUM, &port, "\tspecified port (" NUMSTR(SOCKET_PORT) ")"},
 {"rawdump",    BOL, &rawdump, "\tdump raw ebus data to file"},
 {"rawfile",    STR, &rawfile, "\tspecified raw file (" DAEMON_RAWFILE ")"},
+{"showraw",    BOL, &showraw, "\tprint raw data"},
 {"settings",   BOL, &settings, "\tprint daemon settings"},
 {"max_retry",  NUM, &max_retry, NULL},
 {"skip_ack",   NUM, &skip_ack, NULL},
@@ -176,9 +176,6 @@ cmdline(int *argc, char ***argv)
 		case 'L':
 			strncpy(logfile, optarg, strlen(optarg));
 			break;
-		case 'n':
-			nosyn = YES;
-			break;
 		case 'P':
 			strncpy(pidfile, optarg, strlen(optarg));
 			break;
@@ -194,6 +191,9 @@ cmdline(int *argc, char ***argv)
 			rawdump = YES;
 			break;
 		case 's':
+			showraw = YES;
+			break;			
+		case 'S':
 			settings = YES;
 			break;						
 		case 'v':
@@ -230,9 +230,6 @@ set_unset()
 	if (*logfile == '\0')
 		strncpy(logfile , DAEMON_LOGFILE, strlen(DAEMON_LOGFILE));
 
-	if (nosyn == UNSET)
-		nosyn = NO;
-
 	if (*pidfile == '\0')
 		strncpy(pidfile , DAEMON_PIDFILE, strlen(DAEMON_PIDFILE));
 
@@ -244,6 +241,9 @@ set_unset()
 
 	if (*rawfile == '\0')
 		strncpy(rawfile , DAEMON_RAWFILE, strlen(DAEMON_RAWFILE));
+		
+	if (showraw == UNSET)
+		showraw = NO;		
 
 	if (settings == UNSET)
 		settings = NO;
@@ -356,11 +356,11 @@ cleanup(int state)
 			log_print(L_INF, "%s closed.", device);
 
 	/* close rawfile */
-	if (rawdump)
+	if (rawdump == YES)
 		if (!rawfile_close())
 			log_print(L_INF, "%s closed.", rawfile);
 
-	if (!foreground) {
+	if (foreground == NO) {
 
 		/* delete PID file */
 		if (pidfile_locked)
@@ -391,8 +391,12 @@ cleanup(int state)
 void
 main_loop()
 {
+	unsigned char msgbuf[SERIAL_BUFSIZE];
+	int msgbuflen, maxfd;
 	fd_set listenfds;
-	int maxfd;
+
+	memset(msgbuf, '\0', sizeof(msgbuf));
+	msgbuflen = 0;
 
 	FD_ZERO(&listenfds);
 	FD_SET(serialfd, &listenfds);
@@ -409,7 +413,7 @@ main_loop()
 	for (;;) {
 		fd_set readfds;
 		int readfd;
-		int ret;
+		int ret, i;
 
 		/* set readfds to inital listenfds */
 		readfds = listenfds;
@@ -433,22 +437,41 @@ main_loop()
 			unsigned char serbuf[SERIAL_BUFSIZE];
 			int serbuflen;
 
+			memset(serbuf, '\0', sizeof(serbuf));
 			serbuflen = sizeof(serbuf);
 
 			/* get message from client */
-			ret = serial_ebus_get_msg(serialfd, serbuf, &serbuflen,
-								rawdump, nosyn);
+			ret = eb_scan_bus(serbuf, &serbuflen, msgbuf, &msgbuflen);					
 			if (ret == -1)
-				log_print(L_WAR, "serial device reading: "
-					"*buflen < 0 || *buflen > maxlen");
+				log_print(L_WAR, "error read serial device");
+				
+			/* print bus */
+			if (showraw == YES)
+				print_ebus_msg(serbuf, serbuflen);
+
+			/* print msg */ 
+			if (ret > 0) {
+				print_ebus_msg(msgbuf, msgbuflen);
+				memset(msgbuf, '\0', sizeof(msgbuf));
+				msgbuflen = 0;
+			}
+
+			/* dump raw data*/
+			if (rawdump == YES) {
+				ret = rawfile_write(serbuf, serbuflen);
+				if (ret < 0)
+					log_print(L_WAR, "can't write rawdata");
+			}
 
 		}
 
 		/* new incoming connection at TCP port arrived? */
 		if (FD_ISSET(socketfd, &readfds)) {
+
+			/* get new TCP client fd*/
 			ret = socket_client_accept(socketfd, &readfd);
 			if (readfd >= 0) {
-				/* add new TCP client FD to listenfds */
+				/* add new TCP client fd to listenfds */
 				FD_SET(readfd, &listenfds);
 				(readfd > maxfd) ? (maxfd = readfd) : (1);
 			}
@@ -457,6 +480,7 @@ main_loop()
 		/* run through connected sockets for new data */
 		for (readfd = socketfd + 1; readfd <= maxfd; ++readfd) {
 
+			/* check all connected clients */
 			if (FD_ISSET(readfd, &readfds)) {
 				char tcpbuf[SOCKET_BUFSIZE];
 				int tcpbuflen = sizeof(tcpbuf);
@@ -466,7 +490,7 @@ main_loop()
 								&tcpbuflen);
 
 				if (ret == -1) {
-					/* remove dead TCP client FD */
+					/* remove dead TCP client */
 					FD_CLR(readfd, &listenfds);
 				} else {
 					/* just echo message to sender */
@@ -501,7 +525,7 @@ main(int argc, char *argv[])
 	set_unset();
 
 	/* print configuration */
-	if (settings)
+	if (settings == YES)
 		cfg_print(cfg, cfglen);
 
 	
@@ -519,14 +543,14 @@ main(int argc, char *argv[])
 	log_open(logfile, foreground, (const char ***) &logtxt, logtxtlen);	
 
 	/* to be daemon */
-	if (!foreground) {
+	if (foreground == NO) {
 		log_print(L_ALL, DAEMON_NAME " " DAEMON_VERSION " started.");
 		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " started.");
 		daemonize();
 	}
 
 	/* open raw file */
-	if (rawdump) {
+	if (rawdump == YES) {
 		if (rawfile_open(rawfile) == -1) {
 			log_print(L_ERR, "can't open rawfile: %s\n", rawfile);
 			cleanup(EXIT_FAILURE);

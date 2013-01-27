@@ -36,63 +36,21 @@
 
 
 void
-debug_ebus_msg(unsigned char buf[], int buflen, int nosyn)
+print_ebus_msg(const unsigned char *buf, int buflen)
 {
+	int i = 0;
+	char msg[SERIAL_BUFSIZE];
+	char tmp[4];
 
-	if (nosyn == NO || buflen > 1) {
-		int k = 0;
-		char msg[SERIAL_BUFSIZE];
-		char tmp[4];
+	memset(tmp, '\0', sizeof(tmp));
+	memset(msg, '\0', sizeof(msg));
 
-		memset(tmp, '\0', sizeof(tmp));
-		memset(msg, '\0', sizeof(msg));
-
-		for (k = 0; k <= buflen; k++) {
-			sprintf(tmp, " %02x", buf[k]);
-			strncat(msg, tmp, 3);
-		}
-		log_print(L_EBH, "%s", msg);
+	for (i = 0; i < buflen; i++) {
+		sprintf(tmp, " %02x", buf[i]);
+		strncat(msg, tmp, 3);
 	}
+	log_print(L_EBH, "%s", msg);
 }
-
-int
-serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen,
-							int rawdump, int nosyn)
-{
-	static unsigned char msgbuf[SERIAL_BUFSIZE];
-	static int msglen = 0;
-	int maxlen, i;
-
-	if (msglen == 0)
-		memset(msgbuf, '\0', sizeof(msgbuf));
-
-
-	maxlen = *buflen;
-
-	*buflen = read(fd, buf, *buflen);
-	err_ret_if(*buflen < 0 || *buflen > maxlen, -1);
-
-	i = 0;
-	while (i < *buflen) {
-		msgbuf[msglen] = buf[i];
-
-		/* ebus syn sign is reached - decode ebus message */
-		if (msgbuf[msglen] == EBUS_SYN) {
-			if (rawdump)
-				rawfile_write(msgbuf, msglen);
-
-			debug_ebus_msg(msgbuf, msglen, nosyn);
-			memset(msgbuf, '\0', sizeof(msgbuf));
-			msglen = 0;
-		} else {
-			msglen++;
-		}
-		i++;
-	}
-
-	return 0;
-}
-
 
 
 void
@@ -131,7 +89,8 @@ cfg_print(struct config *cfg, int len)
 }
 
 int
-cfgfile_set_param(char *par, struct config *cfg, int len) {
+cfgfile_set_param(char *par, struct config *cfg, int len)
+{
 	int i;
 
 	for (i = 0; i < len; i++) {
@@ -200,6 +159,7 @@ cfgfile_read(const char *file, struct config *cfg, int len)
 }
 
 
+
 int
 pidfile_open(const char *file, int *fd)
 {
@@ -261,11 +221,12 @@ rawfile_close()
 }
 
 int
-rawfile_write(unsigned char buf[], int buflen)
+rawfile_write(const unsigned char *buf, int buflen)
 {
 	int ret, i;
 
-	for (i = 0; i <= buflen; i++) {
+	//for (i = 0; i <= buflen; i++) {
+	for (i = 0; i < buflen; i++) {		
 		ret = fputc(buf[i], _rawfp);
 		err_ret_if(ret == EOF, -1);
 	}
@@ -333,7 +294,7 @@ socket_client_accept(int listenfd, int *datafd)
 }
 
 int
-socket_client_read(int fd, char buf[], int *buflen)
+socket_client_read(int fd, char *buf, int *buflen)
 {
 	*buflen = read(fd, buf, *buflen);
 	err_ret_if(*buflen < 0, -1);
@@ -348,7 +309,7 @@ socket_client_read(int fd, char buf[], int *buflen)
 }
 
 int
-socket_client_write(int fd, char buf[], int buflen)
+socket_client_write(int fd, const char *buf, int buflen)
 {
 	int ret;
 

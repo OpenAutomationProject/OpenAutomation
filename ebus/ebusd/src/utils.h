@@ -47,10 +47,8 @@
 enum enum_number {UNSET = -1, NO, YES};
 
 
-void debug_ebus_msg(unsigned char buf[], int buflen, int nosyn);
+void print_ebus_msg(const unsigned char *buf, int buflen);
 
-int serial_ebus_get_msg(int fd, unsigned char buf[], int *buflen,
-						int rawdump, int skipsyn);
 
 
 #define CFG_LINELEN   256
@@ -73,7 +71,7 @@ int pidfile_close(const char *file, int fd);
 
 int rawfile_open(const char *file);
 int rawfile_close();
-int rawfile_write(unsigned char buf[],  int buflen);
+int rawfile_write(const unsigned char *buf,  int buflen);
 
 #define SOCKET_PORT      8888
 #define SOCKET_BUFSIZE   1024
@@ -81,7 +79,7 @@ int rawfile_write(unsigned char buf[],  int buflen);
 int socket_open(int *fd, int port);
 int socket_close(int fd);
 int socket_client_accept(int listenfd, int *datafd);
-int socket_client_read(int fd, char buf[], int *buflen);
-int socket_client_write(int fd, char buf[], int buflen);
+int socket_client_read(int fd, char *buf, int *buflen);
+int socket_client_write(int fd, const char *buf, int buflen);
 
 #endif /* UTILS_H_ */

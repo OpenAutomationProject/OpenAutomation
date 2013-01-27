@@ -112,14 +112,14 @@ int eb_htoi(const char *buf);
  * @brief print received results in a specific format
  * @return none
  */
-void ebus_print_result();
+void eb_print_result();
 
 
 /**
- * @brief handle ebus data message
+ * @brief handle sending ebus data
  *
  * \li Given input data will be prepared (escape, crc) and send to ebus.
- * \li Answer will be received, prepared (unescape, crc) and return result.
+ * \li Answer will be received, prepared (unescape, crc) and return as result.
  * 
  * @param [in] *buf pointer to a byte array
  * @param [in] buflen length of byte array
@@ -127,6 +127,20 @@ void ebus_print_result();
  * @return 0 ok | 1 neg. ACK from Slave | -1 error
  */ 
 int eb_send_data(const unsigned char *buf, int buflen, int type);
+
+/**
+ * @brief scan ebus for cycle ebus data
+ *
+ * \li Given input data will be prepared (escape, crc) and send to ebus.
+ * \li Answer will be received, prepared (unescape, crc) and return result.
+ * 
+ * @param [out] *buf pointer to a byte array
+ * @param [out] buflen length of byte array
+ * @param [out] *msg pointer to a byte array with full ebus msg
+ * @param [out] msglen length of byte array with full ebus msg
+ * @return 0 ok | 1 msg complete | -1 error
+ */ 
+int eb_scan_bus(unsigned char *buf, int *buflen, unsigned char *msg, int *msglen);
 
 
 /**
@@ -214,6 +228,7 @@ int eb_d2b_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt);
  * @return 0 substitute value | 1 positive value | -1 negative value
  */ 
 int eb_float_to_d2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb);
+
 
 /**
  * @brief convert data2c hex bytes to float

@@ -183,7 +183,6 @@ unsigned char eb_calc_crc_byte(unsigned char byte, unsigned char init_crc);
 
 
 
-
 int
 serial_open(const char *dev, int *fd)
 {
@@ -260,7 +259,7 @@ serial_send(const unsigned char *buf, int buflen)
 int
 serial_recv(unsigned char *buf, int *buflen)
 {
-	tcflush(sfd, TCIOFLUSH);
+	//tcflush(sfd, TCIOFLUSH);
 	/* read msg from ebus device */
 	*buflen = read(sfd, buf, *buflen);
 
@@ -269,7 +268,6 @@ serial_recv(unsigned char *buf, int *buflen)
 
 	return 0;
 }
-
 
 
 int
@@ -903,6 +901,51 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 			
 	return val;
 }
+
+
+
+int
+eb_scan_bus(unsigned char *buf, int *buflen, unsigned char *msg, int *msglen)
+{
+	static unsigned char tmp[SERIAL_BUFSIZE];
+	static int tmplen = 0;
+	int ret, i;
+
+	if (tmplen > 0) {
+		memcpy(msg, tmp, tmplen);
+		*msglen = tmplen;
+	}
+
+	memset(tmp, '\0', sizeof(tmp));
+	tmplen = 0;
+	
+	ret = serial_recv(buf, buflen);
+	if (ret < 0)
+		return -1;
+
+	i = 0;
+	while (i < *buflen) {
+		/* temporarily  save bytes from input buffer */
+		if (ret > 0) {
+			tmp[tmplen] = buf[i];
+			tmplen++;
+		}
+		
+		if (buf[i] != EBUS_SYN) {
+			msg[*msglen] = buf[i];
+			*msglen += 1;
+		}
+		
+		/* get ebus syn sign - 1 message complete */
+		if (buf[i] == EBUS_SYN && *msglen > 0)
+			ret++;
+
+		i++;
+	}
+	
+	return ret;
+}
+
 
 
 
