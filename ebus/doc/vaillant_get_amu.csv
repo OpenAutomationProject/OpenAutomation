@@ -1,0 +1,50 @@
+# AMU Waermepumpe
+get;amu;-;08;B509;3;0D2900;3;1,2,3;???;0;d.m.y;Datum
+get;amu;-;08;B509;3;0D2A00;1;1;int;0;Mo=0;Wochentag
+get;amu;-;08;B509;3;0D2800;3;1,2,3;???;0;s.m.h;Zeit
+get;amu;-;08;B509;3;0DD000;1;1;int;0;-;Waermepumpenstatus
+get;amu;-;08;B509;3;0DC501;4;?;???;0;min;Kompressorsperrzeit
+get;amu;-;08;B509;3;0D9200;1;1;int;0;-;Zusatzheizung vorhanden
+get;amu;-;08;B509;3;0D6500;2;1,2;d2c;0;°C;Zusatzheizung - Bivalenzpunkt
+get;amu;-;08;B509;3;0D7E00;2;1,2;d2c;0;°C;Zusatzheizung – Hysterese
+get;amu;-;08;B509;3;0DE001;1;1;d1b;0;min;Zusatzheizung – Verzögerung Hysterese 
+get;amu;-;08;B509;3;0D7F00;2;1,2;???;0;°min;Zusatzheizung – EnergieIntegral
+get;amu;-;08;B509;3;0D6300;1;1;int;0;-;Zusatzheizung – Heizung
+get;amu;-;08;B509;3;0D6400;1;1;int;0;-;Zusatzheizung – WarmWasser
+#
+get;amu;-;08;B509;3;0D7D00;2;1,2;d2c;0;°C;Kompressor – Hysterese
+get;amu;-;08;B509;3;0D7C00;2;1,2;???;0;°min;Kompressor  - EnergieIntegral
+get;amu;-;08;B509;3;0D7400;1;1;int;0;-;Kompressor – Starts pro Stunde
+get;amu;-;08;B509;3;0D7300;2;1,2;d2c;0;°C;Kompressor  - max. Rücklauftemperatur
+#
+get;amu;-;08;B509;3;0D6E00;2;1,2;d2c;0;°C;Quelle – zul. Spreizung
+get;amu;-;08;B509;3;0D7A01;1;1;d1b;0;°C;Quelle – Einfrierschutz
+get;amu;-;08;B509;3;0D7600;4;1;???;0;min;Quelle – Vorlaufzeit Quellenpumpe
+#
+get;amu;-;08;B509;3;0D9901;1;1;int;0;min;Ausschaltzeit interne Heizkreispumpe
+get;amu;-;08;B509;3;0DC801;4;1;d1b;0;ss;Interne Heizkreispumpe Vorlaufzeit
+#
+get;amu;-;08;B509;3;0D9B00;4;1,2;???;0;h;Kompressorlaufzeit Heizung
+get;amu;-;08;B509;3;0D9C00;4;1,2;???;0;h;Kompressorlaufzeit WW
+get;amu;-;08;B509;3;0D9A00;4;1,2;???;0;h;Kompressorlaufzeit gesamt
+get;amu;-;08;B509;3;0DA900;4;1,2;???;0;-;Kompressorstarts
+get;amu;-;08;B509;3;0DA100;4;1,2;???;0;h;Zusatzheizung gesamt
+get;amu;-;08;B509;3;0DA200;4;1,2;???;0;h;Zusatzheizung Heizen
+get;amu;-;08;B509;3;0DA300;4;1,2;???;0;h;Zusatzheizung WW
+get;amu;-;08;B509;3;0DB300;4;1,2;???;0;-;Zusatzheizung Starts
+#
+get;amu;-;08;B509;3;0D7401;1;1;d1b;0;°C;Kühlungsvorlaufsollwert
+get;amu;-;08;B509;3;0D7D01;1;?;???;0;h;Solepumpenlaufzeit Kühlbetrieb
+#
+get;amu;-;08;B509;3;0D6600;1;1;int;0;-;Servicezeit
+get;amu;-;08;B509;3;0D1300;1;1;int;0;-;Entlüftung
+#
+get;amu;-;08;B509;3;0D9700;2;1,2;???;0;-;Code 1
+get;amu;-;08;B509;3;0D9800;2;1,2;???;0;-;Code 2
+get;amu;-;08;B509;3;0D2400;1;1;int;0;-;Codes übernehmen
+#
+get;amu;-;08;B509;3;0DB801;1;1;int;0;-;Hocheffizenzpumpenstatus
+get;amu;-;08;B509;3;0DAC01;1;1;d1b;0;%;Hocheffizienzpumpengeschw
+get;amu;-;08;B509;3;0DAE01;1;1;d1b;0;%;Pumpensollwert in% beim Heizen
+#
+get;amu;-;08;B509;3;0DE301;1;1;int;0;-;Bivalenzmodus
