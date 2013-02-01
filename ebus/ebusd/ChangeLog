@@ -1,6 +1,13 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-01:
+* Add functions to read ebus command get files and load them into nested
+  structure. This will be used to send and decode ebus messages. 
+* Try to read daemon configuration file at daemon directory too.
+* ebus files splitted into ebus-decode and ebus-bus part.
+* Moved log.* from src to lib directory and build liblog.a
+
 2013-01-25:
 * Add autogen.sh script in main dir. Just type ./autogen.sh for build all.
 * Logging functions changed from level to class system. The advantage of this

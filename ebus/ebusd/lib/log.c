@@ -30,12 +30,10 @@
 
 #include "log.h"
 
-static unsigned char _loglvl = L_NUL;
-static const char ***_logtxt = NULL;
-static int _logtxtlen = 0;
+static unsigned char loglvl = L_NUL;
+static int logtxtlen = sizeof(logtxt) / sizeof(char*);
 
-static FILE *_logfp = NULL;
-
+static FILE *logfp = NULL;
 
 char * log_time(char *time);
 char * log_txt(unsigned char lvl);
@@ -43,32 +41,32 @@ char * log_txt(unsigned char lvl);
 void
 log_file(FILE *fp)
 {
-	if(_logfp)
-		fclose(_logfp);
+	if(logfp)
+		fclose(logfp);
 
-	_logfp = fp;
+	logfp = fp;
 }
 
 void
-log_level(char *lvl, const char *txt[], int len)
+log_level(char *lvl)
 {
 	unsigned char tmp;
 	int i;
 	char *par;
 	
-	_loglvl = L_NUL;
+	loglvl = L_NUL;
 	
 	par = strtok(lvl, ", ");
 	while (par) {
 		if (strncasecmp(par, "ALL", 3) == 0) {
-			_loglvl = L_ALL;
+			loglvl = L_ALL;
 			break;
 		}	
 		
 		tmp = 0x01;
-		for (i = 0; i < len; i++) {
-			if (strncasecmp(par, txt[i], 3) == 0) {
-				_loglvl |= (tmp << i);
+		for (i = 0; i < logtxtlen; i++) {
+			if (strncasecmp(par, logtxt[i], 3) == 0) {
+				loglvl |= (tmp << i);
 				break;
 			}
 		}
@@ -77,18 +75,15 @@ log_level(char *lvl, const char *txt[], int len)
 }
 
 int
-log_open(const char *file, int foreground, const char ***txt, int len)
+log_open(const char *file, int foreground)
 {
 	FILE *fp = NULL;
-	
-	_logtxt = txt;
-	_logtxtlen = len;
 
 	if (foreground) {
 		log_file(stdout);
 	} else {
 		if (file) {
-			if (!(fp = fopen(file, "a+"))) {
+			if ((fp = fopen(file, "a+")) == 0) {
 				fprintf(stderr, "can't open logfile: %s\n", file);
 
 				return -1;
@@ -106,9 +101,9 @@ log_open(const char *file, int foreground, const char ***txt, int len)
 void
 log_close()
 {
-	if (_logfp) {
-		fflush(_logfp);
-		fclose(_logfp);
+	if (logfp) {
+		fflush(logfp);
+		fclose(logfp);
 	}
 
 	closelog();
@@ -134,20 +129,20 @@ char *
 log_txt(unsigned char lvl)
 {
 	char *type = NULL;
-	if (_logtxtlen > 0) {
+	if (logtxtlen > 0) {
 		unsigned char tmp;
 		int i;
 		
 		tmp = 0x01;
-		for (i = 0; i < _logtxtlen; i++) {
+		for (i = 0; i < logtxtlen; i++) {
 			if (lvl == L_ALL) {
 				type = "ALL";
 				break;
 			}	
 					
 			if ((lvl & (tmp << i)) != 0x00 &&
-				(_loglvl & (tmp << i)) != 0x00) {
-				type = (char *)_logtxt[i];
+				(loglvl & (tmp << i)) != 0x00) {
+				type = (char *)logtxt[i];
 				break;
 			}
 		}
@@ -165,15 +160,15 @@ log_print(unsigned char lvl, const char *txt, ...)
 	va_start(ap, txt);
 	vsprintf(buf, txt, ap);
 
-	if ((_loglvl & lvl) != 0x00) {
-		if (_logfp) {
-			fprintf(_logfp, "%s [0x%02x %s] %s\n",
+	if ((loglvl & lvl) != 0x00) {
+		if (logfp) {
+			fprintf(logfp, "%s [0x%02x %s] %s\n",
 					log_time(time), lvl , log_txt(lvl), buf);								
-			fflush(_logfp);
+			fflush(logfp);
 
 		} else {
 			syslog(LOG_INFO, "[0x%02x %s] %s\n",
-							lvl, log_txt(lvl), buf);
+							lvl, log_txt(lvl), txt);
 		}
 	}
 

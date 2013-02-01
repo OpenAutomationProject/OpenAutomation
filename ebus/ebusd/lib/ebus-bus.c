@@ -19,12 +19,9 @@
  */
 
 /**
- * @file ebus.c
+ * @file ebus-bus.c
  * @brief ebus communication functions
  * @author roland.jax@liwest.at
- *
- * @todo missing functions for date, time and ascii
- *
  * @version 0.1
  */
 
@@ -41,44 +38,19 @@
 #include <termios.h>
 #include <sys/time.h>
 #include <ctype.h>
+#include <errno.h>
 
-#include "ebus.h"
+#include "log.h"
+#include "ebus-bus.h"
 
 
-#define EBUS_SYN_ESC_A9         0xA9
-#define EBUS_SYN_ESC_01         0x01
-#define EBUS_SYN_ESC_00         0x00
-
-#define EBUS_ACK                0x00
-#define EBUS_NAK                0xFF
-#define EBUS_BROADCAST          0xFE
-
-/**
- * @brief sending data structure
- */
-struct send_data {
-	unsigned char crc; /**< crc of escaped message */
-	unsigned char msg[SERIAL_BUFSIZE]; /**< original message */
-	int len; /**< length of original message */
-	unsigned char msg_esc[SERIAL_BUFSIZE]; /**< esacaped message */
-	int len_esc; /**< length of  esacaped message */
-};
 
 static struct send_data send_data;
 
-/**
- * @brief receiving data structure
- */
-struct recv_data {
-	unsigned char crc_recv; /**< received crc */
-	unsigned char crc_calc;	/**< calculated crc */
-	unsigned char msg[SERIAL_BUFSIZE]; /**< unescaped message */
-	int len; /**< length of unescaped message */
-	unsigned char msg_esc[SERIAL_BUFSIZE]; /**< received message */
-	int len_esc; /**< length of received message */
-};
-
 static struct recv_data recv_data;
+
+static int rawdump = NO;
+static int showraw = NO;
 
 static long max_wait = EBUS_MAX_WAIT;
 static int max_retry = EBUS_MAX_RETRY;
@@ -93,201 +65,21 @@ static unsigned char syn = EBUS_SYN;
 static int sfd;
 static struct termios oldtio;
 
-
-/**
- * @brief calculate delte time of given time stamps
- * @param [in] *tact newer time stamp
- * @param [in] *tlast older time stamp
- * @param [out] *tdiff calculated time difference
- * @return 0 positive | -1 negative ??? lol
- */
-int eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
-							struct timeval *tdiff);
-
-
-/**
- * @brief prepare received data
- * @param [in] *buf pointer to a byte array of received bytes
- * @param [in] buflen length of received bytes
- * @return none
- */
-void eb_recv_data_prepare(const unsigned char *buf, int buflen);
-
-/**
- * @brief receive bytes from serial device
- * @param [out] *buf pointer to a byte array of received bytes
- * @param [out] buflen length of received bytes
- * @return 0 ok | -1 error | -2 syn no answer from slave 
- * | -3 SYN received after answer from slave
- */  
-int eb_recv_data(unsigned char *buf, int *buflen);
-
- /**
- * @brief receive ACK byte from serial device
- * @param [out] *buf pointer to a byte array of received bytes
- * @param [out] buflen length of received bytes
- * @return 0 ok | 1 negative ACK | -1 error | -2 send and recv msg are different 
- * | -3 syn received (no answer from slave) | -4 we should never reach this
- */  
-int eb_get_ack(unsigned char *buf, int *buflen);
-
-
-/**
- * @brief receive bytes from serial device until SYN byte was received
- * @param [in] *skip number skipped SYN bytes
- * @return 0 ok | -1 error
- */ 
-int eb_wait_syn(int *skip);
-
-/**
- * @brief try to get bus for sending
- * \li wait SYN byte, send our ebus address and wait for minimun of ~4200 usec
- * \li read at least one byte and compare it with sent byte.
- * @param [out] *skip number skipped SYN bytes
- * @return 0 ok | -1 error | 1 max retry was reached
- */  
-int eb_get_bus();
-
-
-/**
- * @brief prepare send data
- * @param [in] *buf pointer to a byte array of send bytes
- * @param [in] buflen length of send bytes
- * @return none
- */
-void eb_send_data_prepare(const unsigned char *buf, int buflen);
-
-/**
- * @brief calculate crc of hex byte
- * @param [in] byte byte to calculate
- * @param [in] init_crc start value for calculation
- * @return new calculated crc byte from byte and init crc byte
- */
-unsigned char eb_calc_crc_byte(unsigned char byte, unsigned char init_crc);
+static FILE *rawfp = NULL;
 
 
 
-int
-eb_serial_open(const char *dev, int *fd)
+void
+eb_set_rawdump(int dump)
 {
-	int ret;
-	struct termios newtio;
-
-	sfd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
-	if (sfd < 0)
-		return -1;
-
-	ret = fcntl(sfd, F_SETFL, 0);
-	if (ret < 0)
-		return -1;
-
-	/* save current settings of serial port */
-	ret = tcgetattr(sfd, &oldtio);
-	if (ret < 0)
-		return -1;
-
-	memset(&newtio, '\0', sizeof(newtio));
-
-	newtio.c_cflag = SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
-	newtio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-	newtio.c_iflag = IGNPAR;
-	newtio.c_oflag &= ~OPOST;
-
-	newtio.c_cc[VMIN]  = 1;
-	newtio.c_cc[VTIME] = 0;
-
-	ret = tcflush(sfd, TCIFLUSH);
-	if (ret < 0)
-		return -1;
-
-	/* activate new settings of serial port */
-	ret = tcsetattr(sfd, TCSANOW, &newtio);
-	if (ret < 0)
-		return -1;
-
-	*fd = sfd;
-
-	return 0;
+	rawdump = dump;	
 }
 
-int
-eb_serial_close()
+void
+eb_set_showraw(int show)
 {
-	int ret;
-
-	/* activate old settings of serial port */
-	ret = tcsetattr(sfd, TCSANOW, &oldtio);
-	if (ret < 0)
-		return -1;
-
-	/* Close file descriptor from serial device */
-	ret = close(sfd);
-	if (ret < 0)
-		return -1;
-
-	return 0;
+	showraw = show;	
 }
-
-int
-eb_serial_send(const unsigned char *buf, int buflen)
-{
-	int ret;
-	
-	/* write msg to ebus device */
-	ret = write(sfd, buf, buflen);
-	tcflush(sfd, TCIOFLUSH);
-	
-	return ret;
-}
-
-int
-eb_serial_recv(unsigned char *buf, int *buflen)
-{
-	//tcflush(sfd, TCIOFLUSH);
-	/* read msg from ebus device */
-	*buflen = read(sfd, buf, *buflen);
-
-	if (*buflen < 0)
-		return -1;
-
-	return 0;
-}
-
-
-int
-eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
-							struct timeval *tdiff)
-{
-    long diff;
-
-    diff = (tact->tv_usec + 1000000 * tact->tv_sec) -
-	   (tlast->tv_usec + 1000000 * tlast->tv_sec);
-	   
-    tdiff->tv_sec = diff / 1000000;
-    tdiff->tv_usec = diff % 1000000;
-
-    return (diff < 0);
-}
-
-
-int
-eb_htoi(const char *buf)
-{
-	int ret;
-	ret = -1;
-	
-	if (isxdigit(*buf)) {
-		if (isalpha(*buf))
-			ret = 55;	
-		else
-			ret = 48;
-			
-		ret = toupper(*buf) - ret;
-	}
-
-	return ret;
-}
-
 
 void
 eb_set_qq(unsigned char src)
@@ -314,6 +106,187 @@ eb_set_skip_ack(int skip)
 }
 
 
+
+int
+eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
+							struct timeval *tdiff)
+{
+    long diff;
+
+    diff = (tact->tv_usec + 1000000 * tact->tv_sec) -
+	   (tlast->tv_usec + 1000000 * tlast->tv_sec);
+	   
+    tdiff->tv_sec = diff / 1000000;
+    tdiff->tv_usec = diff % 1000000;
+
+    return (diff < 0);
+}
+
+
+
+int
+eb_raw_file_open(const char *file)
+{
+	rawfp = fopen(file, "w");
+	err_ret_if(rawfp == NULL, -1);
+
+	return 0;
+}
+
+int
+eb_raw_file_close()
+{
+	int ret;
+
+	ret = fflush(rawfp);
+	err_ret_if(ret == EOF, -1);
+
+	ret = fclose(rawfp);
+	err_ret_if(ret == EOF, -1);
+
+	return 0;
+}
+
+int
+eb_raw_file_write(const unsigned char *buf, int buflen)
+{
+	int ret, i;
+
+	for (i = 0; i < buflen; i++) {		
+		ret = fputc(buf[i], rawfp);
+		err_ret_if(ret == EOF, -1);
+	}
+
+	ret = fflush(rawfp);
+	err_ret_if(ret == EOF, -1);
+
+	return 0;
+}
+
+void
+eb_raw_print_hex(const unsigned char *buf, int buflen)
+{
+	int i = 0;
+	char msg[SERIAL_BUFSIZE];
+	char tmp[4];
+
+	memset(tmp, '\0', sizeof(tmp));
+	memset(msg, '\0', sizeof(msg));
+	
+	for (i = 0; i < buflen; i++) {
+		sprintf(tmp, " %02x", buf[i]);
+		strncat(msg, tmp, 3);
+	}
+	log_print(L_EBH, "%s", msg);
+}
+
+
+
+int
+eb_serial_open(const char *dev, int *fd)
+{
+	int ret;
+	struct termios newtio;
+
+	sfd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
+	err_ret_if(sfd < 0, -1);
+
+	ret = fcntl(sfd, F_SETFL, 0);
+	err_ret_if(ret < 0, -1);
+
+	/* save current settings of serial port */
+	ret = tcgetattr(sfd, &oldtio);
+	err_ret_if(ret < 0, -1);
+
+	memset(&newtio, '\0', sizeof(newtio));
+
+	newtio.c_cflag = SERIAL_BAUDRATE | CS8 | CLOCAL | CREAD;
+	newtio.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+	newtio.c_iflag = IGNPAR;
+	newtio.c_oflag &= ~OPOST;
+
+	newtio.c_cc[VMIN]  = 1;
+	newtio.c_cc[VTIME] = 0;
+
+	ret = tcflush(sfd, TCIFLUSH);
+	err_ret_if(ret < 0, -1);
+
+	/* activate new settings of serial port */
+	ret = tcsetattr(sfd, TCSANOW, &newtio);
+	err_ret_if(ret < 0, -1);
+
+	*fd = sfd;
+
+	return 0;
+}
+
+int
+eb_serial_close()
+{
+	int ret;
+
+	/* activate old settings of serial port */
+	ret = tcsetattr(sfd, TCSANOW, &oldtio);
+	err_ret_if(ret < 0, -1);
+
+	/* Close file descriptor from serial device */
+	ret = close(sfd);
+	err_ret_if(ret < 0, -1);
+
+	return 0;
+}
+
+int
+eb_serial_send(const unsigned char *buf, int buflen)
+{
+	int ret, val;
+	
+	/* write msg to ebus device */
+	val = write(sfd, buf, buflen);
+	err_ret_if(val < 0, -1);
+	
+	ret = tcflush(sfd, TCIOFLUSH);
+	err_ret_if(ret < 0, -1);
+	
+	return val;
+}
+
+int
+eb_serial_recv(unsigned char *buf, int *buflen)
+{
+	int ret;
+	
+	//tcflush(sfd, TCIOFLUSH);
+	/* read msg from ebus device */
+	*buflen = read(sfd, buf, *buflen);
+	err_if(*buflen < 0);
+
+	if (*buflen < 0) {
+		log_print(L_WAR, "error read serial device");
+		return -1;
+	}
+
+	if (*buflen > SERIAL_BUFSIZE) {
+		log_print(L_WAR, "read data len > %d", SERIAL_BUFSIZE);
+		return -2;
+	}
+
+	/* print bus */
+	if (showraw == YES)
+		eb_raw_print_hex(buf, *buflen);
+
+	/* dump raw data*/
+	if (rawdump == YES) {
+		ret = eb_raw_file_write(buf, *buflen);
+		if (ret < 0)
+			log_print(L_WAR, "can't write rawdata");
+	}
+
+	return 0;
+}
+
+
+
 void
 eb_print_result()
 {
@@ -324,83 +297,6 @@ eb_print_result()
 	fprintf(stdout, "\n");
 }
 
-
-void
-eb_esc(unsigned char *buf, int *buflen)
-{
-	unsigned char tmp[SERIAL_BUFSIZE];
-	int tmplen, i;
-
-	memset(tmp, '\0', sizeof(tmp));
-	i = 0;
-	tmplen = 0;
-	
-	while (i < *buflen) {
-		
-		if (buf[i] == EBUS_SYN) {
-			tmp[tmplen] = EBUS_SYN_ESC_A9;
-			tmplen++;
-			tmp[tmplen] = EBUS_SYN_ESC_01;
-			tmplen++;
-		} else if (buf[i] == EBUS_SYN_ESC_A9) {
-			tmp[tmplen] = EBUS_SYN_ESC_A9;
-			tmplen++;
-			tmp[tmplen] = EBUS_SYN_ESC_00;
-			tmplen++;
-		} else {
-			tmp[tmplen] = buf[i];
-			tmplen++;
-		}
-		
-		i++;
-	}
-
-	memset(buf, '\0', sizeof(buf));
-	for (i = 0; i < tmplen; i++)
-		buf[i] = tmp[i];
-
-	*buflen = tmplen;
-}
-
-void
-eb_unesc(unsigned char *buf, int *buflen)
-{
-	unsigned char tmp[SERIAL_BUFSIZE];
-	int tmplen, i, found;
-
-	memset(tmp, '\0', sizeof(tmp));
-	i = 0;
-	tmplen = 0;
-	found = 0;
-	
-	while (i < *buflen) {
-		
-		if (buf[i] == EBUS_SYN_ESC_A9) {
-			found = 1;
-		} else if (found == 1) {
-			if (buf[i] == EBUS_SYN_ESC_01) {
-				tmp[tmplen] = EBUS_SYN;
-				tmplen++;
-			} else {
-				tmp[tmplen] = EBUS_SYN_ESC_A9;
-				tmplen++;
-			}
-			
-			found = 0;
-		} else {
-			tmp[tmplen] = buf[i];
-			tmplen++;
-		}
-		
-		i++;
-	}
-
-	memset(buf, '\0', sizeof(buf));
-	for (i = 0; i < tmplen; i++)
-		buf[i] = tmp[i];
-
-	*buflen = tmplen;
-}
 
 
 void
@@ -544,6 +440,7 @@ eb_recv_data(unsigned char *buf, int *buflen)
 }
 
 
+
 int
 eb_get_ack(unsigned char *buf, int *buflen)
 {
@@ -560,7 +457,7 @@ eb_get_ack(unsigned char *buf, int *buflen)
 
 		ret = eb_serial_recv(tmp, &tmplen);
 		if (ret < 0)
-			return -1;
+			return -1;	
 		
 		if (tmplen > 0) {		
 			i = 0;
@@ -608,8 +505,9 @@ eb_get_ack(unsigned char *buf, int *buflen)
 }
 
 
+
 int
-eb_wait_syn(int *skip)
+eb_wait_bus_syn(int *skip)
 {
 	unsigned char buf[SERIAL_BUFSIZE];
 	int buflen, ret, i, found;
@@ -623,7 +521,7 @@ eb_wait_syn(int *skip)
 
 		ret = eb_serial_recv(buf, &buflen);
 		if (ret < 0)
-			return -1;
+			return -1;		
 
 		if (buflen > 0) {
 			
@@ -646,7 +544,7 @@ eb_wait_syn(int *skip)
 }
 
 int
-eb_get_bus()
+eb_wait_bus()
 {
 	unsigned char buf[SERIAL_BUFSIZE];
 	int buflen, ret, skip, retry;
@@ -656,7 +554,7 @@ eb_get_bus()
 	retry = 0;
 	
 	do {
-		ret = eb_wait_syn(&skip);
+		ret = eb_wait_bus_syn(&skip);
 		if (ret < 0)
 			return -1;	
 
@@ -682,7 +580,7 @@ eb_get_bus()
 		buflen = sizeof(buf);
 		ret = eb_serial_recv(buf, &buflen);
 		if (ret < 0)
-			return -1;
+			return -1;		
 
 		/* is sent and read qq byte is equal */
 		if (buf[0] == qq && buflen == 1)
@@ -696,6 +594,7 @@ eb_get_bus()
 	/* reached max retry */
 	return 1;
 }
+
 
 
 void
@@ -754,7 +653,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	eb_send_data_prepare(buf, buflen);
 	
 	/* fetch AA and send QQ */
-	ret = eb_get_bus();
+	ret = eb_wait_bus();
 	if (ret != 0)
 		return -1;
 
@@ -887,217 +786,39 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 }
 
 
-int
-eb_bcd_to_int(unsigned char src, int *tgt)
-{
-	if ((src & 0x0F) > 0x09 || ((src >> 4) & 0x0F) > 0x09) {
-		*tgt = (int) (0xFF);
-		return 0;
-	} else {
-		*tgt = (int) ( ( ((src & 0xF0) >> 4) * 10) + (src & 0x0F) );
-		return 1;
-	}
-}
 
 int
-eb_int_to_bcd(int src, unsigned char *tgt)
+eb_cyc_data_recv(unsigned char *buf, int *buflen)
 {
-	if (src > 99) {
-		*tgt = (unsigned char) (0xFF);
-		return 0;
-	} else {
-		*tgt = (unsigned char) ( ((src / 10) << 4) | (src % 10) );
-		return 1;
-	}
-}
+	static unsigned char msg[SERIAL_BUFSIZE];
+	static int msglen = 0;
+	int ret, i;
 
+	if (msglen == 0)
+		memset(msg, '\0', sizeof(msg));
 
-int
-eb_d1b_to_int(unsigned char src, int *tgt)
-{
-	if ((src & 0x80) == 0x80) {
-		*tgt = (int) (- ( ((unsigned char) (~ src)) + 1) );
+	/* get new data */
+	ret = eb_serial_recv(buf, buflen);
+	if (ret < 0)
+		return -1;
 
-		if (*tgt  == -0x80)
-			return 0;
-		else
-			return -1;
-
-	} else {
-		*tgt = (int) (src);
-		return 1;
-	}
-}
-
-int
-eb_int_to_d1b(int src, unsigned char *tgt)
-{
-	if (src < -127 || src > 127) {
-		*tgt = (unsigned char) (0x80);
-		return 0;
-	} else {
-		if (src >= 0) {
-			*tgt = (unsigned char) (src);
-			return 1;
-		} else {
-			*tgt = (unsigned char) (- (~ (src - 1) ) );
-			return -1;
+	i = 0;
+	while (i < *buflen) {
+		if (buf[i] != EBUS_SYN) {
+			msg[msglen] = buf[i];
+			msglen++;
 		}
+
+		/* ebus syn sign is reached - decode ebus message */
+		if (buf[i] == EBUS_SYN && msglen > 0) {
+			eb_raw_print_hex(msg, msglen);
+			memset(msg, '\0', sizeof(msg));
+			msglen = 0;
+		}
+		
+		i++;
 	}
-}
 
-
-int
-eb_d1c_to_float(unsigned char src, float *tgt)
-{
-	if (src > 0xC8) {
-		*tgt = (float) (0xFF);
-		return 0;
-	} else {
-		*tgt = (float) (src / 2.0);
-		return 1;
-	}
-}
-
-int
-eb_float_to_d1c(float src, unsigned char *tgt)
-{
-	if (src < 0.0 || src > 100.0) {
-		*tgt = (unsigned char) (0xFF);
-		return 0;
-	} else {
-		*tgt = (unsigned char) (src * 2.0);
-		return 1;
-	}
-}
-
-
-int
-eb_d2b_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
-{
-	if ((src_msb & 0x80) == 0x80) {
-		*tgt = (float)
-			(- ( ((unsigned char) (~ src_msb)) +
-			(  ( ((unsigned char) (~ src_lsb)) + 1) / 256.0) ) );
-
-		if (src_msb  == 0x80 && src_lsb == 0x00)
-			return 0;
-		else
-			return -1;
-
-	} else {
-		*tgt = (float) (src_msb + (src_lsb / 256.0));
-		return 1;
-	}
-}
-
-int
-eb_float_to_d2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
-{
-	if (src < -127.999 || src > 127.999) {
-		*tgt_msb = (unsigned char) (0x80);
-		*tgt_lsb = (unsigned char) (0x00);
-		return 0;
-	} else {
-		*tgt_lsb = (unsigned char)
-					((src - ((unsigned char) src)) * 256.0);
-
-		if (src < 0.0 && *tgt_lsb != 0x00)
-			*tgt_msb = (unsigned char) (src - 1);
-		else
-			*tgt_msb = (unsigned char) (src);
-
-		if (src >= 0.0)
-			return 1;
-		else
-			return -1;
-
-	}
-}
-
-
-int
-eb_d2c_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt)
-{
-	if ((src_msb & 0x80) == 0x80) {
-		*tgt = (float)
-		(- ( ( ( ((unsigned char) (~ src_msb)) * 16.0) ) +
-		     ( ( ((unsigned char) (~ src_lsb)) & 0xF0) >> 4) +
-		   ( ( ( ((unsigned char) (~ src_lsb)) & 0x0F) +1 ) / 16.0) ) );
-
-		if (src_msb  == 0x80 && src_lsb == 0x00)
-			return 0;
-		else
-			return -1;
-
-	} else {
-		*tgt = (float) ( (src_msb * 16.0) + ((src_lsb & 0xF0) >> 4) +
-						((src_lsb & 0x0F) / 16.0) );
-		return 1;
-	}
-}
-
-int
-eb_float_to_d2c(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
-{
-	if (src < -2047.999 || src > 2047.999) {
-		*tgt_msb = (unsigned char) (0x80);
-		*tgt_lsb = (unsigned char) (0x00);
-		return 0;
-	} else {
-		*tgt_lsb =
-		  ( ((unsigned char) ( ((unsigned char) src) % 16) << 4) +
-		    ((unsigned char) ( (src - ((unsigned char) src)) * 16.0)) );
-
-		if (src < 0.0 && *tgt_lsb != 0x00)
-			*tgt_msb = (unsigned char) ((src / 16.0) - 1);
-		else
-			*tgt_msb = (unsigned char) (src / 16.0);
-
-		if (src >= 0.0)
-			return 1;
-		else
-			return -1;
-	}
-}
-
-
-
-unsigned char
-eb_calc_crc_byte(unsigned char byte, unsigned char init_crc)
-{
-	unsigned char crc, polynom;
-	int i;
-
-	crc = init_crc;
-
-	for (i = 0; i < 8; i++) {
-
-		if (crc & 0x80)
-			polynom = (unsigned char) 0x9B;
-		else
-			polynom = (unsigned char) 0;
-
-		crc = (unsigned char) ((crc & ~0x80) << 1);
-
-		if (byte & 0x80)
-			crc = (unsigned char) (crc | 1);
-
-		crc = (unsigned char) (crc ^ polynom);
-		byte = (unsigned char) (byte << 1);
-	}
-	return crc;
-}
-
-unsigned char
-eb_calc_crc(const unsigned char *buf, int buflen)
-{
-	int i;
-	unsigned char crc = 0;
-
-	for (i = 0 ; i < buflen ; i++, buf++)
-		crc = eb_calc_crc_byte(*buf, crc);
-
-	return crc;
+	return 0;
 }
 

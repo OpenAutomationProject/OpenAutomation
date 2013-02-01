@@ -23,11 +23,33 @@
 #define L_NUL 0x00
 #define L_ALL 0xFF
 
+#define L_INF 0x01
+#define L_NOT 0x02
+#define L_WAR 0x04
+#define L_ERR 0x08
+#define L_DBG 0x10
+#define L_EBH 0x20
+#define L_EBS 0x40
+#define L_NET 0x80
+
+#define LOGTXT "INF, NOT, WAR, ERR, DBG, EBH, EBS, NET, ALL"
+static const char *logtxt[] = {"INF","NOT","WAR","ERR","DBG","EBH","EBS","NET"};
+
+#define err_if(exp) \
+	if (exp) { log_print(L_ERR, "%s: %d: %s: Error %s", \
+		__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
+	}
+
+#define err_ret_if(exp, ret) \
+	if (exp) { log_print(L_ERR, "%s: %d: %s: Error %s", \
+		__FILE__, __LINE__, __PRETTY_FUNCTION__, strerror(errno));\
+		return (ret); \
+	}
 
 void log_file(FILE *fp);
-void log_level(char *lvl, const char *txt[], int len);
+void log_level(char *lvl);
 
-int log_open(const char *logfile, int foreground, const char ***txt, int len);
+int log_open(const char *logfile, int foreground);
 void log_close();
 
 void log_print(unsigned char lvl, const char *txt, ...);

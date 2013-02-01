@@ -32,10 +32,8 @@
 #include <sys/time.h>
 #include <ctype.h>
 
-#include "ebus.h"
+#include "ebus-bus.h"
 
-#define YES  1
-#define NO   0
 
 static int serialfd = -1;
 static const char *device = SERIAL_DEVICE;

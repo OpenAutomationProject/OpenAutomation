@@ -19,19 +19,11 @@
  */
 
 /**
- * @file ebus.h
+ * @file ebus-decode.h
  * @brief ebus communication functions
  * @author roland.jax@liwest.at
- *
- * @todo missing functions for date, time and ascii
- *
  * @version 0.1
  */
-
-#ifndef EBUS_H_
-#define EBUS_H_
-
-#include <sys/time.h>
 
 /*
  * name     type             description              resolution   substitue
@@ -42,80 +34,82 @@
  * DATA2c   SIGNED INTEGER   -2047,9  ... + 2047,9    1/16         8000h
  */
 
-#define EBUS_SYN                0xAA
+#ifndef EBUS_DECODE_H_
+#define EBUS_DECODE_H_
 
-#define EBUS_QQ                 0xFF
-#define EBUS_MAX_RETRY          3
-#define EBUS_SKIP_ACK           1
-#define EBUS_MAX_WAIT           4000
 
-#define EBUS_MSG_BROADCAST      1
-#define EBUS_MSG_MASTER_MASTER  2
-#define EBUS_MSG_MASTER_SLAVE   3
+#include "ebus-common.h"
 
-#define SERIAL_DEVICE           "/dev/ttyUSB0"
-#define SERIAL_BAUDRATE         B2400
-#define SERIAL_BUFSIZE          100
+#define CMD_LINELEN          512
+#define CMD_DELIMETER         11
+#define CMD_FILELEN         1024
+
+#define CMD_GET_SIZE_CLASS     5
+#define CMD_GET_SIZE_CMD      20
+#define CMD_GET_SIZE_S_ZZ      2
+#define CMD_GET_SIZE_S_CMD     4
+#define CMD_GET_SIZE_S_MSG    30
+#define CMD_GET_SIZE_R_POS    10
+#define CMD_GET_SIZE_R_TYPE    3
+#define CMD_GET_SIZE_R_UNIT    6
+#define CMD_GET_SIZE_COMMENT 256
+
+enum enum_cmd_type {GET, SET, CYC};
+
+/**
+ * @brief get commando structure
+ */
+struct cmd_get {
+	int key; /**< internal number - do we need this ? */
+	char class[CMD_GET_SIZE_CLASS+1]; /**< ci */
+	char cmd[CMD_GET_SIZE_CMD+1]; /**< hydraulic */
+	char s_zz[CMD_GET_SIZE_S_ZZ+1]; /**< zz */ 
+	char s_cmd[CMD_GET_SIZE_S_CMD+1]; /**< pb sb */
+	int s_len; /**< number of send bytes */
+	char s_msg[CMD_GET_SIZE_S_MSG+1]; /**< max 15 data bytes */
+	int r_len; /**< number of receive bytes */
+	char r_pos[CMD_GET_SIZE_R_POS+1]; /**< data position at answer string */
+	char r_type[CMD_GET_SIZE_R_TYPE+1]; /**< data type */
+	float r_fac; /**< facter */
+	char r_unit[CMD_GET_SIZE_R_UNIT+1]; /**< unit of data like °C,...) */
+	char com[CMD_GET_SIZE_COMMENT+1]; /**< just a comment */
+};
+
 
 
 /**
- * @brief Open a serial device in raw mode. 1 Byte is then minimum input length.
- * @param [in] *dev serial device
- * @param [out] *fd file descriptor from opened serial device
+ * @brief fill get command structure
+ * @param [in] *tok pointer to given token
  * @return 0 ok | -1 error
  */
-int eb_serial_open(const char *dev, int *fd);
+int eb_cmd_fill_get(const char *tok);
 
 /**
- * @brief close a serial device and set settings to default.
- * @return 0 ok | -1 error
- */
-int eb_serial_close();
-
-/**
- * @brief send bytes to serial device
+ * @brief prevent buffer overflow
+ * 
+ * number of tokens must be >= number of columns - 1 of file
+ * 
  * @param [in] *buf pointer to a byte array
- * @param [in] buflen length of byte array
- * @return 0 ok | -1 error
- */
-int eb_serial_send(const unsigned char *buf, int buflen);
+ * @param [in] delimeter
+ * @return number of found delimeters
+ */ 
+int eb_cmd_num_c(const char *buf, const char c);
 
 /**
- * @brief receive bytes from serial device
- * @param [out] *buf pointer to a byte array received bytes
- * @param [out] *buflen length of received bytes
- * @return 0 ok | -1 error
+ * @brief set cfgdir address
+ * @param [in] *file pointer to configuration file with *.csv
+ * @return 0 ok | -1 error | -2  read token error
  */
-int eb_serial_recv(unsigned char *buf, int *buflen);
-
+int eb_cmd_file_read(const char *file);
 
 /**
- * @brief set own ebus address
- * @param [in] src ebus address
- * @return none
+ * @brief get all files with given extension from given configuration directory
+ * @param [in] *cfgdir pointer to configuration directory
+ * @param [in] *suffix pointer to given extension
+ * @return 0 ok | -1 error | -2 read file error | -3 command files not found
  */
-void eb_set_qq(unsigned char src);
+int eb_cmd_dir_read(const char *cfgdir, const char *extension);
 
-/**
- * @brief set max wait time between send and receive of own address (QQ)
- * @param [in] usec wait time in usec
- * @return none
- */
-void eb_set_max_wait(long usec);
-
-/**
- * @brief set number of retry to get bus
- * @param [in] retry
- * @return none
- */
-void eb_set_max_retry(int retry);
-
-/**
- * @brief set number of skipped SYN if an error occurred while getting the bus
- * @param [in] skip is only the start value (skip = skip_ack + retry;)
- * @return none
- */
-void eb_set_skip_ack(int skip);
 
 
 /**
@@ -125,25 +119,6 @@ void eb_set_skip_ack(int skip);
  */ 
 int eb_htoi(const char *buf);
 
-/**
- * @brief print received results in a specific format
- * @return none
- */
-void eb_print_result();
-
-
-/**
- * @brief handle sending ebus data
- *
- * \li Given input data will be prepared (escape, crc) and send to ebus.
- * \li Answer will be received, prepared (unescape, crc) and return as result.
- * 
- * @param [in] *buf pointer to a byte array
- * @param [in] buflen length of byte array
- * @param [in] type is the type of message to send
- * @return 0 ok | 1 neg. ACK from Slave | -1 error
- */ 
-int eb_send_data(const unsigned char *buf, int buflen, int type);
 
 
 /**
@@ -163,6 +138,7 @@ void eb_esc(unsigned char *buf, int *buflen);
 void eb_unesc(unsigned char *buf, int *buflen);
 
 
+
 /**
  * @brief convert bcd hex byte to int
  * @param [in] src bcd hex byte
@@ -178,6 +154,7 @@ int eb_bcd_to_int(unsigned char src, int *tgt);
  * @return 0 substitute value | 1 positive value
  */ 
 int eb_int_to_bcd(int src, unsigned char *tgt);
+
 
 
 /**
@@ -197,6 +174,7 @@ int eb_d1b_to_int(unsigned char src, int *tgt);
 int eb_int_to_d1b(int src, unsigned char *tgt);
 
 
+
 /**
  * @brief convert data1c hex byte to float
  * @param [in] src data1c hex byte
@@ -212,6 +190,7 @@ int eb_d1c_to_float(unsigned char src, float *tgt);
  * @return 0 substitute value | 1 positive value | -1 negative value
  */ 
 int eb_float_to_d1c(float src, unsigned char *tgt);
+
 
 
 /**
@@ -233,6 +212,7 @@ int eb_d2b_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt);
 int eb_float_to_d2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb);
 
 
+
 /**
  * @brief convert data2c hex bytes to float
  * @param [in] src_lsb least significant data2c hex byte
@@ -252,6 +232,15 @@ int eb_d2c_to_float(unsigned char src_lsb, unsigned char src_msb, float *tgt);
 int eb_float_to_d2c(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb);
 
 
+
+/**
+ * @brief calculate crc of hex byte
+ * @param [in] byte byte to calculate
+ * @param [in] init_crc start value for calculation
+ * @return new calculated crc byte from byte and init crc byte
+ */
+unsigned char eb_calc_crc_byte(unsigned char byte, unsigned char init_crc);
+
 /**
  * @brief calculate crc of given hex array
  *
@@ -264,4 +253,6 @@ int eb_float_to_d2c(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb);
  */
 unsigned char eb_calc_crc(const unsigned char *bytes, int size);
 
-#endif /* EBUS_H_ */
+
+
+#endif /* EBUS_DECODE_H_ */

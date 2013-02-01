@@ -35,13 +35,10 @@
 
 #include "log.h"
 #include "utils.h"
-#include "ebus.h"
+//~ #include "ebus-common.h"
+#include "ebus-bus.h"
 #include "ebusd.h"
 
-/* for log */
-#define LOGTXT "INF, NOT, WAR, ERR, DBG, EBH, EBS, NET, ALL"
-const char *logtxt[] = {"INF","NOT","WAR","ERR","DBG","EBH","EBS","NET"};
-int logtxtlen = sizeof(logtxt) / sizeof(char*);
 
 /* global variables */
 const char *progname;
@@ -57,6 +54,7 @@ static char address[2];
 static char cfgdir[CFG_LINELEN];
 static char cfgfile[CFG_LINELEN];
 static char device[CFG_LINELEN];
+static char extension[5];
 static int foreground = UNSET;
 static char loglevel[CFG_LINELEN];
 static char logfile[CFG_LINELEN];
@@ -71,13 +69,14 @@ static int skip_ack = UNSET;
 static int max_wait = UNSET;
 
 
-static char options[] = "a:c:C:d:fl:L:P:p:rR:sSvh";
+static char options[] = "a:c:C:d:e:fl:L:P:p:rR:sSvh";
 
 static struct option opts[] = {
 	{"address",    required_argument, NULL, 'a'},
 	{"cfgfdir",    required_argument, NULL, 'c'},
 	{"cfgfile",    required_argument, NULL, 'C'},
 	{"device",     required_argument, NULL, 'd'},
+	{"extension",  required_argument, NULL, 'e'},
 	{"foreground", no_argument,       NULL, 'f'},
 	{"loglevel",   required_argument, NULL, 'l'},
 	{"logfile",    required_argument, NULL, 'L'},
@@ -95,16 +94,18 @@ static struct option opts[] = {
 static struct config cfg[] = {
 
 {"address",    STR, &address, "\tbus address (" NUMSTR(EBUS_QQ) ")"},
-{"cfgdir",     STR, &cfgdir, "\tconfiguration directory (" DAEMON_CFGDIR ")"},
+{"cfgdir",     STR, &cfgdir, "\tconfiguration directory of command files " \
+							"(" DAEMON_CFGDIR ")"},
 {"cfgfile",    STR, &cfgfile, "\tdaemon configuration file (" DAEMON_CFGFILE ")"},
-{"device",     STR, &device, "\tspecified serial device (" SERIAL_DEVICE ")"},
+{"device",     STR, &device, "\tserial device (" SERIAL_DEVICE ")"},
+{"extension",  STR, &extension, "extension of command files (" DAEMON_EXTENSION ")"},
 {"foreground", BOL, &foreground, "run in foreground"},
 {"loglevel",   STR, &loglevel, "\tlog level (INF | " LOGTXT ")"},
-{"logfile",    STR, &logfile, "\tspecified log file (" DAEMON_LOGFILE ")"},
-{"pidfile",    STR, &pidfile, "\tspecified pid file (" DAEMON_PIDFILE ")"},
-{"port",       NUM, &port, "\tspecified port (" NUMSTR(SOCKET_PORT) ")"},
+{"logfile",    STR, &logfile, "\tlog file (" DAEMON_LOGFILE ")"},
+{"pidfile",    STR, &pidfile, "\tpid file (" DAEMON_PIDFILE ")"},
+{"port",       NUM, &port, "\tport (" NUMSTR(SOCKET_PORT) ")"},
 {"rawdump",    BOL, &rawdump, "\tdump raw ebus data to file"},
-{"rawfile",    STR, &rawfile, "\tspecified raw file (" DAEMON_RAWFILE ")"},
+{"rawfile",    STR, &rawfile, "\traw file (" DAEMON_RAWFILE ")"},
 {"showraw",    BOL, &showraw, "\tprint raw data"},
 {"settings",   BOL, &settings, "\tprint daemon settings"},
 {"max_retry",  NUM, &max_retry, NULL},
@@ -166,7 +167,15 @@ cmdline(int *argc, char ***argv)
 			break;
 		case 'd':
 			strncpy(device, optarg, strlen(optarg));
-			break;			
+			break;
+		case 'e':
+			if (strlen(optarg) > 3) {
+				usage();
+				exit(EXIT_FAILURE);
+			}
+			extension[0] = '.';
+			strncpy(&extension[1], optarg, strlen(optarg));
+			break;						
 		case 'f':
 			foreground = YES;
 			break;
@@ -220,6 +229,11 @@ set_unset()
 
 	if (*device == '\0')
 		strncpy(device , SERIAL_DEVICE, strlen(SERIAL_DEVICE));
+
+	if (*extension == '\0') {
+		extension[0] = '.';
+		strncpy(&extension[1] , DAEMON_EXTENSION, strlen(DAEMON_EXTENSION));
+	}
 
 	if (foreground == UNSET)
 		foreground = NO;		
@@ -321,7 +335,7 @@ daemonize()
 	close(STDERR_FILENO);
 
 	/* write pidfile and try to lock it */
-	if (pidfile_open(pidfile, &pidfd) == -1) {
+	if (pid_file_open(pidfile, &pidfd) == -1) {
 		log_print(L_ERR, "can't open pidfile: %s\n", pidfile);
 		cleanup(EXIT_FAILURE);
 	} else {
@@ -347,24 +361,24 @@ cleanup(int state)
 
 	/* close listing tcp socket */
 	if (socketfd > 0)
-		if (!socket_close(socketfd))
+		if (sock_close(socketfd) == -1)
 			log_print(L_INF, "port %d closed.", port);
 
 	/* close serial device */
 	if (serialfd > 0)
-		if (!eb_serial_close())
+		if (eb_serial_close() == -1)
 			log_print(L_INF, "%s closed.", device);
 
 	/* close rawfile */
 	if (rawdump == YES)
-		if (!rawfile_close())
+		if (eb_raw_file_close() == -1)
 			log_print(L_INF, "%s closed.", rawfile);
 
 	if (foreground == NO) {
 
 		/* delete PID file */
 		if (pidfile_locked)
-			if (!pidfile_close(pidfile, pidfd))
+			if (pid_file_close(pidfile, pidfd) == -1)
 				log_print(L_INF, "%s deleted.", pidfile);
 
 		/* Reset all signal handlers to default */
@@ -389,87 +403,10 @@ cleanup(int state)
 
 
 void
-print_ebus_msg(const unsigned char *buf, int buflen)
-{
-	int i = 0;
-	char msg[SERIAL_BUFSIZE];
-	char tmp[4];
-
-	memset(tmp, '\0', sizeof(tmp));
-	memset(msg, '\0', sizeof(msg));
-	
-	for (i = 0; i < buflen; i++) {
-		sprintf(tmp, " %02x", buf[i]);
-		strncat(msg, tmp, 3);
-	}
-	log_print(L_EBH, "%s", msg);
-}
-
-int
-parse_cycle_data(unsigned char *buf, int *buflen)
-{
-	static unsigned char msg[SERIAL_BUFSIZE];
-	static int msglen = 0;
-	int ret, i;
-
-	if (msglen == 0)
-		memset(msg, '\0', sizeof(msg));
-
-	/* get new data */
-	ret = eb_serial_recv(buf, buflen);
-	
-	if (ret < 0) {
-		log_print(L_WAR, "error read serial device");
-		return -1;
-	}
-
-	if (*buflen > SERIAL_BUFSIZE) {
-		log_print(L_WAR, "read data len > %d", SERIAL_BUFSIZE);
-		return -2;
-	}
-
-	/* print bus */
-	if (showraw == YES)
-		print_ebus_msg(buf, *buflen);
-
-	/* dump raw data*/
-	if (rawdump == YES) {
-		ret = rawfile_write(buf, *buflen);
-		if (ret < 0)
-			log_print(L_WAR, "can't write rawdata");
-	}
-
-	i = 0;
-	while (i < *buflen) {
-		if (buf[i] != EBUS_SYN) {
-			msg[msglen] = buf[i];
-			msglen++;
-		}
-
-		/* ebus syn sign is reached - decode ebus message */
-		if (buf[i] == EBUS_SYN && msglen > 0) {
-			print_ebus_msg(msg, msglen);
-			memset(msg, '\0', sizeof(msg));
-			msglen = 0;
-		}
-		
-		i++;
-	}
-
-	return 0;
-}
-
-
-void
 main_loop()
 {
-	//~ unsigned char msgbuf[SERIAL_BUFSIZE];
-	//~ int msgbuflen
 	int maxfd;
 	fd_set listenfds;
-
-	//~ memset(msgbuf, '\0', sizeof(msgbuf));
-	//~ msgbuflen = 0;
 
 	FD_ZERO(&listenfds);
 	FD_SET(serialfd, &listenfds);
@@ -514,7 +451,7 @@ main_loop()
 			serbuflen = sizeof(serbuf);
 
 			/* get message from client */
-			parse_cycle_data(serbuf, &serbuflen);
+			eb_cyc_data_recv(serbuf, &serbuflen);
 				
 		}
 
@@ -522,7 +459,7 @@ main_loop()
 		if (FD_ISSET(socketfd, &readfds)) {
 
 			/* get new TCP client fd*/
-			ret = socket_client_accept(socketfd, &readfd);
+			ret = sock_client_accept(socketfd, &readfd);
 			if (readfd >= 0) {
 				/* add new TCP client fd to listenfds */
 				FD_SET(readfd, &listenfds);
@@ -539,17 +476,19 @@ main_loop()
 				int tcpbuflen = sizeof(tcpbuf);
 
 				/* get message from client */
-				ret = socket_client_read(readfd, tcpbuf,
-								&tcpbuflen);
+				ret = sock_client_read(readfd, tcpbuf, &tcpbuflen);
 
 				if (ret == -1) {
 					/* remove dead TCP client */
 					FD_CLR(readfd, &listenfds);
-				} else {
-					/* just echo message to sender */
-					socket_client_write(readfd, tcpbuf,
-								tcpbuflen);
 				}
+
+				ret = cmd_decode(tcpbuf, tcpbuflen);
+
+				//~ else {
+					//~ /* just echo message to sender */
+					//~ sock_client_write(readfd, tcpbuf, tcpbuflen);
+				//~ }
 			}
 		}
 	}
@@ -558,7 +497,8 @@ main_loop()
 int
 main(int argc, char *argv[])
 {
-
+	int tmp;
+	
 	/* set progname */
 	progname = (const char *)strrchr(argv[0], '/');
 	progname = progname ? (progname + 1) : argv[0];
@@ -571,8 +511,9 @@ main(int argc, char *argv[])
 		strncpy(cfgfile , DAEMON_CFGFILE, strlen(DAEMON_CFGFILE));
 
 	/* read config file */
-	if (cfgfile_read(cfgfile, cfg, cfglen) == -1)
-		fprintf(stderr, "can't open cfgfile: %s\n", cfgfile);	
+	if (cfg_file_read(cfgfile, cfg, cfglen) == -1)
+		fprintf(stderr, "can't open cfgfile: %s ==> " \
+				"build in settings will be used.\n", cfgfile);	
 
 	/* set unset configuration */
 	set_unset();
@@ -583,7 +524,9 @@ main(int argc, char *argv[])
 
 	
 	/* set ebus configuration */
-	int tmp;
+	eb_set_rawdump(rawdump);
+	eb_set_showraw(showraw);
+
 	tmp = (eb_htoi(&address[0])) * 16 + (eb_htoi(&address[1]));
 	eb_set_qq((unsigned char) tmp);
 
@@ -592,8 +535,8 @@ main(int argc, char *argv[])
 	eb_set_max_wait(max_wait);	
 
 	/* open log */
-	log_level(loglevel, logtxt, logtxtlen);
-	log_open(logfile, foreground, (const char ***) &logtxt, logtxtlen);	
+	log_level(loglevel);
+	log_open(logfile, foreground);	
 
 	/* to be daemon */
 	if (foreground == NO) {
@@ -602,9 +545,12 @@ main(int argc, char *argv[])
 		daemonize();
 	}
 
+	/* read ebus command configuration files */
+	eb_cmd_dir_read(cfgdir, extension);
+
 	/* open raw file */
 	if (rawdump == YES) {
-		if (rawfile_open(rawfile) == -1) {
+		if (eb_raw_file_open(rawfile) == -1) {
 			log_print(L_ERR, "can't open rawfile: %s\n", rawfile);
 			cleanup(EXIT_FAILURE);
 		} else {
@@ -623,7 +569,7 @@ main(int argc, char *argv[])
 
 
 	/* open listing tcp socket */
-	if (socket_open(&socketfd, port) == -1) {
+	if (sock_open(&socketfd, port) == -1) {
 		log_print(L_ERR, "can't open port: %d", port);
 		cleanup(EXIT_FAILURE);
 	} else {

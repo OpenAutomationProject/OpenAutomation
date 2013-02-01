@@ -29,10 +29,28 @@
 #include <errno.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "log.h"
-#include "ebus.h"
+#include "ebus-bus.h"
 #include "utils.h"
+
+
+
+int
+cmd_decode(unsigned char *buf, int buflen)
+{
+	char *cmd, *par;
+	cmd = strtok(buf, " ");
+	
+	//~ if (strncasecmp(buf, "get", 3) == 0) {
+		//~ log_print(L_NET, "cmd: %s", cmd);
+		//~ par = strtok(NULL, " ");
+		//~ log_print(L_NET, "par: %s", par);
+	//~ }
+	return 0;
+}
+
 
 
 void
@@ -71,7 +89,7 @@ cfg_print(struct config *cfg, int len)
 }
 
 int
-cfgfile_set_param(char *par, struct config *cfg, int len)
+cfg_file_set_param(char *par, struct config *cfg, int len)
 {
 	int i;
 
@@ -85,7 +103,7 @@ cfgfile_set_param(char *par, struct config *cfg, int len)
 			switch (cfg[i].type) {
 			case STR:
 				if (strlen(cfg[i].tgt) == 0)
-					strncpy(cfg[i].tgt , par, strlen(par));	
+					strncpy(cfg[i].tgt , par, strlen(par));
 				break;
 			case BOL:
 				if (*(int *) cfg[i].tgt == UNSET) {
@@ -113,24 +131,38 @@ cfgfile_set_param(char *par, struct config *cfg, int len)
 }
 
 int
-cfgfile_read(const char *file, struct config *cfg, int len)
+cfg_file_read(const char *file, struct config *cfg, int len)
 {
 	int ret;
 	char line[CFG_LINELEN];
-	char *par;
+	char *par, *tmp;
 	FILE *fp = NULL;
+
+	
 
 	/* open config file */
 	fp = fopen(file, "r");
-	err_ret_if(!fp, -1);
+
+	/* try local configuration file */
+	if (fp == NULL) {
+		fprintf(stdout, "configuration file %s not found.\n", file);
+		
+		tmp = strrchr(file, '/');
+		tmp++;
+		
+		/* open config file */
+		fp = fopen(tmp, "r");
+		err_ret_if(fp == NULL, -1);
+		
+		fprintf(stdout, "local configuration file %s used.\n", tmp);
+	}
 
 	/* read each line and set parameter */
-	while (fgets( line, CFG_LINELEN, fp) != NULL ) {
+	while (fgets(line, CFG_LINELEN, fp) != NULL ) {
 		par = strtok(line, "\t =\n\r") ;
 		
 		if (par != NULL && par[0] != '#')
-			cfgfile_set_param(par, cfg, len);
-			
+			ret = cfg_file_set_param(par, cfg, len);
 	}
 
 	/* close config file */
@@ -143,7 +175,7 @@ cfgfile_read(const char *file, struct config *cfg, int len)
 
 
 int
-pidfile_open(const char *file, int *fd)
+pid_file_open(const char *file, int *fd)
 {
 	int ret;
 	char pid[10];
@@ -162,7 +194,7 @@ pidfile_open(const char *file, int *fd)
 }
 
 int
-pidfile_close(const char *file, int fd)
+pid_file_close(const char *file, int fd)
 {
 	int ret;
 
@@ -177,52 +209,8 @@ pidfile_close(const char *file, int fd)
 
 
 
-static FILE *_rawfp = NULL;
-
 int
-rawfile_open(const char *file)
-{
-	_rawfp = fopen(file, "w");
-	err_ret_if(!_rawfp, -1);
-
-	return 0;
-}
-
-int
-rawfile_close()
-{
-	int ret;
-
-	ret = fflush(_rawfp);
-	err_ret_if(ret == EOF, -1);
-
-	ret = fclose(_rawfp);
-	err_ret_if(ret == EOF, -1);
-
-	return 0;
-}
-
-int
-rawfile_write(const unsigned char *buf, int buflen)
-{
-	int ret, i;
-
-	//for (i = 0; i <= buflen; i++) {
-	for (i = 0; i < buflen; i++) {		
-		ret = fputc(buf[i], _rawfp);
-		err_ret_if(ret == EOF, -1);
-	}
-
-	ret = fflush(_rawfp);
-	err_ret_if(ret == EOF, -1);
-
-	return 0;
-}
-
-
-
-int
-socket_open(int *fd, int port)
+sock_open(int *fd, int port)
 {
 	int ret, opt;
 	struct sockaddr_in sock;
@@ -251,7 +239,7 @@ socket_open(int *fd, int port)
 }
 
 int
-socket_close(int fd)
+sock_close(int fd)
 {
 	int ret;
 
@@ -262,7 +250,7 @@ socket_close(int fd)
 }
 
 int
-socket_client_accept(int listenfd, int *datafd)
+sock_client_accept(int listenfd, int *datafd)
 {
 	struct sockaddr_in sock;
 	socklen_t socklen;
@@ -272,26 +260,33 @@ socket_client_accept(int listenfd, int *datafd)
 	*datafd = accept(listenfd, (struct sockaddr *) &sock, &socklen);
 	err_ret_if(*datafd < 0, -1);
 
+	log_print(L_NET, "client [%d] from %s connected.",
+					*datafd, inet_ntoa(sock.sin_addr));
+
 	return 0;
 }
 
 int
-socket_client_read(int fd, char *buf, int *buflen)
+sock_client_read(int fd, char *buf, int *buflen)
 {
 	*buflen = read(fd, buf, *buflen);
 	err_ret_if(*buflen < 0, -1);
-
-	if (strncmp("quit", buf ,4) == 0) {
+	
+	if (strncasecmp("quit", buf ,4) == 0) {
 		/* close tcp connection */
-		close(fd);
+		log_print(L_NET, "client [%d] disconnected.", fd);
+		sock_close(fd);
 		return -1;
 	}
+
+	buf[strcspn(buf,"\n")] = '\0';
+	log_print(L_NET, "client [%d] %s", fd, buf);
 
 	return 0;
 }
 
 int
-socket_client_write(int fd, const char *buf, int buflen)
+sock_client_write(int fd, const char *buf, int buflen)
 {
 	int ret;
 

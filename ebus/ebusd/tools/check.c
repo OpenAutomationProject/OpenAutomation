@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ebus.h"
+#include "ebus-decode.h"
 
 int main() {
 

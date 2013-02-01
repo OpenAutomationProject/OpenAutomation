@@ -27,6 +27,7 @@
 
 #define DAEMON_CFGDIR         "/etc/ebusd"
 #define DAEMON_CFGFILE        DAEMON_CFGDIR"/ebusd.conf"
+#define DAEMON_EXTENSION      "csv"
 #define DAEMON_FOREGROUND     NO
 #define DAEMON_LOGLEVEL       "INF"
 #define DAEMON_LOGFILE        "/var/log/ebusd.log"
@@ -47,10 +48,6 @@ void signal_handler(int sig);
 void daemonize();
 
 void cleanup(int state);
-
-void print_ebus_msg(const unsigned char *buf, int buflen);
-
-int parse_cycle_data(unsigned char *buf, int *buflen);
 
 void main_loop();
 
