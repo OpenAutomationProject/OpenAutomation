@@ -22,6 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
@@ -37,18 +38,113 @@
 
 
 
+struct msg_queue *dummy;
+static int msg_entries;
+
 int
-cmd_decode(unsigned char *buf, int buflen)
+msg_queue_entries(void)
 {
-	char *cmd, *par;
-	cmd = strtok(buf, " ");
+	return msg_entries;
+}
+
+int
+msg_queue_init(void)
+{
+	dummy = (struct msg_queue *) malloc(sizeof(struct msg_queue));
 	
-	//~ if (strncasecmp(buf, "get", 3) == 0) {
-		//~ log_print(L_NET, "cmd: %s", cmd);
-		//~ par = strtok(NULL, " ");
-		//~ log_print(L_NET, "par: %s", par);
-	//~ }
-	return 0;
+	if (dummy != NULL) {
+		dummy->id = -1;
+		dummy->clientfd = -1;
+		dummy->prev = NULL;
+
+		msg_entries = 0;
+		return 0;
+	} 
+	
+	return -1;
+}
+
+void
+msg_queue_free(void)
+{
+	while (dummy->prev != NULL)
+		msg_queue_get();
+		
+	free(dummy);
+	msg_entries = 0;
+}
+
+void
+msg_queue_put(struct msg_queue *new)
+{
+	struct msg_queue *tmp;
+
+	/* first element */
+	if (dummy->prev == NULL) {
+		dummy->prev = new;
+		new->prev = NULL;	
+	} else {
+		tmp = dummy;	
+		/* get last element */
+		while (tmp->prev != NULL)
+			tmp = tmp->prev;
+			
+		tmp->prev = new;
+		new->prev = NULL;	
+	}
+}
+
+void
+msg_queue_get(void)
+{
+	struct msg_queue *tmp;
+
+	/* delete element */
+	if (dummy->prev != NULL) {
+		tmp = dummy->prev;
+		dummy->prev = tmp->prev;
+		free(tmp);
+	} else {
+		log_print(L_ERR, "msg queue empty - should never seen");
+	}
+}
+
+void
+msg_queue_add_msg(int id, int clientfd)
+{
+	struct msg_queue *new;
+
+	new = (struct msg_queue *) malloc(sizeof(struct msg_queue));
+
+	if (new != NULL) {
+		new->id = id;
+		new->clientfd = clientfd;
+		new->prev = NULL;
+		
+		msg_queue_put(new);
+		msg_entries++;
+	
+		log_print(L_DBG, "add: id: %d clientfd: %d ==> entries: %d",
+					new->id, new->clientfd, msg_entries);
+	}
+}
+
+void
+msg_queue_del_msg(int *id, int *clientfd)
+{
+	if (dummy->prev != NULL) {
+		*id = dummy->prev->id;
+		*clientfd = dummy->prev->clientfd;
+			
+		msg_queue_get();
+		msg_entries--;
+
+		log_print(L_DBG, "del: id: %d clientfd: %d ==> entries: %d",
+						*id, *clientfd, msg_entries);
+		
+	} else {
+		log_print(L_NOT, "msg queue empty");
+	}
 }
 
 
@@ -272,7 +368,7 @@ sock_client_read(int fd, char *buf, int *buflen)
 	*buflen = read(fd, buf, *buflen);
 	err_ret_if(*buflen < 0, -1);
 	
-	if (strncasecmp("quit", buf ,4) == 0) {
+	if (strncasecmp("quit", buf , 4) == 0) {
 		/* close tcp connection */
 		log_print(L_NET, "client [%d] disconnected.", fd);
 		sock_close(fd);
@@ -280,18 +376,21 @@ sock_client_read(int fd, char *buf, int *buflen)
 	}
 
 	buf[strcspn(buf,"\n")] = '\0';
-	log_print(L_NET, "client [%d] %s", fd, buf);
+	log_print(L_NET, ">>> client [%d] %s", fd, buf);
 
 	return 0;
 }
 
 int
-sock_client_write(int fd, const char *buf, int buflen)
+sock_client_write(int fd, char *buf, int buflen)
 {
 	int ret;
 
 	ret = write(fd, buf, buflen);
 	err_ret_if(ret < 0, -1);
+
+	buf[strcspn(buf,"\n")] = '\0';
+	log_print(L_NET, "<<< client [%d] %s", fd, buf);	
 
 	return 0;
 }

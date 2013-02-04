@@ -134,7 +134,7 @@ eb_raw_file_open(const char *file)
 }
 
 int
-eb_raw_file_close()
+eb_raw_file_close(void)
 {
 	int ret;
 
@@ -221,7 +221,7 @@ eb_serial_open(const char *dev, int *fd)
 }
 
 int
-eb_serial_close()
+eb_serial_close(void)
 {
 	int ret;
 
@@ -288,7 +288,7 @@ eb_serial_recv(unsigned char *buf, int *buflen)
 
 
 void
-eb_print_result()
+eb_print_result(void)
 {
 	int i;
 	//fprintf(stdout, ">>> ");
@@ -298,6 +298,13 @@ eb_print_result()
 }
 
 
+
+void
+eb_get_recv_data(unsigned char *buf, int *buflen)
+{
+	strncpy(buf, recv_data.msg, recv_data.len);	
+	*buflen = recv_data.len;
+}
 
 void
 eb_recv_data_prepare(const unsigned char *buf, int buflen)
@@ -544,7 +551,7 @@ eb_wait_bus_syn(int *skip)
 }
 
 int
-eb_wait_bus()
+eb_wait_bus(void)
 {
 	unsigned char buf[SERIAL_BUFSIZE];
 	int buflen, ret, skip, retry;
@@ -594,6 +601,25 @@ eb_wait_bus()
 	/* reached max retry */
 	return 1;
 }
+
+int
+eb_free_bus(void)
+{
+	int ret, skip;
+	ret = 0;
+	skip = 0;
+
+	ret = eb_serial_send(&syn, 1);
+	if (ret < 0)
+		return -1;
+		
+	ret = eb_wait_bus_syn(&skip);
+	if (ret < 0)
+		return -1;			
+
+	return 0;
+}
+
 
 
 
@@ -663,10 +689,10 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		return -1;
 
 	if (type == EBUS_MSG_BROADCAST) {
-		/* SYN bus */
-		ret = eb_serial_send(&syn, 1);
+		/* free bus */
+		ret = eb_free_bus();
 		if (ret < 0)
-			return -1;
+			return -1;		
 		
 		return 0;
 	}
@@ -680,9 +706,9 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 
 	if (ret < 0 || ret > 1) {
 		/* free bus */
-		ret = eb_serial_send(&syn, 1);	
+		ret = eb_free_bus();
 		if (ret < 0)
-			return -1;
+			return -1;		
 	
 		return -1;
 	}
@@ -704,10 +730,10 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	
 		if (ret == 1) {
 			/* free bus */
-			ret = eb_serial_send(&syn, 1);	
+			ret = eb_free_bus();
 			if (ret < 0)
 				return -1;
-		
+	
 			return -1;
 		}
 		
@@ -717,9 +743,9 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		val = ret;
 	
 		/* free bus */
-		ret = eb_serial_send(&syn, 1);
+		ret = eb_free_bus();
 		if (ret < 0)
-			return -1;
+			return -1;		
 
 		return val;
 	}
@@ -747,14 +773,14 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		/* we compare against nak ! */
 		if (ret != 1) {
 			/* free bus */
-			ret = eb_serial_send(&syn, 1);	
+			ret = eb_free_bus();
 			if (ret < 0)
-				return -1;
+				return -1;			
 		
 			return -1;
 		}
 
-		/* get data - dont reset buffer */
+		/* get data - don't reset buffer */
 		ret = eb_recv_data(tmp, &tmplen);	
 		if (ret < 0)
 			return -1;
@@ -778,9 +804,9 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	}
 
 	/* free bus */
-	ret = eb_serial_send(&syn, 1);;	
+	ret = eb_free_bus();
 	if (ret < 0)
-		return -1;
+		return -1;	
 			
 	return val;
 }
@@ -804,6 +830,7 @@ eb_cyc_data_recv(unsigned char *buf, int *buflen)
 
 	i = 0;
 	while (i < *buflen) {
+		
 		if (buf[i] != EBUS_SYN) {
 			msg[msglen] = buf[i];
 			msglen++;
@@ -819,6 +846,6 @@ eb_cyc_data_recv(unsigned char *buf, int *buflen)
 		i++;
 	}
 
-	return 0;
+	return msglen;
 }
 

@@ -44,6 +44,7 @@
 const char *progname;
 
 static int pidfile_locked = NO;
+static int msg_queue_on = NO;
 
 static int pidfd = UNSET; /* pidfile file descriptor */
 static int serialfd = UNSET; /* serial file descriptor */
@@ -118,7 +119,7 @@ static struct config cfg[] = {
 const int cfglen = sizeof(cfg) / sizeof(cfg[0]);
 
 void
-usage()
+usage(void)
 {
 	fprintf(stdout, "\nUsage: %s [OPTIONS]\n", progname);
 
@@ -218,7 +219,7 @@ cmdline(int *argc, char ***argv)
 }
 
 void
-set_unset()
+set_unset(void)
 {
 
 	if (*address == '\0')
@@ -293,7 +294,7 @@ signal_handler(int sig) {
 }
 
 void
-daemonize()
+daemonize(void)
 {
 	pid_t pid;
 
@@ -359,6 +360,10 @@ void
 cleanup(int state)
 {
 
+	/* free msg queue */
+	if (msg_queue_on == YES)
+		msg_queue_free();
+
 	/* close listing tcp socket */
 	if (socketfd > 0)
 		if (sock_close(socketfd) == -1)
@@ -373,6 +378,9 @@ cleanup(int state)
 	if (rawdump == YES)
 		if (eb_raw_file_close() == -1)
 			log_print(L_INF, "%s closed.", rawfile);
+
+	/* free mem for ebus commands */
+	eb_cmd_dir_free();
 
 	if (foreground == NO) {
 
@@ -403,7 +411,7 @@ cleanup(int state)
 
 
 void
-main_loop()
+main_loop(void)
 {
 	int maxfd;
 	fd_set listenfds;
@@ -450,8 +458,26 @@ main_loop()
 			memset(serbuf, '\0', sizeof(serbuf));
 			serbuflen = sizeof(serbuf);
 
-			/* get message from client */
-			eb_cyc_data_recv(serbuf, &serbuflen);
+			/* get cycle message from bus */
+			ret = eb_cyc_data_recv(serbuf, &serbuflen);
+
+			/* send msg to bus - only when cyc buf is empty */
+			if (ret == 0 && msg_queue_entries() > 0) {
+				char tcpbuf[SOCKET_BUFSIZE];
+				int tcpbuflen, id, clientfd;
+				
+				memset(tcpbuf, '\0', sizeof(tcpbuf));
+				tcpbuflen = sizeof(tcpbuf);
+
+				/* get next entry from msg queue */
+				msg_queue_del_msg(&id, &clientfd);
+
+				/* just do it */
+				eb_msg_send_cmd(id, tcpbuf, &tcpbuflen);
+
+				/* send answer */
+				sock_client_write(clientfd, tcpbuf, tcpbuflen);
+			}
 				
 		}
 
@@ -473,22 +499,40 @@ main_loop()
 			/* check all connected clients */
 			if (FD_ISSET(readfd, &readfds)) {
 				char tcpbuf[SOCKET_BUFSIZE];
-				int tcpbuflen = sizeof(tcpbuf);
+				int tcpbuflen;
+
+				memset(tcpbuf, '\0', sizeof(tcpbuf));
+				tcpbuflen = sizeof(tcpbuf);
 
 				/* get message from client */
 				ret = sock_client_read(readfd, tcpbuf, &tcpbuflen);
 
+				/* remove dead TCP client */
 				if (ret == -1) {
-					/* remove dead TCP client */
 					FD_CLR(readfd, &listenfds);
+					continue;
+				} 
+
+				/* handle different commands */
+				if (strncasecmp("shutdown", tcpbuf, 8) == 0)
+					cleanup(EXIT_FAILURE);
+
+				/* should be all commands in this function? */
+				ret = eb_msg_decode(tcpbuf, &tcpbuflen);
+
+				/* command not found */
+				if (ret < 0) {
+					memset(tcpbuf, '\0', strlen(tcpbuf));
+					strcpy(tcpbuf, "command not found\n");
+					tcpbuflen = strlen(tcpbuf);
+					
+					/* send answer */
+					sock_client_write(readfd, tcpbuf, tcpbuflen);
+
+				} else {
+					msg_queue_add_msg(ret, readfd);
 				}
-
-				ret = cmd_decode(tcpbuf, tcpbuflen);
-
-				//~ else {
-					//~ /* just echo message to sender */
-					//~ sock_client_write(readfd, tcpbuf, tcpbuflen);
-				//~ }
+				
 			}
 		}
 	}
@@ -546,7 +590,8 @@ main(int argc, char *argv[])
 	}
 
 	/* read ebus command configuration files */
-	eb_cmd_dir_read(cfgdir, extension);
+	if (eb_cmd_dir_read(cfgdir, extension) == -1)
+		log_print(L_WAR, "error during command file reading.");
 
 	/* open raw file */
 	if (rawdump == YES) {
@@ -574,6 +619,15 @@ main(int argc, char *argv[])
 		cleanup(EXIT_FAILURE);
 	} else {
 		log_print(L_INF, "port %d opened.", port);
+	}
+
+	/* init msg queue */
+	if (msg_queue_init() == -1) {
+		log_print(L_ERR, "can't initialize msg queue");
+		cleanup(EXIT_FAILURE);
+	} else {
+		msg_queue_on = YES;
+		log_print(L_INF, "msg queue initialized.");
 	}
 
 	/* enter main loop */

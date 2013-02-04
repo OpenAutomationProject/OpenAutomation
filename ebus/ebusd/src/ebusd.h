@@ -37,18 +37,18 @@
 #define DAEMON_RAWDUMP        NO
 
 
-void usage();
+void usage(void);
 
 void cmdline(int *argc, char ***argv);
 
-void set_unset();
+void set_unset(void);
 
 void signal_handler(int sig);
 
-void daemonize();
+void daemonize(void);
 
 void cleanup(int state);
 
-void main_loop();
+void main_loop(void);
 
 #endif /* MAIN_H_ */

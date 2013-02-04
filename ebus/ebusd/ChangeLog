@@ -1,6 +1,12 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-04:
+* Add the ability to send commands via telnet to daemon
+  (This ist just implemented for GET and a few ebus commands for response)
+* The telnet commands will collected into a message buffer.
+  If the cycle buffer is free, only one command is sent.
+
 2013-02-01:
 * Add functions to read ebus command get files and load them into nested
   structure. This will be used to send and decode ebus messages. 

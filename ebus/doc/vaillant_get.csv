@@ -1,261 +1,259 @@
-# CI-Parameter;class;cmd;s_zz;s_cmd;s_len;s_msg;r_len;r_pos;r_type;r_fac;r_unit;com
-#;5;20;02;4;;30;;10;3;;10;256
-get;ci;hydraulic;15;B509;3;0D2900;1;1;int;0;-;Hydraulikschema
-get;ci;language;15;B509;3;0D2600;1;1;int;0;-;Sprachvariante
-get;ci;holiday_period;15;B509;3;0D4300;12;0;blk;0;-;Ferienzeitraum 1 Start
-get;ci;holiday_cir2_temp;15;B509;3;0D2200;2;1,2;d2b;0;-;Heizkreis-Solltemperatur Ferien
-get;ci;password_pin1;15;B509;3;0D2C00;4;1;int;1000;-;Passwort Konfiguration
-get;ci;password_pin2;15;B509;3;0D2C00;4;2;int;100;-;Passwort Konfiguration
-get;ci;password_pin3;15;B509;3;0D2C00;4;3;int;10;-;Passwort Konfiguration
-get;ci;password_pin4;15;B509;3;0D2C00;4;4;int;1;-;Passwort Konfiguration
-get;ci;cir2_set_temp;15;B509;3;0D0500;2;1;d1b;0;°C;Heizkreis2-Solltemperatur
-get;ci;cir2_flow_temp;15;B509;3;0D0200;3;1,2;d2b;0;°C;Heizkreis2-Vorlauftemperatur
-get;ci;hw_heat_time;15;B509;3;0D4D00;1;1;d1b;0;min;Heizzeit max. bei WW-Anforderung
-get;ci;hw_wait_time;15;B509;3;0D4C00;1;1;d1b;0;min;WW-Zeit max. bei Heizanforderung
-get;ci;temp_camber;15;B509;3;0D2F00;2;1,2;int;0;°C;Temperaturüberhöhung
-get;ci;pre_off_time;15;B509;3;0D2D97;1;1;int;0;min;Vorabschaltzeit
-get;ci;freeze_wait;15;B509;3;0D2E00;1;1;int;0;h;Frostschutz-Verzögerung
-get;ci;temp_error;15;B509;3;0D3300;1;1;int;0;-;Temperaturfehlererkennung
-get;ci;boiler;15;B509;3;0D5C00;1;1;int;0;-;Pufferspeicher vorhanden
-get;ci;yield_transfer;15;B509;3;0D8600;4;1,2;d2c;256;kWh;Mitternacht Übertragswert Energieertrag
-get;ci;mode;15;B509;3;0D9700;1;1;int;0;-;aktueller Betriebsstatus
-# CI-Parameter - Energie Ertrag;;;;;;;;;;;;
-get;ci;yield_jan_act;15;B509;3;0D8400;2;1,2;d2b;256;kWh;Energie Januar
-get;ci;yield_jan_last;15;B509;3;0D8500;2;1,2;d2b;256;kWh;Energie Januar Vorjahr
-get;ci;yield_feb_act;15;B509;3;0D8408;2;1,2;d2b;256;kWh;Energie Februar
-get;ci;yield_feb_last;15;B509;3;0D8508;2;1,2;d2b;256;kWh;Energie Februar Vorjahr
-get;ci;yield_mar_act;15;B509;3;0D8410;2;1,2;d2b;256;kWh;Energie März
-get;ci;yield_mar_last;15;B509;3;0D8510;2;1,2;d2b;256;kWh;Energie März Vorjahr
-get;ci;yield_apr_act;15;B509;3;0D8418;2;1,2;d2b;256;kWh;Energie April
-get;ci;yield_apr_last;15;B509;3;0D8518;2;1,2;d2b;256;kWh;Energie April Vorjahr
-get;ci;yield_may_act;15;B509;3;0D8420;2;1,2;d2b;256;kWh;Energie Mai
-get;ci;yield_may_last;15;B509;3;0D8520;2;1,2;d2b;256;kWh;Energie Mai Vorjahr
-get;ci;yield_jun_act;15;B509;3;0D8428;2;1,2;d2b;256;kWh;Energie Juni
-get;ci;yield_jun_last;15;B509;3;0D8528;2;1,2;d2b;256;kWh;Energie Juni Vorjahr
-get;ci;yield_jul_act;15;B509;3;0D8430;2;1,2;d2b;256;kWh;Energie Juli
-get;ci;yield_jul_last;15;B509;3;0D8530;2;1,2;d2b;256;kWh;Energie Juli Vorjahr
-get;ci;yield_aug_act;15;B509;3;0D8438;2;1,2;d2b;256;kWh;Energie August
-get;ci;yield_aug_last;15;B509;3;0D8538;2;1,2;d2b;256;kWh;Energie August Vorjahr
-get;ci;yield_sep_act;15;B509;3;0D8440;2;1,2;d2b;256;kWh;Energie September
-get;ci;yield_sep_last;15;B509;3;0D8540;2;1,2;d2b;256;kWh;Energie September Vorjahr
-get;ci;yield_oct_act;15;B509;3;0D8448;2;1,2;d2b;256;kWh;Energie Oktober
-get;ci;yield_oct_last;15;B509;3;0D8548;2;1,2;d2b;256;kWh;Energie Oktober Vorjahr
-get;ci;yield_nov_act;15;B509;3;0D8450;2;1,2;d2b;256;kWh;Energie November
-get;ci;yield_nov_last;15;B509;3;0D8550;2;1,2;d2b;256;kWh;Energie November Vorjahr
-get;ci;yield_dec_act;15;B509;3;0D8458;2;1,2;d2b;256;kWh;Energie Dezember
-get;ci;yield_dec_last;15;B509;3;0D8558;2;1,2;d2b;256;kWh;Energie Dezember Vorjahr
-# AMU Waermepumpe;;;;;;;;;;;;
-get;amu;-;08;B509;3;0D2900;3;1,2,3;???;0;d.m.y;Datum
-get;amu;-;08;B509;3;0D2A00;1;1;int;0;Mo=0;Wochentag
-get;amu;-;08;B509;3;0D2800;3;1,2,3;???;0;s.m.h;Zeit
-get;amu;-;08;B509;3;0DD000;1;1;int;0;-;Waermepumpenstatus
-get;amu;-;08;B509;3;0DC501;4;?;???;0;min;Kompressorsperrzeit
-get;amu;-;08;B509;3;0D9200;1;1;int;0;-;Zusatzheizung vorhanden
-get;amu;-;08;B509;3;0D6500;2;1,2;d2c;0;°C;Zusatzheizung - Bivalenzpunkt
-get;amu;-;08;B509;3;0D7E00;2;1,2;d2c;0;°C;Zusatzheizung – Hysterese
-get;amu;-;08;B509;3;0DE001;1;1;d1b;0;min;Zusatzheizung – Verzögerung Hysterese 
-get;amu;-;08;B509;3;0D7F00;2;1,2;???;0;°min;Zusatzheizung – EnergieIntegral
-get;amu;-;08;B509;3;0D6300;1;1;int;0;-;Zusatzheizung – Heizung
-get;amu;-;08;B509;3;0D6400;1;1;int;0;-;Zusatzheizung – WarmWasser
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0D7D00;2;1,2;d2c;0;°C;Kompressor – Hysterese
-get;amu;-;08;B509;3;0D7C00;2;1,2;???;0;°min;Kompressor  - EnergieIntegral
-get;amu;-;08;B509;3;0D7400;1;1;int;0;-;Kompressor – Starts pro Stunde
-get;amu;-;08;B509;3;0D7300;2;1,2;d2c;0;°C;Kompressor  - max. Rücklauftemperatur
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0D6E00;2;1,2;d2c;0;°C;Quelle – zul. Spreizung
-get;amu;-;08;B509;3;0D7A01;1;1;d1b;0;°C;Quelle – Einfrierschutz
-get;amu;-;08;B509;3;0D7600;4;1;???;0;min;Quelle – Vorlaufzeit Quellenpumpe
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0D9901;1;1;int;0;min;Ausschaltzeit interne Heizkreispumpe (Minuten)
-get;amu;-;08;B509;3;0DC801;4;1;d1b;0;ss;Interne Heizkreispumpe Vorlaufzeit (Sekunden)
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0D9B00;4;1,2;???;0;h;Kompressorlaufzeit Heizung
-get;amu;-;08;B509;3;0D9C00;4;1,2;???;0;h;Kompressorlaufzeit WW
-get;amu;-;08;B509;3;0D9A00;4;1,2;???;0;h;Kompressorlaufzeit gesamt
-get;amu;-;08;B509;3;0DA900;4;1,2;???;0;-;Kompressorstarts
-get;amu;-;08;B509;3;0DA100;4;1,2;???;0;h;Zusatzheizung gesamt
-get;amu;-;08;B509;3;0DA200;4;1,2;???;0;h;Zusatzheizung Heizen
-get;amu;-;08;B509;3;0DA300;4;1,2;???;0;h;Zusatzheizung WW
-get;amu;-;08;B509;3;0DB300;4;1,2;???;0;-;Zusatzheizung Starts
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0D7401;1;1;d1b;0;°C;Kühlungsvorlaufsollwert
-get;amu;-;08;B509;3;0D7D01;1;?;???;0;h;Solepumpenlaufzeit Kühlbetrieb
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0D6600;1;1;int;0;-;Servicezeit
-get;amu;-;08;B509;3;0D1300;1;1;int;0;-;Entlüftung
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0D9700;2;1,2;???;0;-;Code 1
-get;amu;-;08;B509;3;0D9800;2;1,2;???;0;-;Code 2
-get;amu;-;08;B509;3;0D2400;1;1;int;0;-;Codes übernehmen
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0DB801;1;1;int;0;-;Hocheffizenzpumpenstatus
-get;amu;-;08;B509;3;0DAC01;1;1;d1b;0;%;Hocheffizienzpumpengeschw. %
-get;amu;-;08;B509;3;0DAE01;1;1;d1b;0;%;Pumpensollwert in% beim Heizen
-#;;;;;;;;;;;;
-get;amu;-;08;B509;3;0DE301;1;1;int;0;-;Bivalenzmodus
-#;;;;;;;;;;;;
-# Messwerte;;;;;;;;;;;;
-get;mv;-;08;B509;3;0DBC00;4;1,2;d2b;256;kWh;Energieertrag
-get;mv;-;08;B509;3;0D0F00;3;1,2;d2c;0;°C;Quellentemperatur
-get;mv;-;08;B509;3;0D0F00;3;3;int;0;-;Quellentemperatur Status
-get;mv;-;08;B509;3;0D0800;3;1,2;d2c;0;°C;Austrittstemperatur
-get;mv;-;08;B509;3;0D0800;3;3;int;0;-;AustrittstemperaturStatus
-get;mv;-;08;B509;3;0D1600;3;?;???;0;bar;Druck Wärmequelle
-get;mv;-;08;B509;3;0D1900;1;1;int;0;-;Status Quellenpumpe I/O
-get;mv;-;08;B509;3;0D2600;1;1;int;0;-;Soledruckschalter
-#;;;;;;;;;;;;
-get;mv;-;08;B509;3;0D1400;3;1,2;???;0;bar;Hochdruck Kältekreis
-get;mv;-;08;B509;3;0D1400;3;3;int;0;-;Hochdruck Kältekreis Status
-get;mv;-;08;B509;3;0D1500;3;1,2;???;0;bar;Niederdruck Kältekreis
-get;mv;-;08;B509;3;0D1500;3;3;int;0;-;Niederdruck Kältekreis Status
-get;mv;-;08;B509;3;0D8D00;2;2;d2c;0;°C;Überhitzung
-get;mv;-;08;B509;3;0D8E00;2;2;d2c;0;°C;Unterkühlung
-get;mv;-;08;B509;3;0D8000;2;2;???;0;min;Energieintegral
-get;mv;-;08;B509;3;0D0200;3;1,2;d2c;0;°C;Kompressortemperatur Eintritt
-get;mv;-;08;B509;3;0D0200;3;3;int;0;-;Kompressortemperatur Eintritt Status
-get;mv;-;08;B509;3;0D0404;3;1,2;d2c;0;°C;Kompressortemperatur Austritt
-get;mv;-;08;B509;3;0D0400;3;3;int;0;-;Kompressortemperatur Austritt Status
-get;mv;-;08;B509;3;0D0D00;3;1,2;d2c;0;°C;TEV-Eintritt
-get;mv;-;08;B509;3;0D0D00;3;3;int;0;-;TEV-Eintritt Status
-get;mv;-;08;B509;3;0D2500;1;1;int;0;-;Prestostate
-get;mv;-;08;B509;3;0D1D00;1;1;int;0;-;Status kompresseor I/O
-get;mv;-;08;B509;3;0D5F00;1;1;int;0;-;Status Zusatzheizung I/O
-get;mv;-;08;B509;3;0D0900;3;1,2;d2c;0;°C;Vorlauftemperatur T6 (intern)
-get;mv;-;08;B509;3;0D0900;3;3;int;0;-;Vorlauftemperatur T6 (intern) Status
-get;mv;-;08;B509;3;0D0A00;3;1,2;d2c;0;°C;Rücklauftemperatur T5 (intern)
-get;mv;-;08;B509;3;0D0A00;3;3;int;0;-;Rücklauftemperatur T5 (intern) Status
-get;mv;-;08;B509;3;0D1200;3;1,2;???;0;bar;Heizanlagendruck
-get;mv;-;08;B509;3;0D1200;3;3;int;0;-;Heizanlagendruck Status
-get;mv;-;08;B509;3;0D1700;1;1;int;0;-;Status Heizkreispumpe I/O
-get;mv;-;08;B509;3;0D0100;3;1,2;d2c;0;°C;Vorlauftemperatur VF1
-get;mv;-;08;B509;3;0D0100;3;3;int;0;-;Vorlauftemperatur VF1 Status
-get;mv;-;08;B509;3;0D0700;3;1,2;d2c;0;°C;Rücklauftemperatur RF1
-get;mv;-;08;B509;3;0D0700;3;3;int;0;-;Rücklauftemperatur RF1Status
-get;mv;-;08;B509;3;0D0300;3;1,2;d2c;0;°C;Vorlauftemperatur VF2
-get;mv;-;08;B509;3;0D0300;3;3;int;0;-;Vorlauftemperatur VF2 Status
-get;mv;-;08;B509;3;0D0E00;1;1;???;0;%;Mischerstatus
-get;mv;-;08;B509;3;0D1800;1;1;int;0;%;Pumpenstatus
-#;;;;;;;;;;;;
-get;mv;-;08;B509;3;0D0000;3;1,2;d2c;0;°C;Speichertemperatur
-get;mv;-;08;B509;3;0D0000;3;3;int;0;-;Speichertemperatur Status
-get;mv;-;08;B509;3;0D0C00;1;1;int;0;-;Status Zirkulationspumpe I/O
-get;mv;-;08;B509;3;0D1000;1;1;int;0;-;Umschaltventil Heizen/WW
-get;mv;-;08;B509;3;0D0B00;1;1;int;0;-;Status 1x ZP-Eingang
-#;;;;;;;;;;;;
-get;mv;-;08;B509;3;0D1100;1;1;int;0;-;Stromunterbrechung 
-get;mv;-;08;B509;3;0D8800;1;1;int;0;-;Phasen Status
-get;mv;-;08;B509;3;0D5700;1;1;int;0;-;Drehfeldstatus
-get;mv;-;08;B509;3;0D3F00;1;1;int;0;-;Anlaufstrombegrenzer
-#;;;;;;;;;;;;
-get;mw;at_temp;08;B509;3;0D0600;3;1,2;d2c;0;°C;Aussentempertur
-get;mw;at_stat;08;B509;3;0D0600;3;3;int;0;-;Aussentempertur Fühler Status
-# Kalibrierung;;;;;;;;;;;;
-get;cal;-;08;B509;5;0DC300;2;1,2;d2c;0;°C;Kalibrierung – Aussentemperatur
-get;cal;-;08;B509;5;0DCD00;2;1,2;d2c;0;°C;Kalibrierung - Quelle Eintritt
-get;cal;-;08;B509;5;0DC900;2;1,2;d2c;0;°C;Kalibrierung - Quelle Austritt
-get;cal;-;08;B509;5;0DC400;2;1,2;d2c;0;°C;Kalibrierung – WW-Speicher
-get;cal;-;08;B509;5;0DCA00;2;1,2;d2c;0;°C;Kalibrierung – Vorlauf
-get;cal;-;08;B509;5;0DCB00;2;1,2;d2c;0;°C;Kalibrierung – Rücklauf
-get;cal;-;08;B509;5;0DC500;2;1,2;d2c;0;°C;Kalibrierung - Vorlauf VF2
-get;cal;-;08;B509;5;0DC600;2;1,2;d2c;0;°C;Kalibrierung - Kompressor Eintritt
-get;cal;-;08;B509;5;0DC700;2;1,2;d2c;0;°C;Kalibrierung - Kompressor Austritt
-get;cal;-;08;B509;5;0D3400;2;1,2;d2c;0;°C;Kalibrierung – Puffer RL
-get;cal;-;08;B509;5;0D3301;2;1,2;d2c;0;°C;Kalibrierung – Puffer VL
-#WW-Kreis;;;;;;;;;;;;
-get;hw;-;25;B509;3;0D3B00;1;1;int;0;-;WW – Betriebsmodus
-get;hw;-;25;B509;3;0D8200;2;1,2;d2c;0;°C;WW – Solltemperatur
-get;hw;-;25;B509;3;0D8300;2;1,2;d2c;0;°C;WW – Min. Temperatur
-get;hw;-;25;B509;3;0D4000;1;1;int;0;-;WW – Legionellenschutz
-get;hw;-;25;B509;3;0D7C01;1;1;int;0;Mo=0;WW – Legionellenschutz Wochentag
-get;hw;-;25;B509;3;0D6700;2;1,2;d2b;0;hh24;WW – Legionellenschutz Startzeit
-get;hw;-;25;B509;3;0DC101;1;1;d1b;0;-;WW – Pumpe layered tank
-get;hw;-;25;B509;3;0DC201;1;1;d1b;0;-;WW – Pumpe coiled tank
-get;hw;-;25;B509;3;0DCD01;1;1;int;0;-;WW – Speicher = coiled
-# Heizkreis 2;;;;;;;;;;;;
-get;cir2;-;50;B509;3;0D2B00;1;1;int;0;-;Heizkreis - Betriebsart
-get;cir2;-;50;B509;3;0D3C00;1;1;int;0;-;Heizkreis - Kreis Typ
-get;cir2;-;50;B509;3;0D3200;1;1;d1b;0;°C;Heizkreis – Raumsolltemperatur
-get;cir2;-;50;B509;3;0D3300;1;1;d1b;0;°C;Heizkreis – Absenktemperatur
-get;cir2;-;50;B509;4;0D3500;2;1,2;???;0;-;Heizkreis – Heizkurve
-get;cir2;-;50;B509;3;0D3600;1;1;d1b;0;°C;Heizkreis – Aussentemperatur Abschaltgrenze
-get;cir2;-;50;B509;3;0D3000;1;1;d1b;0;°C;Heizkreis - minimale Vorlauftemperatur
-get;cir2;-;50;B509;3;0D3100;1;1;d1b;0;°C;Heizkreis - maximale Vorlauftemperatur
-get;cir2;-;50;B509;3;0D3800;1;1;int;0;h;Heizkreis - max. Voraufheizung in Stunden
-get;cir2;-;50;B509;3;0D3B00;1;1;int;0;dd;Heizkreis Estrichtrocknung Tag
-get;cir2;-;50;B509;3;0D7B01;1;1;d1b;0.5;-;Fußbodenschutz
-#;;;;;;;;;;;;
-get;cir2;-;50;B509;3;0D8C01;1;1;int;0;-;Kühlbetrieb
-get;cir2;-;50;B509;3;0D8601;1;1;int;0;-;Kühlbetrieb supported/ für freigegeben
-get;cir2;-;50;B509;3;0D8801;1;1;d2c;0;°C;Außentemperatur mittel 24h
-get;cir2;-;50;B509;3;0D8701;1;1;d1c;0;°C;Kühlung Offset AT-Abschaltgrenze
-get;cir2;-;50;B509;3;0D8401;1;1;int;0;-;Sperrzeit Kuehlung > Heizung
-get;cir2;-;50;B509;3;0D8501;1;1;int;0;-;Sperrzeit Heizung > Kühlung
-get;cir2;-;50;B509;3;0D8B01;1;1;d1c;0;°C;min Diff VL / RT
-get;cir2;-;50;B509;3;0D9501;1;1;int;0;-;Kühlen im Ferienbetrieb
-get;cir2;-;50;B509;3;0D9701;4;?;???;0;-;Statusbit Kühlfunktion
-get;cir2;-;50;B509;3;0D8301;1;1;int;0;-;HK spezifische Kühlanforderung?
-#;;;;;;;;;;;;
-get;cir2;-;50;B509;3;0DB901;1;1;int;0;-;Status Heizkreispumpe
-get;cir2;-;50;B509;3;0DBA01;1;1;d1b;0;%;akt. PWM-Wert Heizkreizpumpe
-get;cir2;-;50;B509;3;0DBF01;1;1;d1b;0;%;Heizkreispumpe bei Pufferladung
-get;cir2;-;50;B509;3;0DC001;1;1;d1b;0;%;Heizkreispumpe Standardwert
-get;cir2;-;50;B509;3;0DE101;1;1;d1b;0;%;Heizkreispumpe in Pausen
-# Heizkreis 4;;;;;;;;;;;;
-get;cir4;-;52;B509;3;0D2B00;1;1;int;0;-;Heizkreis - Betriebsart
-get;cir4;-;52;B509;3;0D3C00;1;1;int;0;-;Heizkreis - Kreis Typ
-get;cir4;-;52;B509;3;0D3200;1;1;d1b;0;°C;Heizkreis – Raumsolltemperatur
-get;cir4;-;52;B509;3;0D3300;1;1;d1b;0;°C;Heizkreis – Absenktemperatur
-get;cir4;-;52;B509;4;0D3500;2;1,2;???;0;-;Heizkreis – Heizkurve
-get;cir4;-;52;B509;3;0D3600;1;1;d1b;0;°C;Heizkreis – Aussentemperatur Abschaltgrenze
-get;cir4;-;52;B509;3;0D3000;1;1;d1b;0;°C;Heizkreis - minimale Vorlauftemperatur
-get;cir4;-;52;B509;3;0D3100;1;1;d1b;0;°C;Heizkreis - maximale Vorlauftemperatur
-get;cir4;-;52;B509;3;0D3800;1;1;int;0;h;Heizkreis - max. Voraufheizung in Stunden
-get;cir4;-;52;B509;3;0D3B00;1;1;int;0;dd;Heizkreis Estrichtrocknung Tag
-get;cir4;-;52;B509;3;0D7B01;1;1;d1b;0.5;-;Fußbodenschutz
-#;;;;;;;;;;;;
-get;cir4;-;52;B509;3;0D8C01;1;1;int;0;-;Kühlbetrieb
-get;cir4;-;52;B509;3;0D8601;1;1;int;0;-;Kühlbetrieb supported/ für freigegeben
-get;cir4;-;52;B509;3;0D8801;1;1;d2c;0;°C;Außentemperatur mittel 24h
-get;cir4;-;52;B509;3;0D8701;1;1;d1c;0;°C;Kühlung Offset AT-Abschaltgrenze
-get;cir4;-;52;B509;3;0D8401;1;1;int;0;-;Sperrzeit Kuehlung > Heizung
-get;cir4;-;52;B509;3;0D8501;1;1;int;0;-;Sperrzeit Heizung > Kühlung
-get;cir4;-;52;B509;3;0D8B01;1;1;d1c;0;°C;min Diff VL / RT
-get;cir4;-;52;B509;3;0D9501;1;1;int;0;-;Kühlen im Ferienbetrieb
-get;cir4;-;52;B509;3;0D9701;4;?;???;0;-;Statusbit Kühlfunktion
-get;cir4;-;52;B509;3;0D8301;1;1;int;0;-;HK spezifische Kühlanforderung?
-#;;;;;;;;;;;;
-get;cir4;-;52;B509;3;0DB901;1;1;int;0;-;Status Heizkreispumpe
-get;cir4;-;52;B509;3;0DBA01;1;1;d1b;0;%;akt. PWM-Wert Heizkreizpumpe
-get;cir4;-;52;B509;3;0DBF01;1;1;d1b;0;%;Heizkreispumpe bei Pufferladung
-get;cir4;-;52;B509;3;0DC001;1;1;d1b;0;%;Heizkreispumpe Standardwert
-get;cir4;-;52;B509;3;0DE101;1;1;d1b;0;%;Heizkreispumpe in Pausen
-# Heizkreis 5;;;;;;;;;;;;
-get;cir5;-;53;B509;3;0D2B00;1;1;int;0;-;Heizkreis - Betriebsart
-get;cir5;-;53;B509;3;0D3C00;1;1;int;0;-;Heizkreis - Kreis Typ
-get;cir5;-;53;B509;3;0D3200;1;1;d1b;0;°C;Heizkreis – Raumsolltemperatur
-get;cir5;-;53;B509;3;0D3300;1;1;d1b;0;°C;Heizkreis – Absenktemperatur
-get;cir5;-;53;B509;4;0D3500;2;1,2;???;0;-;Heizkreis – Heizkurve
-get;cir5;-;53;B509;3;0D3600;1;1;d1b;0;°C;Heizkreis – Aussentemperatur Abschaltgrenze
-get;cir5;-;53;B509;3;0D3000;1;1;d1b;0;°C;Heizkreis - minimale Vorlauftemperatur
-get;cir5;-;53;B509;3;0D3100;1;1;d1b;0;°C;Heizkreis - maximale Vorlauftemperatur
-get;cir5;-;53;B509;3;0D3800;1;1;int;0;h;Heizkreis - max. Voraufheizung in Stunden
-get;cir5;-;53;B509;3;0D3B00;1;1;int;0;dd;Heizkreis Estrichtrocknung Tag
-get;cir5;-;53;B509;3;0D7B01;1;1;d1b;0.5;-;Fußbodenschutz
-#;;;;;;;;;;;;
-get;cir5;-;53;B509;3;0D8C01;1;1;int;0;-;Kühlbetrieb
-get;cir5;-;53;B509;3;0D8601;1;1;int;0;-;Kühlbetrieb supported/ für freigegeben
-get;cir5;-;53;B509;3;0D8801;1;1;d2c;0;°C;Außentemperatur mittel 24h
-get;cir5;-;53;B509;3;0D8701;1;1;d1c;0;°C;Kühlung Offset AT-Abschaltgrenze
-get;cir5;-;53;B509;3;0D8401;1;1;int;0;-;Sperrzeit Kuehlung > Heizung
-get;cir5;-;53;B509;3;0D8501;1;1;int;0;-;Sperrzeit Heizung > Kühlung
-get;cir5;-;53;B509;3;0D8B01;1;1;d1c;0;°C;min Diff VL / RT
-get;cir5;-;53;B509;3;0D9501;1;1;int;0;-;Kühlen im Ferienbetrieb
-get;cir5;-;53;B509;3;0D9701;4;?;???;0;-;Statusbit Kühlfunktion
-get;cir5;-;53;B509;3;0D8301;1;1;int;0;-;HK spezifische Kühlanforderung?
-#;;;;;;;;;;;;
-get;cir5;-;53;B509;3;0DB901;1;1;int;0;-;Status Heizkreispumpe
-get;cir5;-;53;B509;3;0DBA01;1;1;d1b;0;%;akt. PWM-Wert Heizkreizpumpe
-get;cir5;-;53;B509;3;0DBF01;1;1;d1b;0;%;Heizkreispumpe bei Pufferladung
-get;cir5;-;53;B509;3;0DC001;1;1;d1b;0;%;Heizkreispumpe Standardwert
-get;cir5;-;53;B509;3;0DE101;1;1;d1b;0;%;Heizkreispumpe in Pausen
+# CI-Parameter
+get;ci;hydraulic;3;15;B509;3;0D2900;1;1;int;0;-;Hydraulikschema
+get;ci;language;3;15;B509;3;0D2600;1;1;int;0;-;Sprachvariante
+get;ci;holiday_period;3;15;B509;3;0D4300;12;0;blk;0;-;Ferienzeitraum 1 Start
+get;ci;holiday_cir2_temp;3;15;B509;3;0D2200;2;1,2;d2b;0;-;Heizkreis-Solltemperatur Ferien
+get;ci;password_pin1;3;15;B509;3;0D2C00;4;1;int;1000;-;Passwort Konfiguration
+get;ci;password_pin2;3;15;B509;3;0D2C00;4;2;int;100;-;Passwort Konfiguration
+get;ci;password_pin3;3;15;B509;3;0D2C00;4;3;int;10;-;Passwort Konfiguration
+get;ci;password_pin4;3;15;B509;3;0D2C00;4;4;int;1;-;Passwort Konfiguration
+get;ci;cir2_set_temp;3;15;B509;3;0D0500;2;1;d1b;0;°C;Heizkreis2-Solltemperatur
+get;ci;cir2_flow_temp;3;15;B509;3;0D0200;3;1,2;d2b;0;°C;Heizkreis2-Vorlauftemperatur
+get;ci;hw_heat_time;3;15;B509;3;0D4D00;1;1;d1b;0;min;Heizzeit max. bei WW-Anforderung
+get;ci;hw_wait_time;3;15;B509;3;0D4C00;1;1;d1b;0;min;WW-Zeit max. bei Heizanforderung
+get;ci;temp_camber;3;15;B509;3;0D2F00;2;1,2;int;0;°C;Temperaturüberhöhung
+get;ci;pre_off_time;3;15;B509;3;0D2D97;1;1;int;0;min;Vorabschaltzeit
+get;ci;freeze_wait;3;15;B509;3;0D2E00;1;1;int;0;h;Frostschutz-Verzögerung
+get;ci;temp_error;3;15;B509;3;0D3300;1;1;int;0;-;Temperaturfehlererkennung
+get;ci;boiler;3;15;B509;3;0D5C00;1;1;int;0;-;Pufferspeicher vorhanden
+get;ci;yield_transfer;3;15;B509;3;0D8600;4;1,2;d2c;256;kWh;Mitternacht Übertragswert Energieertrag
+get;ci;mode;3;15;B509;3;0D9700;1;1;int;0;-;aktueller Betriebsstatus
+# CI-Parameter - Energie Ertrag
+get;ci;yield_jan_act;3;15;B509;3;0D8400;2;1,2;d2b;256;kWh;Energie Januar
+get;ci;yield_jan_last;3;15;B509;3;0D8500;2;1,2;d2b;256;kWh;Energie Januar Vorjahr
+get;ci;yield_feb_act;3;15;B509;3;0D8408;2;1,2;d2b;256;kWh;Energie Februar
+get;ci;yield_feb_last;3;15;B509;3;0D8508;2;1,2;d2b;256;kWh;Energie Februar Vorjahr
+get;ci;yield_mar_act;3;15;B509;3;0D8410;2;1,2;d2b;256;kWh;Energie März
+get;ci;yield_mar_last;3;15;B509;3;0D8510;2;1,2;d2b;256;kWh;Energie März Vorjahr
+get;ci;yield_apr_act;3;15;B509;3;0D8418;2;1,2;d2b;256;kWh;Energie April
+get;ci;yield_apr_last;3;15;B509;3;0D8518;2;1,2;d2b;256;kWh;Energie April Vorjahr
+get;ci;yield_may_act;3;15;B509;3;0D8420;2;1,2;d2b;256;kWh;Energie Mai
+get;ci;yield_may_last;3;15;B509;3;0D8520;2;1,2;d2b;256;kWh;Energie Mai Vorjahr
+get;ci;yield_jun_act;3;15;B509;3;0D8428;2;1,2;d2b;256;kWh;Energie Juni
+get;ci;yield_jun_last;3;15;B509;3;0D8528;2;1,2;d2b;256;kWh;Energie Juni Vorjahr
+get;ci;yield_jul_act;3;15;B509;3;0D8430;2;1,2;d2b;256;kWh;Energie Juli
+get;ci;yield_jul_last;3;15;B509;3;0D8530;2;1,2;d2b;256;kWh;Energie Juli Vorjahr
+get;ci;yield_aug_act;3;15;B509;3;0D8438;2;1,2;d2b;256;kWh;Energie August
+get;ci;yield_aug_last;3;15;B509;3;0D8538;2;1,2;d2b;256;kWh;Energie August Vorjahr
+get;ci;yield_sep_act;3;15;B509;3;0D8440;2;1,2;d2b;256;kWh;Energie September
+get;ci;yield_sep_last;3;15;B509;3;0D8540;2;1,2;d2b;256;kWh;Energie September Vorjahr
+get;ci;yield_oct_act;3;15;B509;3;0D8448;2;1,2;d2b;256;kWh;Energie Oktober
+get;ci;yield_oct_last;3;15;B509;3;0D8548;2;1,2;d2b;256;kWh;Energie Oktober Vorjahr
+get;ci;yield_nov_act;3;15;B509;3;0D8450;2;1,2;d2b;256;kWh;Energie November
+get;ci;yield_nov_last;3;15;B509;3;0D8550;2;1,2;d2b;256;kWh;Energie November Vorjahr
+get;ci;yield_dec_act;3;15;B509;3;0D8458;2;1,2;d2b;256;kWh;Energie Dezember
+get;ci;yield_dec_last;3;15;B509;3;0D8558;2;1,2;d2b;256;kWh;Energie Dezember Vorjahr
+# AMU Waermepumpe
+get;amu;-;3;08;B509;3;0D2900;3;1,2,3;???;0;d.m.y;Datum
+get;amu;-;3;08;B509;3;0D2A00;1;1;int;0;Mo=0;Wochentag
+get;amu;-;3;08;B509;3;0D2800;3;1,2,3;???;0;s.m.h;Zeit
+get;amu;-;3;08;B509;3;0DD000;1;1;int;0;-;Waermepumpenstatus
+get;amu;-;3;08;B509;3;0DC501;4;?;???;0;min;Kompressorsperrzeit
+get;amu;-;3;08;B509;3;0D9200;1;1;int;0;-;Zusatzheizung vorhanden
+get;amu;-;3;08;B509;3;0D6500;2;1,2;d2c;0;°C;Zusatzheizung - Bivalenzpunkt
+get;amu;-;3;08;B509;3;0D7E00;2;1,2;d2c;0;°C;Zusatzheizung – Hysterese
+get;amu;-;3;08;B509;3;0DE001;1;1;d1b;0;min;Zusatzheizung – Verzögerung Hysterese 
+get;amu;-;3;08;B509;3;0D7F00;2;1,2;???;0;°min;Zusatzheizung – EnergieIntegral
+get;amu;-;3;08;B509;3;0D6300;1;1;int;0;-;Zusatzheizung – Heizung
+get;amu;-;3;08;B509;3;0D6400;1;1;int;0;-;Zusatzheizung – WarmWasser
+#         
+get;amu;-;3;08;B509;3;0D7D00;2;1,2;d2c;0;°C;Kompressor – Hysterese
+get;amu;-;3;08;B509;3;0D7C00;2;1,2;???;0;°min;Kompressor  - EnergieIntegral
+get;amu;-;3;08;B509;3;0D7400;1;1;int;0;-;Kompressor – Starts pro Stunde
+get;amu;-;3;08;B509;3;0D7300;2;1,2;d2c;0;°C;Kompressor  - max. Rücklauftemperatur
+#      
+get;amu;-;3;08;B509;3;0D6E00;2;1,2;d2c;0;°C;Quelle – zul. Spreizung
+get;amu;-;3;08;B509;3;0D7A01;1;1;d1b;0;°C;Quelle – Einfrierschutz
+get;amu;-;3;08;B509;3;0D7600;4;1;???;0;min;Quelle – Vorlaufzeit Quellenpumpe
+#    
+get;amu;-;3;08;B509;3;0D9901;1;1;int;0;min;Ausschaltzeit interne Heizkreispumpe (Minuten)
+get;amu;-;3;08;B509;3;0DC801;4;1;d1b;0;ss;Interne Heizkreispumpe Vorlaufzeit (Sekunden)
+#      
+get;amu;-;3;08;B509;3;0D9B00;4;1,2;???;0;h;Kompressorlaufzeit Heizung
+get;amu;-;3;08;B509;3;0D9C00;4;1,2;???;0;h;Kompressorlaufzeit WW
+get;amu;-;3;08;B509;3;0D9A00;4;1,2;???;0;h;Kompressorlaufzeit gesamt
+get;amu;-;3;08;B509;3;0DA900;4;1,2;???;0;-;Kompressorstarts
+get;amu;-;3;08;B509;3;0DA100;4;1,2;???;0;h;Zusatzheizung gesamt
+get;amu;-;3;08;B509;3;0DA200;4;1,2;???;0;h;Zusatzheizung Heizen
+get;amu;-;3;08;B509;3;0DA300;4;1,2;???;0;h;Zusatzheizung WW
+get;amu;-;3;08;B509;3;0DB300;4;1,2;???;0;-;Zusatzheizung Starts
+#        
+get;amu;-;3;08;B509;3;0D7401;1;1;d1b;0;°C;Kühlungsvorlaufsollwert
+get;amu;-;3;08;B509;3;0D7D01;1;?;???;0;h;Solepumpenlaufzeit Kühlbetrieb
+#  
+get;amu;-;3;08;B509;3;0D6600;1;1;int;0;-;Servicezeit
+get;amu;-;3;08;B509;3;0D1300;1;1;int;0;-;Entlüftung
+#      
+get;amu;-;3;08;B509;3;0D9700;2;1,2;???;0;-;Code 1
+get;amu;-;3;08;B509;3;0D9800;2;1,2;???;0;-;Code 2
+get;amu;-;3;08;B509;3;0D2400;1;1;int;0;-;Codes übernehmen
+#      
+get;amu;-;3;08;B509;3;0DB801;1;1;int;0;-;Hocheffizenzpumpenstatus
+get;amu;-;3;08;B509;3;0DAC01;1;1;d1b;0;%;Hocheffizienzpumpengeschw. %
+get;amu;-;3;08;B509;3;0DAE01;1;1;d1b;0;%;Pumpensollwert in% beim Heizen
+#      
+get;amu;-;3;08;B509;3;0DE301;1;1;int;0;-;Bivalenzmodus
+# Messwerte
+get;mv;-;3;08;B509;3;0DBC00;4;1,2;d2b;256;kWh;Energieertrag
+get;mv;-;3;08;B509;3;0D0F00;3;1,2;d2c;0;°C;Quellentemperatur
+get;mv;-;3;08;B509;3;0D0F00;3;3;int;0;-;Quellentemperatur Status
+get;mv;-;3;08;B509;3;0D0800;3;1,2;d2c;0;°C;Austrittstemperatur
+get;mv;-;3;08;B509;3;0D0800;3;3;int;0;-;AustrittstemperaturStatus
+get;mv;-;3;08;B509;3;0D1600;3;?;???;0;bar;Druck Wärmequelle
+get;mv;-;3;08;B509;3;0D1900;1;1;int;0;-;Status Quellenpumpe I/O
+get;mv;-;3;08;B509;3;0D2600;1;1;int;0;-;Soledruckschalter
+# 
+get;mv;-;3;08;B509;3;0D1400;3;1,2;???;0;bar;Hochdruck Kältekreis
+get;mv;-;3;08;B509;3;0D1400;3;3;int;0;-;Hochdruck Kältekreis Status
+get;mv;-;3;08;B509;3;0D1500;3;1,2;???;0;bar;Niederdruck Kältekreis
+get;mv;-;3;08;B509;3;0D1500;3;3;int;0;-;Niederdruck Kältekreis Status
+get;mv;-;3;08;B509;3;0D8D00;2;2;d2c;0;°C;Überhitzung
+get;mv;-;3;08;B509;3;0D8E00;2;2;d2c;0;°C;Unterkühlung
+get;mv;-;3;08;B509;3;0D8000;2;2;???;0;min;Energieintegral
+get;mv;-;3;08;B509;3;0D0200;3;1,2;d2c;0;°C;Kompressortemperatur Eintritt
+get;mv;-;3;08;B509;3;0D0200;3;3;int;0;-;Kompressortemperatur Eintritt Status
+get;mv;-;3;08;B509;3;0D0404;3;1,2;d2c;0;°C;Kompressortemperatur Austritt
+get;mv;-;3;08;B509;3;0D0400;3;3;int;0;-;Kompressortemperatur Austritt Status
+get;mv;-;3;08;B509;3;0D0D00;3;1,2;d2c;0;°C;TEV-Eintritt
+get;mv;-;3;08;B509;3;0D0D00;3;3;int;0;-;TEV-Eintritt Status
+get;mv;-;3;08;B509;3;0D2500;1;1;int;0;-;Prestostate
+get;mv;-;3;08;B509;3;0D1D00;1;1;int;0;-;Status kompresseor I/O
+get;mv;-;3;08;B509;3;0D5F00;1;1;int;0;-;Status Zusatzheizung I/O
+get;mv;-;3;08;B509;3;0D0900;3;1,2;d2c;0;°C;Vorlauftemperatur T6 (intern)
+get;mv;-;3;08;B509;3;0D0900;3;3;int;0;-;Vorlauftemperatur T6 (intern) Status
+get;mv;-;3;08;B509;3;0D0A00;3;1,2;d2c;0;°C;Rücklauftemperatur T5 (intern)
+get;mv;-;3;08;B509;3;0D0A00;3;3;int;0;-;Rücklauftemperatur T5 (intern) Status
+get;mv;-;3;08;B509;3;0D1200;3;1,2;???;0;bar;Heizanlagendruck
+get;mv;-;3;08;B509;3;0D1200;3;3;int;0;-;Heizanlagendruck Status
+get;mv;-;3;08;B509;3;0D1700;1;1;int;0;-;Status Heizkreispumpe I/O
+get;mv;-;3;08;B509;3;0D0100;3;1,2;d2c;0;°C;Vorlauftemperatur VF1
+get;mv;-;3;08;B509;3;0D0100;3;3;int;0;-;Vorlauftemperatur VF1 Status
+get;mv;-;3;08;B509;3;0D0700;3;1,2;d2c;0;°C;Rücklauftemperatur RF1
+get;mv;-;3;08;B509;3;0D0700;3;3;int;0;-;Rücklauftemperatur RF1Status
+get;mv;-;3;08;B509;3;0D0300;3;1,2;d2c;0;°C;Vorlauftemperatur VF2
+get;mv;-;3;08;B509;3;0D0300;3;3;int;0;-;Vorlauftemperatur VF2 Status
+get;mv;-;3;08;B509;3;0D0E00;1;1;???;0;%;Mischerstatus
+get;mv;-;3;08;B509;3;0D1800;1;1;int;0;%;Pumpenstatus
+#       
+get;mv;-;3;08;B509;3;0D0000;3;1,2;d2c;0;°C;Speichertemperatur
+get;mv;-;3;08;B509;3;0D0000;3;3;int;0;-;Speichertemperatur Status
+get;mv;-;3;08;B509;3;0D0C00;1;1;int;0;-;Status Zirkulationspumpe I/O
+get;mv;-;3;08;B509;3;0D1000;1;1;int;0;-;Umschaltventil Heizen/WW
+get;mv;-;3;08;B509;3;0D0B00;1;1;int;0;-;Status 1x ZP-Eingang
+#     
+get;mv;-;3;08;B509;3;0D1100;1;1;int;0;-;Stromunterbrechung 
+get;mv;-;3;08;B509;3;0D8800;1;1;int;0;-;Phasen Status
+get;mv;-;3;08;B509;3;0D5700;1;1;int;0;-;Drehfeldstatus
+get;mv;-;3;08;B509;3;0D3F00;1;1;int;0;-;Anlaufstrombegrenzer
+#      
+get;mw;at_temp;3;08;B509;3;0D0600;3;1,2;d2c;0;°C;Aussentempertur
+get;mw;at_stat;3;08;B509;3;0D0600;3;3;int;0;-;Aussentempertur Fühler Status
+# Kalibrierung
+get;cal;-;3;08;B509;5;0DC300;2;1,2;d2c;0;°C;Kalibrierung – Aussentemperatur
+get;cal;-;3;08;B509;5;0DCD00;2;1,2;d2c;0;°C;Kalibrierung - Quelle Eintritt
+get;cal;-;3;08;B509;5;0DC900;2;1,2;d2c;0;°C;Kalibrierung - Quelle Austritt
+get;cal;-;3;08;B509;5;0DC400;2;1,2;d2c;0;°C;Kalibrierung – WW-Speicher
+get;cal;-;3;08;B509;5;0DCA00;2;1,2;d2c;0;°C;Kalibrierung – Vorlauf
+get;cal;-;3;08;B509;5;0DCB00;2;1,2;d2c;0;°C;Kalibrierung – Rücklauf
+get;cal;-;3;08;B509;5;0DC500;2;1,2;d2c;0;°C;Kalibrierung - Vorlauf VF2
+get;cal;-;3;08;B509;5;0DC600;2;1,2;d2c;0;°C;Kalibrierung - Kompressor Eintritt
+get;cal;-;3;08;B509;5;0DC700;2;1,2;d2c;0;°C;Kalibrierung - Kompressor Austritt
+get;cal;-;3;08;B509;5;0D3400;2;1,2;d2c;0;°C;Kalibrierung – Puffer RL
+get;cal;-;3;08;B509;5;0D3301;2;1,2;d2c;0;°C;Kalibrierung – Puffer VL
+#WW-Kreis
+get;hw;-;3;25;B509;3;0D3B00;1;1;int;0;-;WW – Betriebsmodus
+get;hw;-;3;25;B509;3;0D8200;2;1,2;d2c;0;°C;WW – Solltemperatur
+get;hw;-;3;25;B509;3;0D8300;2;1,2;d2c;0;°C;WW – Min. Temperatur
+get;hw;-;3;25;B509;3;0D4000;1;1;int;0;-;WW – Legionellenschutz
+get;hw;-;3;25;B509;3;0D7C01;1;1;int;0;Mo=0;WW – Legionellenschutz Wochentag
+get;hw;-;3;25;B509;3;0D6700;2;1,2;d2b;0;hh24;WW – Legionellenschutz Startzeit
+get;hw;-;3;25;B509;3;0DC101;1;1;d1b;0;-;WW – Pumpe layered tank
+get;hw;-;3;25;B509;3;0DC201;1;1;d1b;0;-;WW – Pumpe coiled tank
+get;hw;-;3;25;B509;3;0DCD01;1;1;int;0;-;WW – Speicher = coiled
+# Heizkreis 2
+get;cir2;-;3;50;B509;3;0D2B00;1;1;int;0;-;Heizkreis - Betriebsart
+get;cir2;-;3;50;B509;3;0D3C00;1;1;int;0;-;Heizkreis - Kreis Typ
+get;cir2;-;3;50;B509;3;0D3200;1;1;d1b;0;°C;Heizkreis – Raumsolltemperatur
+get;cir2;-;3;50;B509;3;0D3300;1;1;d1b;0;°C;Heizkreis – Absenktemperatur
+get;cir2;-;3;50;B509;4;0D3500;2;1,2;???;0;-;Heizkreis – Heizkurve
+get;cir2;-;3;50;B509;3;0D3600;1;1;d1b;0;°C;Heizkreis – Aussentemperatur Abschaltgrenze
+get;cir2;-;3;50;B509;3;0D3000;1;1;d1b;0;°C;Heizkreis - minimale Vorlauftemperatur
+get;cir2;-;3;50;B509;3;0D3100;1;1;d1b;0;°C;Heizkreis - maximale Vorlauftemperatur
+get;cir2;-;3;50;B509;3;0D3800;1;1;int;0;h;Heizkreis - max. Voraufheizung in Stunden
+get;cir2;-;3;50;B509;3;0D3B00;1;1;int;0;dd;Heizkreis Estrichtrocknung Tag
+get;cir2;-;3;50;B509;3;0D7B01;1;1;d1b;0.5;-;Fußbodenschutz
+#       
+get;cir2;-;3;50;B509;3;0D8C01;1;1;int;0;-;Kühlbetrieb
+get;cir2;-;3;50;B509;3;0D8601;1;1;int;0;-;Kühlbetrieb supported/ für freigegeben
+get;cir2;-;3;50;B509;3;0D8801;1;1;d2c;0;°C;Außentemperatur mittel 24h
+get;cir2;-;3;50;B509;3;0D8701;1;1;d1c;0;°C;Kühlung Offset AT-Abschaltgrenze
+get;cir2;-;3;50;B509;3;0D8401;1;1;int;0;-;Sperrzeit Kuehlung > Heizung
+get;cir2;-;3;50;B509;3;0D8501;1;1;int;0;-;Sperrzeit Heizung > Kühlung
+get;cir2;-;3;50;B509;3;0D8B01;1;1;d1c;0;°C;min Diff VL / RT
+get;cir2;-;3;50;B509;3;0D9501;1;1;int;0;-;Kühlen im Ferienbetrieb
+get;cir2;-;3;50;B509;3;0D9701;4;?;???;0;-;Statusbit Kühlfunktion
+get;cir2;-;3;50;B509;3;0D8301;1;1;int;0;-;HK spezifische Kühlanforderung?
+#         
+get;cir2;-;3;50;B509;3;0DB901;1;1;int;0;-;Status Heizkreispumpe
+get;cir2;-;3;50;B509;3;0DBA01;1;1;d1b;0;%;akt. PWM-Wert Heizkreizpumpe
+get;cir2;-;3;50;B509;3;0DBF01;1;1;d1b;0;%;Heizkreispumpe bei Pufferladung
+get;cir2;-;3;50;B509;3;0DC001;1;1;d1b;0;%;Heizkreispumpe Standardwert
+get;cir2;-;3;50;B509;3;0DE101;1;1;d1b;0;%;Heizkreispumpe in Pausen
+# Heizkreis 4
+get;cir4;-;3;52;B509;3;0D2B00;1;1;int;0;-;Heizkreis - Betriebsart
+get;cir4;-;3;52;B509;3;0D3C00;1;1;int;0;-;Heizkreis - Kreis Typ
+get;cir4;-;3;52;B509;3;0D3200;1;1;d1b;0;°C;Heizkreis – Raumsolltemperatur
+get;cir4;-;3;52;B509;3;0D3300;1;1;d1b;0;°C;Heizkreis – Absenktemperatur
+get;cir4;-;3;52;B509;4;0D3500;2;1,2;???;0;-;Heizkreis – Heizkurve
+get;cir4;-;3;52;B509;3;0D3600;1;1;d1b;0;°C;Heizkreis – Aussentemperatur Abschaltgrenze
+get;cir4;-;3;52;B509;3;0D3000;1;1;d1b;0;°C;Heizkreis - minimale Vorlauftemperatur
+get;cir4;-;3;52;B509;3;0D3100;1;1;d1b;0;°C;Heizkreis - maximale Vorlauftemperatur
+get;cir4;-;3;52;B509;3;0D3800;1;1;int;0;h;Heizkreis - max. Voraufheizung in Stunden
+get;cir4;-;3;52;B509;3;0D3B00;1;1;int;0;dd;Heizkreis Estrichtrocknung Tag
+get;cir4;-;3;52;B509;3;0D7B01;1;1;d1b;0.5;-;Fußbodenschutz
+#        
+get;cir4;-;3;52;B509;3;0D8C01;1;1;int;0;-;Kühlbetrieb
+get;cir4;-;3;52;B509;3;0D8601;1;1;int;0;-;Kühlbetrieb supported/ für freigegeben
+get;cir4;-;3;52;B509;3;0D8801;1;1;d2c;0;°C;Außentemperatur mittel 24h
+get;cir4;-;3;52;B509;3;0D8701;1;1;d1c;0;°C;Kühlung Offset AT-Abschaltgrenze
+get;cir4;-;3;52;B509;3;0D8401;1;1;int;0;-;Sperrzeit Kuehlung > Heizung
+get;cir4;-;3;52;B509;3;0D8501;1;1;int;0;-;Sperrzeit Heizung > Kühlung
+get;cir4;-;3;52;B509;3;0D8B01;1;1;d1c;0;°C;min Diff VL / RT
+get;cir4;-;3;52;B509;3;0D9501;1;1;int;0;-;Kühlen im Ferienbetrieb
+get;cir4;-;3;52;B509;3;0D9701;4;?;???;0;-;Statusbit Kühlfunktion
+get;cir4;-;3;52;B509;3;0D8301;1;1;int;0;-;HK spezifische Kühlanforderung?
+#          
+get;cir4;-;3;52;B509;3;0DB901;1;1;int;0;-;Status Heizkreispumpe
+get;cir4;-;3;52;B509;3;0DBA01;1;1;d1b;0;%;akt. PWM-Wert Heizkreizpumpe
+get;cir4;-;3;52;B509;3;0DBF01;1;1;d1b;0;%;Heizkreispumpe bei Pufferladung
+get;cir4;-;3;52;B509;3;0DC001;1;1;d1b;0;%;Heizkreispumpe Standardwert
+get;cir4;-;3;52;B509;3;0DE101;1;1;d1b;0;%;Heizkreispumpe in Pausen
+# Heizkreis 5
+get;cir5;-;3;53;B509;3;0D2B00;1;1;int;0;-;Heizkreis - Betriebsart
+get;cir5;-;3;53;B509;3;0D3C00;1;1;int;0;-;Heizkreis - Kreis Typ
+get;cir5;-;3;53;B509;3;0D3200;1;1;d1b;0;°C;Heizkreis – Raumsolltemperatur
+get;cir5;-;3;53;B509;3;0D3300;1;1;d1b;0;°C;Heizkreis – Absenktemperatur
+get;cir5;-;3;53;B509;4;0D3500;2;1,2;???;0;-;Heizkreis – Heizkurve
+get;cir5;-;3;53;B509;3;0D3600;1;1;d1b;0;°C;Heizkreis – Aussentemperatur Abschaltgrenze
+get;cir5;-;3;53;B509;3;0D3000;1;1;d1b;0;°C;Heizkreis - minimale Vorlauftemperatur
+get;cir5;-;3;53;B509;3;0D3100;1;1;d1b;0;°C;Heizkreis - maximale Vorlauftemperatur
+get;cir5;-;3;53;B509;3;0D3800;1;1;int;0;h;Heizkreis - max. Voraufheizung in Stunden
+get;cir5;-;3;53;B509;3;0D3B00;1;1;int;0;dd;Heizkreis Estrichtrocknung Tag
+get;cir5;-;3;53;B509;3;0D7B01;1;1;d1b;0.5;-;Fußbodenschutz
+#  
+get;cir5;-;3;53;B509;3;0D8C01;1;1;int;0;-;Kühlbetrieb
+get;cir5;-;3;53;B509;3;0D8601;1;1;int;0;-;Kühlbetrieb supported/ für freigegeben
+get;cir5;-;3;53;B509;3;0D8801;1;1;d2c;0;°C;Außentemperatur mittel 24h
+get;cir5;-;3;53;B509;3;0D8701;1;1;d1c;0;°C;Kühlung Offset AT-Abschaltgrenze
+get;cir5;-;3;53;B509;3;0D8401;1;1;int;0;-;Sperrzeit Kuehlung > Heizung
+get;cir5;-;3;53;B509;3;0D8501;1;1;int;0;-;Sperrzeit Heizung > Kühlung
+get;cir5;-;3;53;B509;3;0D8B01;1;1;d1c;0;°C;min Diff VL / RT
+get;cir5;-;3;53;B509;3;0D9501;1;1;int;0;-;Kühlen im Ferienbetrieb
+get;cir5;-;3;53;B509;3;0D9701;4;?;???;0;-;Statusbit Kühlfunktion
+get;cir5;-;3;53;B509;3;0D8301;1;1;int;0;-;HK spezifische Kühlanforderung?
+#     
+get;cir5;-;3;53;B509;3;0DB901;1;1;int;0;-;Status Heizkreispumpe
+get;cir5;-;3;53;B509;3;0DBA01;1;1;d1b;0;%;akt. PWM-Wert Heizkreizpumpe
+get;cir5;-;3;53;B509;3;0DBF01;1;1;d1b;0;%;Heizkreispumpe bei Pufferladung
+get;cir5;-;3;53;B509;3;0DC001;1;1;d1b;0;%;Heizkreispumpe Standardwert
+get;cir5;-;3;53;B509;3;0DE101;1;1;d1b;0;%;Heizkreispumpe in Pausen

@@ -128,7 +128,7 @@ int eb_raw_file_open(const char *file);
  * @brief close a file.
  * @return 0 ok | -1 error
  */
-int eb_raw_file_close();
+int eb_raw_file_close(void);
 
 /**
  * @brief write bytes into file
@@ -160,7 +160,7 @@ int eb_serial_open(const char *dev, int *fd);
  * @brief close serial device and set settings to default.
  * @return 0 ok | -1 error
  */
-int eb_serial_close();
+int eb_serial_close(void);
 
 /**
  * @brief send bytes to serial device
@@ -184,9 +184,16 @@ int eb_serial_recv(unsigned char *buf, int *buflen);
  * @brief print received results in a specific format
  * @return none
  */
-void eb_print_result();
+void eb_print_result(void);
 
 
+/**
+ * @brief get received data
+ * @param [out] *buf pointer to a byte array of received bytes
+ * @param [out] *buflen length of received bytes
+ * @return none
+ */
+void eb_get_recv_data(unsigned char *buf, int *buflen);
 
 /**
  * @brief prepare received data
@@ -229,10 +236,15 @@ int eb_wait_bus_syn(int *skip);
  * @brief try to get bus for sending
  * \li wait SYN byte, send our ebus address and wait for minimun of ~4200 usec
  * \li read at least one byte and compare it with sent byte.
- * @param [out] *skip number skipped SYN bytes
  * @return 0 ok | -1 error | 1 max retry was reached
  */  
-int eb_wait_bus();
+int eb_wait_bus(void);
+
+/**
+ * @brief free bus after syn was sent
+ * @return 0 ok | -1 error
+ */  
+int eb_free_bus(void);
 
 
 
@@ -263,7 +275,7 @@ int eb_send_data(const unsigned char *buf, int buflen, int type);
  * @brief handle reading cycle ebus data
  * @param [out] *buf pointer to a byte array
  * @param [out] *buflen length of byte array
- * @return 0 ok | -1 error
+ * @return 0-x length of collected msg | -1 error
  */
 int eb_cyc_data_recv(unsigned char *buf, int *buflen);
 

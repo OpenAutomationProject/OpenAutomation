@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-02-04:
+* Add the ability to send commands via telnet to daemon
+  (This ist just added for GET and a few ebus commands for response)
+
 2013-02-01:
 * Add functions to read ebus command files
 

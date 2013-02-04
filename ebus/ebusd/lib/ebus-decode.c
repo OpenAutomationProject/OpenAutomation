@@ -42,6 +42,7 @@
 #include <dirent.h>
 
 #include "log.h"
+#include "ebus-bus.h"
 #include "ebus-decode.h"
 
 
@@ -49,13 +50,161 @@
 static struct cmd_get *get = NULL;
 static int getlen = 0;
 
+void
+eb_msg_result(int id, unsigned char *msg, int msglen, char *buf)
+{
+	int ret, i;
+	float f;
+	
+	if (strncasecmp(get[id].r_type, "d2b", 3) == 0) {
+		
+		ret = eb_d2b_to_float(msg[1], msg[2], &f);
+		f *= get[id].r_fac;
+		sprintf(buf, "%8.3f\n", f);
+	} 
+}
+
+void
+eb_msg_send_cmd(int id, char *buf, int *buflen)
+{
+	unsigned char msg[SERIAL_BUFSIZE];
+	int msglen, msgtype, ret;
+
+	memset(msg, '\0', sizeof(msg));
+	msglen = sizeof(msg);
+
+	msgtype = UNSET;			
+
+	/* prepare command */
+	eb_msg_prepare_cmd(id, msg, &msglen, &msgtype);
+	eb_raw_print_hex(msg, msglen);
+	
+	/* send data to bus */
+	ret = eb_send_data(msg, msglen, msgtype);
+
+	if (ret >= 0) {
+		
+		if (msgtype == EBUS_MSG_BROADCAST)
+			strcpy(buf, "broadcast done\n");
+
+		if (msgtype == EBUS_MSG_MASTER_MASTER) {
+			if (ret == 0) {
+				strcpy(buf, "ACK\n");
+			} else {
+				strcpy(buf, "NAK\n");
+			}
+		}
+
+		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
+			if (ret == 0) {
+				memset(msg, '\0', sizeof(msg));
+				eb_get_recv_data(msg, &msglen);
+				eb_raw_print_hex(msg, msglen);
+
+				/* decode */
+				eb_msg_result(id, msg, msglen, buf);
+				
+			} else {
+				strcpy(buf, "NAK\n");
+			}
+		}
+
+	} else {
+		strcpy(buf, "error send ebus msg\n");
+	}
+	*buflen = strlen(buf);
+}
+
+
+void
+eb_msg_prepare_cmd(int id, char *msg, int *msglen, int *type)
+{
+	char str[CMD_GET_SIZE_S_ZZ + CMD_GET_SIZE_S_CMD + 2 + CMD_GET_SIZE_S_MSG];
+	memset(str, '\0', sizeof(str));
+	
+	sprintf(str, "%s%s%02X%s",
+		get[id].s_zz, get[id].s_cmd, get[id].s_len, get[id].s_msg);
+	
+	char byte;
+	int ret, i, j, k;
+	int in[SERIAL_BUFSIZE];
+
+	memset(in, '\0', sizeof(in));
+	i = 0;
+	j = 0;
+	
+	while (str[j] != '\0') {
+		byte = str[j];
+		if (i < sizeof(in)) {
+
+			ret = eb_htoi(&byte);
+			if (ret != -1) {
+				in[i] = ret;
+				i++;
+			}
+		}
+		j++;
+	}
+
+
+	memset(msg, '\0', sizeof(msg));
+	for (j = 0, k = 0; j < i; j += 2, k++)
+		msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
+
+	*msglen = k;
+
+	*type = get[id].s_type;
+}
+
+int
+eb_msg_find_cmd(const char *class, const char *cmd)
+{
+	int i;
+
+	for (i = 0; i < getlen; i++) {
+		if ((strncasecmp(class, get[i].class, strlen(get[i].class)) == 0)
+		   && (strncasecmp(cmd, get[i].cmd, strlen(get[i].cmd)) == 0)) {
+
+			log_print(L_NOT, " found: %s%s%02X%s type: %d ==> id: %d",
+				get[i].s_zz, get[i].s_cmd, get[i].s_len,
+				get[i].s_msg, get[i].s_type, i);
+			return i;
+		}
+			
+	}
+	
+	return -1;
+}
+
+int
+eb_msg_decode(char *buf)
+{
+	char *type, *class, *cmd;
+	int ret;
+
+	type = strtok(buf, " ");
+	class = strtok(NULL, " .");
+	cmd = strtok(NULL, " ");	
+	
+	if ((strncasecmp(buf, "get", 3) == 0) && class != NULL && cmd != NULL) {
+		log_print(L_NOT, "search: %s %s.%s", type, class, cmd);
+
+		/* search command */
+		ret = eb_msg_find_cmd(class, cmd);
+		return ret;
+
+	}
+	
+	return -1;
+}
+
 
 
 int
 eb_cmd_fill_get(const char *tok)
 {
 
-	get = realloc(get, (getlen + 1) * sizeof(struct cmd_get));
+	get = (struct cmd_get *) realloc(get, (getlen + 1) * sizeof(struct cmd_get));
 	err_ret_if(get == NULL, -1);
 
 	memset(get + getlen, '\0', sizeof(struct cmd_get));
@@ -70,6 +219,10 @@ eb_cmd_fill_get(const char *tok)
 	/* sub */
 	tok = strtok(NULL, ";");
 	strncpy(get[getlen].cmd, tok, strlen(tok));
+
+	/* s_type */
+	tok = strtok(NULL, ";");
+	get[getlen].s_type = atoi(tok);	
 	
 	/* s_zz */
 	tok = strtok(NULL, ";");
@@ -186,12 +339,13 @@ eb_cmd_dir_read(const char *cfgdir, const char *extension)
 {
 	struct dirent **dir;
 	int ret, i, j, files;
-	char *ext, file[CMD_FILELEN];
+	char file[CMD_FILELEN];
+	char *ext;
 
 	files = scandir(cfgdir, &dir, 0, alphasort);
 	if (files < 0) {
 		log_print(L_WAR, "configuration directory %s not found.", cfgdir);
-		return -1;
+		return 1;
 	}
 	
 	i = 0;
@@ -202,13 +356,13 @@ eb_cmd_dir_read(const char *cfgdir, const char *extension)
 				if (strlen(ext) == 4
 				    && dir[i]->d_type == DT_REG
 				    && strncasecmp(ext, extension, 4) == 0 ) {
-					memset(file, '\0', strlen(file));
-					sprintf(file, "%s%s", cfgdir,
+					memset(file, '\0', sizeof(file));
+					sprintf(file, "%s/%s", cfgdir,
 								dir[i]->d_name);
 									
 					ret = eb_cmd_file_read(file);
 					if (ret < 0)
-						return -2;
+						return -1;
 
 					j++;
 				}
@@ -221,11 +375,24 @@ eb_cmd_dir_read(const char *cfgdir, const char *extension)
 	free(dir);
 
 	if (j == 0) {
-		log_print(L_WAR, "command files not found ==> decode disabled.");
-		return -3;
+		log_print(L_WAR, "no command files found ==> decode disabled.");
+		return 2;
 	}
 	
 	return 0;
+}
+
+void
+eb_cmd_dir_free(void)
+{
+	if (getlen > 0)
+		free(get);
+
+	//~ if (setlen > 0)
+		//~ free(set);
+
+	//~ if (cyclen > 0)
+		//~ free(cyc);				
 }
 
 

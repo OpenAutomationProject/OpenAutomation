@@ -1,10 +1,10 @@
 # WW-Kreis
-get;hw;-;25;B509;3;0D3B00;1;1;int;0;-;WW – Betriebsmodus
-get;hw;-;25;B509;3;0D8200;2;1,2;d2c;0;°C;WW – Solltemperatur
-get;hw;-;25;B509;3;0D8300;2;1,2;d2c;0;°C;WW – Min. Temperatur
-get;hw;-;25;B509;3;0D4000;1;1;int;0;-;WW – Legionellenschutz
-get;hw;-;25;B509;3;0D7C01;1;1;int;0;Mo=0;WW – Legionellenschutz Wochentag
-get;hw;-;25;B509;3;0D6700;2;1,2;d2b;0;hh24;WW – Legionellenschutz Startzeit
-get;hw;-;25;B509;3;0DC101;1;1;d1b;0;-;WW – Pumpe layered tank
-get;hw;-;25;B509;3;0DC201;1;1;d1b;0;-;WW – Pumpe coiled tank
-get;hw;-;25;B509;3;0DCD01;1;1;int;0;-;WW – Speicher = coiled
+get;hw;-;3;25;B509;3;0D3B00;1;1;int;0;-;WW – Betriebsmodus
+get;hw;-;3;25;B509;3;0D8200;2;1,2;d2c;0;°C;WW – Solltemperatur
+get;hw;-;3;25;B509;3;0D8300;2;1,2;d2c;0;°C;WW – Min. Temperatur
+get;hw;-;3;25;B509;3;0D4000;1;1;int;0;-;WW – Legionellenschutz
+get;hw;-;3;25;B509;3;0D7C01;1;1;int;0;Mo=0;WW – Legionellenschutz Wochentag
+get;hw;-;3;25;B509;3;0D6700;2;1,2;d2b;0;hh24;WW – Legionellenschutz Startzeit
+get;hw;-;3;25;B509;3;0DC101;1;1;d1b;0;-;WW – Pumpe layered tank
+get;hw;-;3;25;B509;3;0DC201;1;1;d1b;0;-;WW – Pumpe coiled tank
+get;hw;-;3;25;B509;3;0DCD01;1;1;int;0;-;WW – Speicher = coiled

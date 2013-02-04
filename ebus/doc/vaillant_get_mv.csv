@@ -1,55 +1,55 @@
 # Messwerte
-get;mv;-;08;B509;3;0DBC00;4;1,2;d2b;256;kWh;Energieertrag
-get;mv;-;08;B509;3;0D0F00;3;1,2;d2c;0;°C;Quellentemperatur
-get;mv;-;08;B509;3;0D0F00;3;3;int;0;-;Quellentemperatur Status
-get;mv;-;08;B509;3;0D0800;3;1,2;d2c;0;°C;Austrittstemperatur
-get;mv;-;08;B509;3;0D0800;3;3;int;0;-;AustrittstemperaturStatus
-get;mv;-;08;B509;3;0D1600;3;?;???;0;bar;Druck Wärmequelle
-get;mv;-;08;B509;3;0D1900;1;1;int;0;-;Status Quellenpumpe I/O
-get;mv;-;08;B509;3;0D2600;1;1;int;0;-;Soledruckschalter
+get;mv;-;3;08;B509;3;0DBC00;4;1,2;d2b;256;kWh;Energieertrag
+get;mv;-;3;08;B509;3;0D0F00;3;1,2;d2c;0;°C;Quellentemperatur
+get;mv;-;3;08;B509;3;0D0F00;3;3;int;0;-;Quellentemperatur Status
+get;mv;-;3;08;B509;3;0D0800;3;1,2;d2c;0;°C;Austrittstemperatur
+get;mv;-;3;08;B509;3;0D0800;3;3;int;0;-;AustrittstemperaturStatus
+get;mv;-;3;08;B509;3;0D1600;3;?;???;0;bar;Druck Wärmequelle
+get;mv;-;3;08;B509;3;0D1900;1;1;int;0;-;Status Quellenpumpe I/O
+get;mv;-;3;08;B509;3;0D2600;1;1;int;0;-;Soledruckschalter
+#     
+get;mv;-;3;08;B509;3;0D1400;3;1,2;???;0;bar;Hochdruck Kältekreis
+get;mv;-;3;08;B509;3;0D1400;3;3;int;0;-;Hochdruck Kältekreis Status
+get;mv;-;3;08;B509;3;0D1500;3;1,2;???;0;bar;Niederdruck Kältekreis
+get;mv;-;3;08;B509;3;0D1500;3;3;int;0;-;Niederdruck Kältekreis Status
+get;mv;-;3;08;B509;3;0D8D00;2;2;d2c;0;°C;Überhitzung
+get;mv;-;3;08;B509;3;0D8E00;2;2;d2c;0;°C;Unterkühlung
+get;mv;-;3;08;B509;3;0D8000;2;2;???;0;min;Energieintegral
+get;mv;-;3;08;B509;3;0D0200;3;1,2;d2c;0;°C;Kompressortemperatur Eintritt
+get;mv;-;3;08;B509;3;0D0200;3;3;int;0;-;Kompressortemperatur Eintritt Status
+get;mv;-;3;08;B509;3;0D0404;3;1,2;d2c;0;°C;Kompressortemperatur Austritt
+get;mv;-;3;08;B509;3;0D0400;3;3;int;0;-;Kompressortemperatur Austritt Status
+get;mv;-;3;08;B509;3;0D0D00;3;1,2;d2c;0;°C;TEV-Eintritt
+get;mv;-;3;08;B509;3;0D0D00;3;3;int;0;-;TEV-Eintritt Status
+get;mv;-;3;08;B509;3;0D2500;1;1;int;0;-;Prestostate
+get;mv;-;3;08;B509;3;0D1D00;1;1;int;0;-;Status kompresseor I/O
+get;mv;-;3;08;B509;3;0D5F00;1;1;int;0;-;Status Zusatzheizung I/O
+get;mv;-;3;08;B509;3;0D0900;3;1,2;d2c;0;°C;Vorlauftemperatur T6 (intern)
+get;mv;-;3;08;B509;3;0D0900;3;3;int;0;-;Vorlauftemperatur T6 (intern) Status
+get;mv;-;3;08;B509;3;0D0A00;3;1,2;d2c;0;°C;Rücklauftemperatur T5 (intern)
+get;mv;-;3;08;B509;3;0D0A00;3;3;int;0;-;Rücklauftemperatur T5 (intern) Status
+get;mv;-;3;08;B509;3;0D1200;3;1,2;???;0;bar;Heizanlagendruck
+get;mv;-;3;08;B509;3;0D1200;3;3;int;0;-;Heizanlagendruck Status
+get;mv;-;3;08;B509;3;0D1700;1;1;int;0;-;Status Heizkreispumpe I/O
+get;mv;-;3;08;B509;3;0D0100;3;1,2;d2c;0;°C;Vorlauftemperatur VF1
+get;mv;-;3;08;B509;3;0D0100;3;3;int;0;-;Vorlauftemperatur VF1 Status
+get;mv;-;3;08;B509;3;0D0700;3;1,2;d2c;0;°C;Rücklauftemperatur RF1
+get;mv;-;3;08;B509;3;0D0700;3;3;int;0;-;Rücklauftemperatur RF1Status
+get;mv;-;3;08;B509;3;0D0300;3;1,2;d2c;0;°C;Vorlauftemperatur VF2
+get;mv;-;3;08;B509;3;0D0300;3;3;int;0;-;Vorlauftemperatur VF2 Status
+get;mv;-;3;08;B509;3;0D0E00;1;1;???;0;%;Mischerstatus
+get;mv;-;3;08;B509;3;0D1800;1;1;int;0;%;Pumpenstatus
+#  
+get;mv;-;3;08;B509;3;0D0000;3;1,2;d2c;0;°C;Speichertemperatur
+get;mv;-;3;08;B509;3;0D0000;3;3;int;0;-;Speichertemperatur Status
+get;mv;-;3;08;B509;3;0D0C00;1;1;int;0;-;Status Zirkulationspumpe I/O
+get;mv;-;3;08;B509;3;0D1000;1;1;int;0;-;Umschaltventil Heizen/WW
+get;mv;-;3;08;B509;3;0D0B00;1;1;int;0;-;Status 1x ZP-Eingang
+#        
+get;mv;-;3;08;B509;3;0D1100;1;1;int;0;-;Stromunterbrechung 
+get;mv;-;3;08;B509;3;0D8800;1;1;int;0;-;Phasen Status
+get;mv;-;3;08;B509;3;0D5700;1;1;int;0;-;Drehfeldstatus
+get;mv;-;3;08;B509;3;0D3F00;1;1;int;0;-;Anlaufstrombegrenzer
 #
-get;mv;-;08;B509;3;0D1400;3;1,2;???;0;bar;Hochdruck Kältekreis
-get;mv;-;08;B509;3;0D1400;3;3;int;0;-;Hochdruck Kältekreis Status
-get;mv;-;08;B509;3;0D1500;3;1,2;???;0;bar;Niederdruck Kältekreis
-get;mv;-;08;B509;3;0D1500;3;3;int;0;-;Niederdruck Kältekreis Status
-get;mv;-;08;B509;3;0D8D00;2;2;d2c;0;°C;Überhitzung
-get;mv;-;08;B509;3;0D8E00;2;2;d2c;0;°C;Unterkühlung
-get;mv;-;08;B509;3;0D8000;2;2;???;0;min;Energieintegral
-get;mv;-;08;B509;3;0D0200;3;1,2;d2c;0;°C;Kompressortemperatur Eintritt
-get;mv;-;08;B509;3;0D0200;3;3;int;0;-;Kompressortemperatur Eintritt Status
-get;mv;-;08;B509;3;0D0404;3;1,2;d2c;0;°C;Kompressortemperatur Austritt
-get;mv;-;08;B509;3;0D0400;3;3;int;0;-;Kompressortemperatur Austritt Status
-get;mv;-;08;B509;3;0D0D00;3;1,2;d2c;0;°C;TEV-Eintritt
-get;mv;-;08;B509;3;0D0D00;3;3;int;0;-;TEV-Eintritt Status
-get;mv;-;08;B509;3;0D2500;1;1;int;0;-;Prestostate
-get;mv;-;08;B509;3;0D1D00;1;1;int;0;-;Status kompresseor I/O
-get;mv;-;08;B509;3;0D5F00;1;1;int;0;-;Status Zusatzheizung I/O
-get;mv;-;08;B509;3;0D0900;3;1,2;d2c;0;°C;Vorlauftemperatur T6 (intern)
-get;mv;-;08;B509;3;0D0900;3;3;int;0;-;Vorlauftemperatur T6 (intern) Status
-get;mv;-;08;B509;3;0D0A00;3;1,2;d2c;0;°C;Rücklauftemperatur T5 (intern)
-get;mv;-;08;B509;3;0D0A00;3;3;int;0;-;Rücklauftemperatur T5 (intern) Status
-get;mv;-;08;B509;3;0D1200;3;1,2;???;0;bar;Heizanlagendruck
-get;mv;-;08;B509;3;0D1200;3;3;int;0;-;Heizanlagendruck Status
-get;mv;-;08;B509;3;0D1700;1;1;int;0;-;Status Heizkreispumpe I/O
-get;mv;-;08;B509;3;0D0100;3;1,2;d2c;0;°C;Vorlauftemperatur VF1
-get;mv;-;08;B509;3;0D0100;3;3;int;0;-;Vorlauftemperatur VF1 Status
-get;mv;-;08;B509;3;0D0700;3;1,2;d2c;0;°C;Rücklauftemperatur RF1
-get;mv;-;08;B509;3;0D0700;3;3;int;0;-;Rücklauftemperatur RF1Status
-get;mv;-;08;B509;3;0D0300;3;1,2;d2c;0;°C;Vorlauftemperatur VF2
-get;mv;-;08;B509;3;0D0300;3;3;int;0;-;Vorlauftemperatur VF2 Status
-get;mv;-;08;B509;3;0D0E00;1;1;???;0;%;Mischerstatus
-get;mv;-;08;B509;3;0D1800;1;1;int;0;%;Pumpenstatus
-#
-get;mv;-;08;B509;3;0D0000;3;1,2;d2c;0;°C;Speichertemperatur
-get;mv;-;08;B509;3;0D0000;3;3;int;0;-;Speichertemperatur Status
-get;mv;-;08;B509;3;0D0C00;1;1;int;0;-;Status Zirkulationspumpe I/O
-get;mv;-;08;B509;3;0D1000;1;1;int;0;-;Umschaltventil Heizen/WW
-get;mv;-;08;B509;3;0D0B00;1;1;int;0;-;Status 1x ZP-Eingang
-#
-get;mv;-;08;B509;3;0D1100;1;1;int;0;-;Stromunterbrechung 
-get;mv;-;08;B509;3;0D8800;1;1;int;0;-;Phasen Status
-get;mv;-;08;B509;3;0D5700;1;1;int;0;-;Drehfeldstatus
-get;mv;-;08;B509;3;0D3F00;1;1;int;0;-;Anlaufstrombegrenzer
-#
-get;mv;at_temp;08;B509;3;0D0600;3;1,2;d2c;0;°C;Aussentempertur
-get;mv;at_stat;08;B509;3;0D0600;3;3;int;0;-;Aussentempertur Fühler Status
+get;mv;at_temp;3;08;B509;3;0D0600;3;1,2;d2c;0;°C;Aussentempertur
+get;mv;at_stat;3;08;B509;3;0D0600;3;3;int;0;-;Aussentempertur Fühler Status

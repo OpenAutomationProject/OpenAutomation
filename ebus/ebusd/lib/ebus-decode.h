@@ -41,7 +41,7 @@
 #include "ebus-common.h"
 
 #define CMD_LINELEN          512
-#define CMD_DELIMETER         11
+#define CMD_DELIMETER         12
 #define CMD_FILELEN         1024
 
 #define CMD_GET_SIZE_CLASS     5
@@ -63,6 +63,7 @@ struct cmd_get {
 	int key; /**< internal number - do we need this ? */
 	char class[CMD_GET_SIZE_CLASS+1]; /**< ci */
 	char cmd[CMD_GET_SIZE_CMD+1]; /**< hydraulic */
+	int s_type; /**< message type */
 	char s_zz[CMD_GET_SIZE_S_ZZ+1]; /**< zz */ 
 	char s_cmd[CMD_GET_SIZE_S_CMD+1]; /**< pb sb */
 	int s_len; /**< number of send bytes */
@@ -74,6 +75,18 @@ struct cmd_get {
 	char r_unit[CMD_GET_SIZE_R_UNIT+1]; /**< unit of data like °C,...) */
 	char com[CMD_GET_SIZE_COMMENT+1]; /**< just a comment */
 };
+
+
+
+void eb_msg_result(int id, unsigned char *msg, int msglen, char *buf);
+
+void eb_msg_send_cmd(int id, char *buf, int *buflen);
+
+void eb_msg_prepare_cmd(int id, char *msg, int *msglen, int *type);
+
+int eb_msg_find_cmd(const char *class, const char *cmd);
+
+int eb_msg_decode(char *buf);
 
 
 
@@ -106,9 +119,15 @@ int eb_cmd_file_read(const char *file);
  * @brief get all files with given extension from given configuration directory
  * @param [in] *cfgdir pointer to configuration directory
  * @param [in] *suffix pointer to given extension
- * @return 0 ok | -1 error | -2 read file error | -3 command files not found
+ * @return 0 ok | -1 error | 1 read file error | 2 no command files found
  */
 int eb_cmd_dir_read(const char *cfgdir, const char *extension);
+
+/**
+ * @brief free mem for ebus commands
+ * @return none
+ */
+void eb_cmd_dir_free(void);
 
 
 

@@ -1,29 +1,29 @@
 # Heizkreis 2
-get;cir2;-;50;B509;3;0D2B00;1;1;int;0;-;Heizkreis - Betriebsart
-get;cir2;-;50;B509;3;0D3C00;1;1;int;0;-;Heizkreis - Kreis Typ
-get;cir2;-;50;B509;3;0D3200;1;1;d1b;0;°C;Heizkreis - Raumsolltemperatur
-get;cir2;-;50;B509;3;0D3300;1;1;d1b;0;°C;Heizkreis - Absenktemperatur
-get;cir2;-;50;B509;4;0D3500;2;1,2;???;0;-;Heizkreis - Heizkurve
-get;cir2;-;50;B509;3;0D3600;1;1;d1b;0;°C;Heizkreis - Aussentemperatur Abschaltgrenze
-get;cir2;-;50;B509;3;0D3000;1;1;d1b;0;°C;Heizkreis - minimale Vorlauftemperatur
-get;cir2;-;50;B509;3;0D3100;1;1;d1b;0;°C;Heizkreis - maximale Vorlauftemperatur
-get;cir2;-;50;B509;3;0D3800;1;1;int;0;h;Heizkreis - max. Voraufheizung in Stunden
-get;cir2;-;50;B509;3;0D3B00;1;1;int;0;dd;Heizkreis Estrichtrocknung Tag
-get;cir2;-;50;B509;3;0D7B01;1;1;d1b;0.5;-;Fußbodenschutz
+get;cir2;-;3;50;B509;3;0D2B00;1;1;int;0;-;Heizkreis - Betriebsart
+get;cir2;-;3;50;B509;3;0D3C00;1;1;int;0;-;Heizkreis - Kreis Typ
+get;cir2;-;3;50;B509;3;0D3200;1;1;d1b;0;°C;Heizkreis - Raumsolltemperatur
+get;cir2;-;3;50;B509;3;0D3300;1;1;d1b;0;°C;Heizkreis - Absenktemperatur
+get;cir2;-;3;50;B509;4;0D3500;2;1,2;???;0;-;Heizkreis - Heizkurve
+get;cir2;-;3;50;B509;3;0D3600;1;1;d1b;0;°C;Heizkreis - Aussentemperatur Abschaltgrenze
+get;cir2;-;3;50;B509;3;0D3000;1;1;d1b;0;°C;Heizkreis - minimale Vorlauftemperatur
+get;cir2;-;3;50;B509;3;0D3100;1;1;d1b;0;°C;Heizkreis - maximale Vorlauftemperatur
+get;cir2;-;3;50;B509;3;0D3800;1;1;int;0;h;Heizkreis - max. Voraufheizung in Stunden
+get;cir2;-;3;50;B509;3;0D3B00;1;1;int;0;dd;Heizkreis Estrichtrocknung Tag
+get;cir2;-;3;50;B509;3;0D7B01;1;1;d1b;0.5;-;Fußbodenschutz
+#    
+get;cir2;-;3;50;B509;3;0D8C01;1;1;int;0;-;Kühlbetrieb
+get;cir2;-;3;50;B509;3;0D8601;1;1;int;0;-;Kühlbetrieb supported/ für freigegeben
+get;cir2;-;3;50;B509;3;0D8801;1;1;d2c;0;°C;Außentemperatur mittel 24h
+get;cir2;-;3;50;B509;3;0D8701;1;1;d1c;0;°C;Kühlung Offset AT-Abschaltgrenze
+get;cir2;-;3;50;B509;3;0D8401;1;1;int;0;-;Sperrzeit Kuehlung > Heizung
+get;cir2;-;3;50;B509;3;0D8501;1;1;int;0;-;Sperrzeit Heizung > Kühlung
+get;cir2;-;3;50;B509;3;0D8B01;1;1;d1c;0;°C;min Diff VL / RT
+get;cir2;-;3;50;B509;3;0D9501;1;1;int;0;-;Kühlen im Ferienbetrieb
+get;cir2;-;3;50;B509;3;0D9701;4;?;???;0;-;Statusbit Kühlfunktion
+get;cir2;-;3;50;B509;3;0D8301;1;1;int;0;-;HK spezifische Kühlanforderung?
 #        
-get;cir2;-;50;B509;3;0D8C01;1;1;int;0;-;Kühlbetrieb
-get;cir2;-;50;B509;3;0D8601;1;1;int;0;-;Kühlbetrieb supported/ für freigegeben
-get;cir2;-;50;B509;3;0D8801;1;1;d2c;0;°C;Außentemperatur mittel 24h
-get;cir2;-;50;B509;3;0D8701;1;1;d1c;0;°C;Kühlung Offset AT-Abschaltgrenze
-get;cir2;-;50;B509;3;0D8401;1;1;int;0;-;Sperrzeit Kuehlung > Heizung
-get;cir2;-;50;B509;3;0D8501;1;1;int;0;-;Sperrzeit Heizung > Kühlung
-get;cir2;-;50;B509;3;0D8B01;1;1;d1c;0;°C;min Diff VL / RT
-get;cir2;-;50;B509;3;0D9501;1;1;int;0;-;Kühlen im Ferienbetrieb
-get;cir2;-;50;B509;3;0D9701;4;?;???;0;-;Statusbit Kühlfunktion
-get;cir2;-;50;B509;3;0D8301;1;1;int;0;-;HK spezifische Kühlanforderung?
-#        
-get;cir2;-;50;B509;3;0DB901;1;1;int;0;-;Status Heizkreispumpe
-get;cir2;-;50;B509;3;0DBA01;1;1;d1b;0;%;akt. PWM-Wert Heizkreizpumpe
-get;cir2;-;50;B509;3;0DBF01;1;1;d1b;0;%;Heizkreispumpe bei Pufferladung
-get;cir2;-;50;B509;3;0DC001;1;1;d1b;0;%;Heizkreispumpe Standardwert
-get;cir2;-;50;B509;3;0DE101;1;1;d1b;0;%;Heizkreispumpe in Pausen
+get;cir2;-;3;50;B509;3;0DB901;1;1;int;0;-;Status Heizkreispumpe
+get;cir2;-;3;50;B509;3;0DBA01;1;1;d1b;0;%;akt. PWM-Wert Heizkreizpumpe
+get;cir2;-;3;50;B509;3;0DBF01;1;1;d1b;0;%;Heizkreispumpe bei Pufferladung
+get;cir2;-;3;50;B509;3;0DC001;1;1;d1b;0;%;Heizkreispumpe Standardwert
+get;cir2;-;3;50;B509;3;0DE101;1;1;d1b;0;%;Heizkreispumpe in Pausen

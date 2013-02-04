@@ -23,10 +23,10 @@
 #define NUMSTR2(s) #s
 #define NUMSTR(s) NUMSTR2(s)
 
-int cmd_decode(unsigned char *buf, int buflen);
-
-
 #define CFG_LINELEN   256
+
+#define SOCKET_PORT      8888
+#define SOCKET_BUFSIZE   1024
 
 enum enum_config {STR, BOL, NUM};
 
@@ -37,6 +37,20 @@ struct config {
 	char *info;
 };
 
+struct msg_queue {
+	int id;
+	int clientfd;
+	struct msg_queue *prev;
+};
+
+int msg_queue_entries(void);
+int msg_queue_init(void);
+void msg_queue_free(void);
+void msg_queue_put(struct msg_queue *msg);
+void msg_queue_get(void);
+void msg_queue_add_msg(int id, int clientfd);
+void msg_queue_del_msg(int *id, int *clientfd);
+
 void cfg_print(struct config *cfg, int len);
 int cfg_file_set_param(char *param, struct config *cfg, int len);
 int cfg_file_read(const char *file, struct config *cfg, int len);
@@ -44,13 +58,10 @@ int cfg_file_read(const char *file, struct config *cfg, int len);
 int pid_file_open(const char *file, int *fd);
 int pid_file_close(const char *file, int fd);
 
-#define SOCKET_PORT      8888
-#define SOCKET_BUFSIZE   1024
-
 int sock_open(int *fd, int port);
 int sock_close(int fd);
 int sock_client_accept(int listenfd, int *datafd);
 int sock_client_read(int fd, char *buf, int *buflen);
-int sock_client_write(int fd, const char *buf, int buflen);
+int sock_client_write(int fd, char *buf, int buflen);
 
 #endif /* UTILS_H_ */

@@ -1,12 +1,12 @@
 # Kalibrierung
-get;cal;-;08;B509;5;0DC300;2;1,2;d2c;0;°C;Kalibrierung – Aussentemperatur
-get;cal;-;08;B509;5;0DCD00;2;1,2;d2c;0;°C;Kalibrierung - Quelle Eintritt
-get;cal;-;08;B509;5;0DC900;2;1,2;d2c;0;°C;Kalibrierung - Quelle Austritt
-get;cal;-;08;B509;5;0DC400;2;1,2;d2c;0;°C;Kalibrierung – WW-Speicher
-get;cal;-;08;B509;5;0DCA00;2;1,2;d2c;0;°C;Kalibrierung – Vorlauf
-get;cal;-;08;B509;5;0DCB00;2;1,2;d2c;0;°C;Kalibrierung – Rücklauf
-get;cal;-;08;B509;5;0DC500;2;1,2;d2c;0;°C;Kalibrierung - Vorlauf VF2
-get;cal;-;08;B509;5;0DC600;2;1,2;d2c;0;°C;Kalibrierung - Kompressor Eintritt
-get;cal;-;08;B509;5;0DC700;2;1,2;d2c;0;°C;Kalibrierung - Kompressor Austritt
-get;cal;-;08;B509;5;0D3400;2;1,2;d2c;0;°C;Kalibrierung – Puffer RL
-get;cal;-;08;B509;5;0D3301;2;1,2;d2c;0;°C;Kalibrierung – Puffer VL
+get;cal;-;3;08;B509;5;0DC300;2;1,2;d2c;0;°C;Kalibrierung – Aussentemperatur
+get;cal;-;3;08;B509;5;0DCD00;2;1,2;d2c;0;°C;Kalibrierung - Quelle Eintritt
+get;cal;-;3;08;B509;5;0DC900;2;1,2;d2c;0;°C;Kalibrierung - Quelle Austritt
+get;cal;-;3;08;B509;5;0DC400;2;1,2;d2c;0;°C;Kalibrierung – WW-Speicher
+get;cal;-;3;08;B509;5;0DCA00;2;1,2;d2c;0;°C;Kalibrierung – Vorlauf
+get;cal;-;3;08;B509;5;0DCB00;2;1,2;d2c;0;°C;Kalibrierung – Rücklauf
+get;cal;-;3;08;B509;5;0DC500;2;1,2;d2c;0;°C;Kalibrierung - Vorlauf VF2
+get;cal;-;3;08;B509;5;0DC600;2;1,2;d2c;0;°C;Kalibrierung - Kompressor Eintritt
+get;cal;-;3;08;B509;5;0DC700;2;1,2;d2c;0;°C;Kalibrierung - Kompressor Austritt
+get;cal;-;3;08;B509;5;0D3400;2;1,2;d2c;0;°C;Kalibrierung – Puffer RL
+get;cal;-;3;08;B509;5;0D3301;2;1,2;d2c;0;°C;Kalibrierung – Puffer VL
