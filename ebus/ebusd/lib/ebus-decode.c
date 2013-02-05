@@ -79,8 +79,9 @@ eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf)
 		if (p1 > 0) {
 			ret = eb_d1b_to_int(msg[p1], &i);
 
-			i *= get[id].r_fac;
-			sprintf(buf, "%4d\n", i);
+			f = i * get[id].r_fac;
+			sprintf(buf, "%6.2f\n", f);
+			//~ sprintf(buf, "%4d\n", i);
 		} else {
 			goto on_error;
 		}
@@ -90,7 +91,8 @@ eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf)
 			ret = eb_d1c_to_float(msg[p1], &f);
 
 			f *= get[id].r_fac;
-			sprintf(buf, "%5.1f\n", f);
+			sprintf(buf, "%6.2f\n", f);			
+			//~ sprintf(buf, "%5.1f\n", f);
 		} else {
 			goto on_error;
 		}
