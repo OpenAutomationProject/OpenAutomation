@@ -48,8 +48,8 @@ int msg_queue_init(void);
 void msg_queue_free(void);
 void msg_queue_put(struct msg_queue *msg);
 void msg_queue_get(void);
-void msg_queue_add_msg(int id, int clientfd);
-void msg_queue_del_msg(int *id, int *clientfd);
+void msg_queue_msg_add(int id, int clientfd);
+void msg_queue_msg_del(int *id, int *clientfd);
 
 void cfg_print(struct config *cfg, int len);
 int cfg_file_set_param(char *param, struct config *cfg, int len);

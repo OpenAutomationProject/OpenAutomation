@@ -110,7 +110,7 @@ msg_queue_get(void)
 }
 
 void
-msg_queue_add_msg(int id, int clientfd)
+msg_queue_msg_add(int id, int clientfd)
 {
 	struct msg_queue *new;
 
@@ -130,7 +130,7 @@ msg_queue_add_msg(int id, int clientfd)
 }
 
 void
-msg_queue_del_msg(int *id, int *clientfd)
+msg_queue_msg_del(int *id, int *clientfd)
 {
 	if (dummy->prev != NULL) {
 		*id = dummy->prev->id;

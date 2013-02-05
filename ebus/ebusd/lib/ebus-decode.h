@@ -78,15 +78,45 @@ struct cmd_get {
 
 
 
-void eb_msg_result(int id, unsigned char *msg, int msglen, char *buf);
 
+
+int eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf);
+
+
+/**
+ * @brief prepare message string for given ebus cmd from array
+ * @param [in] id is index in command array to sending msg.
+ * @param [out] *msg pointer to message array
+ * @param [out] *msglen pointer to message length
+ * @param [out] *type pointer to message type
+ * @return none
+ */
+void eb_msg_send_cmd_prepare(int id, char *msg, int *msglen, int *type);
+
+
+/**
+ * @brief handle send ebus cmd 
+ * @param [in] id is index in command array to sending msg.
+ * @param [out] *buf pointer to answer array
+ * @param [out] *buflen point to answer length
+ * @return none
+ */
 void eb_msg_send_cmd(int id, char *buf, int *buflen);
 
-void eb_msg_prepare_cmd(int id, char *msg, int *msglen, int *type);
+/**
+ * @brief decode input data string with command data
+ * @param [in] *class pointer to a ebus class array
+ * @param [in] *cmd pointer to a ebus command array
+ * @return 0-x id of found ebus command in array | -1 command not found
+ */
+int eb_msg_search_cmd_table(const char *class, const char *cmd);
 
-int eb_msg_find_cmd(const char *class, const char *cmd);
-
-int eb_msg_decode(char *buf);
+/**
+ * @brief decode input data string with command data
+ * @param [in] *buf pointer to a byte array
+ * @return 0-x id of found ebus command in array | -1 command not found
+ */
+int eb_msg_search_cmd(char *buf);
 
 
 

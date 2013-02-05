@@ -361,23 +361,32 @@ cleanup(int state)
 {
 
 	/* free msg queue */
-	if (msg_queue_on == YES)
+	if (msg_queue_on == YES) {
 		msg_queue_free();
+		log_print(L_INF, "msg queue freeed.");
+	}
 
 	/* close listing tcp socket */
 	if (socketfd > 0)
 		if (sock_close(socketfd) == -1)
+			log_print(L_ERR, "can't close port: %d", port);
+		else
 			log_print(L_INF, "port %d closed.", port);
 
 	/* close serial device */
 	if (serialfd > 0)
 		if (eb_serial_close() == -1)
+			log_print(L_ERR, "can't close device: %s", device);
+		else
 			log_print(L_INF, "%s closed.", device);
 
 	/* close rawfile */
 	if (rawdump == YES)
 		if (eb_raw_file_close() == -1)
+			log_print(L_ERR, "can't close rawfile: %s\n", rawfile);
+		else
 			log_print(L_INF, "%s closed.", rawfile);
+			
 
 	/* free mem for ebus commands */
 	eb_cmd_dir_free();
@@ -470,7 +479,7 @@ main_loop(void)
 				tcpbuflen = sizeof(tcpbuf);
 
 				/* get next entry from msg queue */
-				msg_queue_del_msg(&id, &clientfd);
+				msg_queue_msg_del(&id, &clientfd);
 
 				/* just do it */
 				eb_msg_send_cmd(id, tcpbuf, &tcpbuflen);
@@ -515,10 +524,10 @@ main_loop(void)
 
 				/* handle different commands */
 				if (strncasecmp("shutdown", tcpbuf, 8) == 0)
-					cleanup(EXIT_FAILURE);
+					cleanup(EXIT_SUCCESS);
 
-				/* should be all commands in this function? */
-				ret = eb_msg_decode(tcpbuf, &tcpbuflen);
+				/* search ebus command */
+				ret = eb_msg_search_cmd(tcpbuf, &tcpbuflen);
 
 				/* command not found */
 				if (ret < 0) {
@@ -530,7 +539,7 @@ main_loop(void)
 					sock_client_write(readfd, tcpbuf, tcpbuflen);
 
 				} else {
-					msg_queue_add_msg(ret, readfd);
+					msg_queue_msg_add(ret, readfd);
 				}
 				
 			}
