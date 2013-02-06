@@ -45,7 +45,7 @@
 #define CMD_FILELEN         1024
 
 #define CMD_GET_SIZE_CLASS     5
-#define CMD_GET_SIZE_CMD      20
+#define CMD_GET_SIZE_CMD      30
 #define CMD_GET_SIZE_S_ZZ      2
 #define CMD_GET_SIZE_S_CMD     4
 #define CMD_GET_SIZE_S_MSG    30
