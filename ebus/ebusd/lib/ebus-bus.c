@@ -651,6 +651,7 @@ eb_send_data_prepare(const unsigned char *buf, int buflen)
 	memset(crc, '\0', sizeof(crc));
 	send_data.crc = eb_calc_crc(&send_data.msg_esc[0], tmplen);
 	crc[0] = send_data.crc;
+	crclen = 1;
 
 	if (crc[0] == EBUS_SYN || crc[0] == EBUS_SYN_ESC_A9) {
 		/* esc crc */
@@ -682,7 +683,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	ret = eb_wait_bus();
 	if (ret != 0)
 		return -1;
-
+	
 	/* send message to slave */
 	ret = eb_serial_send(&send_data.msg_esc[1], send_data.len_esc - 1);
 	if (ret < 0)

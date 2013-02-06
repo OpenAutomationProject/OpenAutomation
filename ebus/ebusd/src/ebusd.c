@@ -600,12 +600,14 @@ main(int argc, char *argv[])
 
 	/* read ebus command configuration files */
 	if (eb_cmd_dir_read(cfgdir, extension) == -1)
-		log_print(L_WAR, "error during command file reading.");
+		log_print(L_WAR, "error during read command file");
+	else
+		log_print(L_INF, "command files read.");
 
 	/* open raw file */
 	if (rawdump == YES) {
 		if (eb_raw_file_open(rawfile) == -1) {
-			log_print(L_ERR, "can't open rawfile: %s\n", rawfile);
+			log_print(L_ERR, "can't open rawfile: %s", rawfile);
 			cleanup(EXIT_FAILURE);
 		} else {
 			log_print(L_INF, "%s opened.", rawfile);
