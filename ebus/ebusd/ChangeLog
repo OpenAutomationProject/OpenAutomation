@@ -1,6 +1,12 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-06:
+* FIX: increase length of ebus command from 20 to 30
+* FIX: set initiale value of crclen before escape in eb_send_data_prepare()
+* FIX: in eb_msg_decode_result() do strtok on local copy from r_pos. Maybe
+       we don't wont do modife the original value.
+
 2013-02-04:
 * Add the ability to send commands via telnet to daemon
   (This ist just implemented for GET and a few ebus commands for response)

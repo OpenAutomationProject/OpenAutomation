@@ -54,16 +54,23 @@ int
 eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf)
 {
 	char *c1, *c2, *c3;
+	char r_pos[CMD_GET_SIZE_R_POS+1];
 	int ret, i, p1, p2, p3;
 	float f;
 
-	c1 = strtok(get[id].r_pos, " ,\n");
+	memset(r_pos, '\0', sizeof(r_pos));
+	strncpy(r_pos, get[id].r_pos, strlen(get[id].r_pos));
+
+	c1 = strtok(r_pos, " ,\n");
 	c2 = strtok(NULL, " ,\n");
 	c3 = strtok(NULL, " ,\n");
 
 	p1 = c1 ? atoi(c1) : 0;
 	p2 = c2 ? atoi(c2) : 0;
 	p3 = c3 ? atoi(c3) : 0;
+
+	log_print(L_DBG, "id: %d r_pos: %s p1: %d p2: %d p3: %d",
+						id, get[id].r_pos, p1, p2, p3);
 	
 	if (strncasecmp(get[id].r_type, "int", 3) == 0) {
 		if (p1 > 0) {
@@ -210,6 +217,7 @@ eb_msg_send_cmd(int id, char *buf, int *buflen)
 		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
 			if (ret == 0) {
 				memset(msg, '\0', sizeof(msg));
+				msglen = sizeof(msg);
 				eb_get_recv_data(msg, &msglen);
 				eb_raw_print_hex(msg, msglen);
 
