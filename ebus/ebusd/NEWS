@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-02-06:
+* Fix some malfunctions of command decode function
+* Add parameter send_retry so the daemon can try x times to send command
+
 2013-02-04:
 * Add the ability to send commands via telnet to daemon
   (This ist just added for GET and a few ebus commands for response)

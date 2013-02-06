@@ -50,6 +50,7 @@
 static struct cmd_get *get = NULL;
 static int getlen = 0;
 
+
 int
 eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf)
 {
@@ -184,10 +185,10 @@ eb_msg_send_cmd_prepare(int id, char *msg, int *msglen, int *type)
 }
 
 void
-eb_msg_send_cmd(int id, char *buf, int *buflen)
+eb_msg_send_cmd(int id, char *buf, int *buflen, int retry)
 {
 	unsigned char msg[SERIAL_BUFSIZE];
-	int msglen, msgtype, ret;
+	int msglen, msgtype, ret, send_retry;
 
 	memset(msg, '\0', sizeof(msg));
 	msglen = sizeof(msg);
@@ -199,7 +200,16 @@ eb_msg_send_cmd(int id, char *buf, int *buflen)
 	eb_raw_print_hex(msg, msglen);
 	
 	/* send data to bus */
-	ret = eb_send_data(msg, msglen, msgtype);
+	ret = -1;
+	send_retry = 0;
+	
+	while (ret < 0 && send_retry < retry) {
+		if (send_retry > 0)
+			log_print(L_NOT, "send retry: %d", send_retry);
+				
+		ret = eb_send_data(msg, msglen, msgtype);
+		send_retry++;
+	}
 
 	if (ret >= 0) {
 		
@@ -242,7 +252,8 @@ eb_msg_search_cmd_table(const char *class, const char *cmd)
 
 	for (i = 0; i < getlen; i++) {
 		if ((strncasecmp(class, get[i].class, strlen(get[i].class)) == 0)
-		   && (strncasecmp(cmd, get[i].cmd, strlen(get[i].cmd)) == 0)) {
+		   && (strncasecmp(cmd, get[i].cmd, strlen(get[i].cmd)) == 0)
+		   && strlen(cmd) == strlen(get[i].cmd)) {
 
 			log_print(L_NOT, " found: %s%s%02X%s type: %d ==> id: %d",
 				get[i].s_zz, get[i].s_cmd, get[i].s_len,

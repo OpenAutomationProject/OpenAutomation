@@ -71,7 +71,7 @@ usage()
 	progname,
 	EBUS_QQ,
 	device,
-	EBUS_MAX_RETRY,
+	EBUS_GET_RETRY,
 	EBUS_SKIP_ACK,
 	type,
 	EBUS_MAX_WAIT);
@@ -120,7 +120,7 @@ cmdline(int *argc, char ***argv)
 			break;
 		case 'r':
 			if (isdigit(*optarg)) {
-				eb_set_max_retry(atoi(optarg));
+				eb_set_get_retry(atoi(optarg));
 			}
 			break;
 		case 's':

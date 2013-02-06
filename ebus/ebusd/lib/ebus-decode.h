@@ -99,9 +99,10 @@ void eb_msg_send_cmd_prepare(int id, char *msg, int *msglen, int *type);
  * @param [in] id is index in command array to sending msg.
  * @param [out] *buf pointer to answer array
  * @param [out] *buflen point to answer length
+ * @param [in] retry send msg
  * @return none
  */
-void eb_msg_send_cmd(int id, char *buf, int *buflen);
+void eb_msg_send_cmd(int id, char *buf, int *buflen, int retry);
 
 /**
  * @brief decode input data string with command data

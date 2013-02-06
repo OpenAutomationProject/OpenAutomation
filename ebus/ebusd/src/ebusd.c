@@ -65,9 +65,10 @@ static int rawdump = UNSET;
 static char rawfile[CFG_LINELEN];
 static int showraw = UNSET;
 static int settings = UNSET;
-static int max_retry = UNSET;
+static int get_retry = UNSET;
 static int skip_ack = UNSET;
 static int max_wait = UNSET;
+static int send_retry = UNSET;
 
 
 static char options[] = "a:c:C:d:e:fl:L:P:p:rR:sSvh";
@@ -109,9 +110,10 @@ static struct config cfg[] = {
 {"rawfile",    STR, &rawfile, "\traw file (" DAEMON_RAWFILE ")"},
 {"showraw",    BOL, &showraw, "\tprint raw data"},
 {"settings",   BOL, &settings, "\tprint daemon settings"},
-{"max_retry",  NUM, &max_retry, NULL},
+{"get_retry",  NUM, &get_retry, NULL},
 {"skip_ack",   NUM, &skip_ack, NULL},
 {"max_wait",   NUM, &max_wait, NULL},
+{"send_retry", NUM, &send_retry, NULL},
 {"version",    STR, NULL, "\tprint version information"},
 {"help",       STR, NULL, "\tprint this message"}
 };
@@ -263,8 +265,8 @@ set_unset(void)
 	if (settings == UNSET)
 		settings = NO;
 
-	if (max_retry == UNSET)
-		max_retry = EBUS_MAX_RETRY;
+	if (get_retry == UNSET)
+		get_retry = EBUS_GET_RETRY;
 
 	if (skip_ack == UNSET)
 		skip_ack = EBUS_SKIP_ACK;
@@ -272,6 +274,8 @@ set_unset(void)
 	if (max_wait == UNSET)
 		max_wait = EBUS_MAX_WAIT;
 
+	if (send_retry == UNSET)
+		send_retry = DAEMON_SENDRETRY;
 		
 }
 
@@ -481,8 +485,8 @@ main_loop(void)
 				/* get next entry from msg queue */
 				msg_queue_msg_del(&id, &clientfd);
 
-				/* just do it */
-				eb_msg_send_cmd(id, tcpbuf, &tcpbuflen);
+				/* just do it */		
+				eb_msg_send_cmd(id, tcpbuf, &tcpbuflen, send_retry);
 
 				/* send answer */
 				sock_client_write(clientfd, tcpbuf, tcpbuflen);
@@ -583,9 +587,9 @@ main(int argc, char *argv[])
 	tmp = (eb_htoi(&address[0])) * 16 + (eb_htoi(&address[1]));
 	eb_set_qq((unsigned char) tmp);
 
-	eb_set_max_retry(max_retry);
+	eb_set_get_retry(get_retry);
 	eb_set_skip_ack(skip_ack);
-	eb_set_max_wait(max_wait);	
+	eb_set_max_wait(max_wait);
 
 	/* open log */
 	log_level(loglevel);

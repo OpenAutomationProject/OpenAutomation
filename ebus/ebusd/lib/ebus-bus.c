@@ -52,9 +52,9 @@ static struct recv_data recv_data;
 static int rawdump = NO;
 static int showraw = NO;
 
-static long max_wait = EBUS_MAX_WAIT;
-static int max_retry = EBUS_MAX_RETRY;
+static int get_retry = EBUS_GET_RETRY;
 static int skip_ack = EBUS_SKIP_ACK;
+static long max_wait = EBUS_MAX_WAIT;
 
 static unsigned char qq = EBUS_QQ;
 
@@ -88,21 +88,21 @@ eb_set_qq(unsigned char src)
 }
 
 void
-eb_set_max_wait(long usec)
+eb_set_get_retry(int retry)
 {
-	max_wait = usec;
-}
-
-void
-eb_set_max_retry(int retry)
-{
-	max_retry = retry;
+	get_retry = retry;
 }
 
 void
 eb_set_skip_ack(int skip)
 {
 	skip_ack = skip;
+}
+
+void
+eb_set_max_wait(long usec)
+{
+	max_wait = usec;
 }
 
 
@@ -596,7 +596,7 @@ eb_wait_bus(void)
 		retry++;
 		skip = skip_ack + retry;
 	
-	} while (retry < max_retry);
+	} while (retry < get_retry);
 
 	/* reached max retry */
 	return 1;

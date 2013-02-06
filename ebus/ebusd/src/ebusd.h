@@ -35,6 +35,7 @@
 #define DAEMON_PIDFILE        "/var/run/ebusd.pid"
 #define DAEMON_RAWFILE        "/tmp/ebusd.bin"
 #define DAEMON_RAWDUMP        NO
+#define DAEMON_SENDRETRY      2
 
 
 void usage(void);

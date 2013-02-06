@@ -83,18 +83,11 @@ void eb_set_showraw(int show);
 void eb_set_qq(unsigned char src);
 
 /**
- * @brief set max wait time between send and receive of own address (QQ)
- * @param [in] usec wait time in usec
- * @return none
- */
-void eb_set_max_wait(long usec);
-
-/**
  * @brief set number of retry to get bus
  * @param [in] retry
  * @return none
  */
-void eb_set_max_retry(int retry);
+void eb_set_get_retry(int retry);
 
 /**
  * @brief set number of skipped SYN if an error occurred while getting the bus
@@ -102,6 +95,13 @@ void eb_set_max_retry(int retry);
  * @return none
  */
 void eb_set_skip_ack(int skip);
+
+/**
+ * @brief set max wait time between send and receive of own address (QQ)
+ * @param [in] usec wait time in usec
+ * @return none
+ */
+void eb_set_max_wait(long usec);
 
 
 
