@@ -1,0 +1,42 @@
+# CI-Parameter;;;;;;;;;;;;;;
+get;ci;hydraulic;3;15;B509;3;0D2900;1;1;int;1.000;-;Hydraulikschema;
+get;ci;language;3;15;B509;3;0D2600;1;1;int;1.000;-;Sprachvariante;
+get;ci;holiday_period;3;15;B509;3;0D4300;12;-;???;1.000;-;Ferienzeitraum 1 Start;Prüfen → d1b: st1,sm1,sj1,st2,sm2,sj2,et1,em1,ej1,et2,em2,ej2
+get;ci;holiday_cir2_temp;3;15;B509;3;0D2200;2;1,2;d2c;1.000;°C;Heizkreis-Solltemperatur Ferien;
+get;ci;password_pin1;3;15;B509;3;0D2C00;4;1;???;1.000;-;Passwort Konfiguration;FIXME:datatyp
+get;ci;cir2_set_temp;3;15;B509;3;0D0500;2;1,2;d2c;1.000;°C;Heizkreis2-Solltemperatur;
+get;ci;cir2_flow_temp;3;15;B509;3;0D0200;3;1,2;d2c;1.000;°C;Heizkreis2-Vorlauftemperatur;
+get;ci;hw_heat_time;3;15;B509;3;0D4D00;1;1;d1b;1.000;min;Heizzeit max. bei WW-Anforderung;
+get;ci;hw_wait_time;3;15;B509;3;0D4C00;1;1;d1b;1.000;min;WW-Zeit max. bei Heizanforderung;
+get;ci;temp_camber;3;15;B509;3;0D2F00;2;1,2;int;1.000;°C;Temperaturüberhöhung;FIXME:datatyp
+get;ci;pre_off_time;3;15;B509;3;0D2D97;1;1;int;1.000;min;Vorabschaltzeit;FIXME:telegram/datatyp
+get;ci;freeze_wait;3;15;B509;3;0D2E00;1;1;int;1.000;h;Frostschutz-Verzögerung;
+get;ci;temp_error;3;15;B509;3;0D3300;1;1;int;1.000;-;Temperaturfehlererkennung;
+get;ci;boiler;3;15;B509;3;0D5C00;1;1;int;1.000;-;Pufferspeicher vorhanden;
+get;ci;yield_transfer;3;15;B509;3;0D8600;4;1,2;d2b;256.000;kWh;Mitternacht Übertragswert Energieertrag;
+get;ci;mode;3;15;B509;3;0D9700;1;1;int;1.000;-;aktueller Betriebsstatus;
+# CI-Parameter - Energie Ertrag;;;;;;;;;;;;;;
+get;ci;yield_jan_act;3;15;B509;3;0D8400;2;1,2;d2b;256.000;kWh;Energie Januar;
+get;ci;yield_jan_last;3;15;B509;3;0D8500;2;1,2;d2b;256.000;kWh;Energie Januar Vorjahr;
+get;ci;yield_feb_act;3;15;B509;3;0D8408;2;1,2;d2b;256.000;kWh;Energie Februar;
+get;ci;yield_feb_last;3;15;B509;3;0D8508;2;1,2;d2b;256.000;kWh;Energie Februar Vorjahr;
+get;ci;yield_mar_act;3;15;B509;3;0D8410;2;1,2;d2b;256.000;kWh;Energie März;
+get;ci;yield_mar_last;3;15;B509;3;0D8510;2;1,2;d2b;256.000;kWh;Energie März Vorjahr;
+get;ci;yield_apr_act;3;15;B509;3;0D8418;2;1,2;d2b;256.000;kWh;Energie April;
+get;ci;yield_apr_last;3;15;B509;3;0D8518;2;1,2;d2b;256.000;kWh;Energie April Vorjahr;
+get;ci;yield_may_act;3;15;B509;3;0D8420;2;1,2;d2b;256.000;kWh;Energie Mai;
+get;ci;yield_may_last;3;15;B509;3;0D8520;2;1,2;d2b;256.000;kWh;Energie Mai Vorjahr;
+get;ci;yield_jun_act;3;15;B509;3;0D8428;2;1,2;d2b;256.000;kWh;Energie Juni;
+get;ci;yield_jun_last;3;15;B509;3;0D8528;2;1,2;d2b;256.000;kWh;Energie Juni Vorjahr;
+get;ci;yield_jul_act;3;15;B509;3;0D8430;2;1,2;d2b;256.000;kWh;Energie Juli;
+get;ci;yield_jul_last;3;15;B509;3;0D8530;2;1,2;d2b;256.000;kWh;Energie Juli Vorjahr;
+get;ci;yield_aug_act;3;15;B509;3;0D8438;2;1,2;d2b;256.000;kWh;Energie August;
+get;ci;yield_aug_last;3;15;B509;3;0D8538;2;1,2;d2b;256.000;kWh;Energie August Vorjahr;
+get;ci;yield_sep_act;3;15;B509;3;0D8440;2;1,2;d2b;256.000;kWh;Energie September;
+get;ci;yield_sep_last;3;15;B509;3;0D8540;2;1,2;d2b;256.000;kWh;Energie September Vorjahr;
+get;ci;yield_oct_act;3;15;B509;3;0D8448;2;1,2;d2b;256.000;kWh;Energie Oktober;
+get;ci;yield_oct_last;3;15;B509;3;0D8548;2;1,2;d2b;256.000;kWh;Energie Oktober Vorjahr;
+get;ci;yield_nov_act;3;15;B509;3;0D8450;2;1,2;d2b;256.000;kWh;Energie November;
+get;ci;yield_nov_last;3;15;B509;3;0D8550;2;1,2;d2b;256.000;kWh;Energie November Vorjahr;
+get;ci;yield_dec_act;3;15;B509;3;0D8458;2;1,2;d2b;256.000;kWh;Energie Dezember;
+get;ci;yield_dec_last;3;15;B509;3;0D8558;2;1,2;d2b;256.000;kWh;Energie Dezember Vorjahr;

@@ -1,0 +1,12 @@
+# Kalibrierung;;;;;;;;;;;;;;
+get;cal;outdoor;3;08;B509;3;0DC300;2;1,2;d2c;1.000;°C;Kalibrierung – Aussentemperatur;
+get;cal;brine_in;3;08;B509;3;0DCD00;2;1,2;d2c;1.000;°C;Kalibrierung - Quelle Eintritt;
+get;cal;brine_out;3;08;B509;3;0DC900;2;1,2;d2c;1.000;°C;Kalibrierung - Quelle Austritt;
+get;cal;boiler;3;08;B509;3;0DC400;2;1,2;d2c;1.000;°C;Kalibrierung – WW-Speicher;
+get;cal;heat_flow;3;08;B509;3;0DCA00;2;1,2;d2c;1.000;°C;Kalibrierung – Vorlauf;
+get;cal;heat_return;3;08;B509;3;0DCB00;2;1,2;d2c;1.000;°C;Kalibrierung – Rücklauf;
+get;cal;VF2;3;08;B509;3;0DC500;2;1,2;d2c;1.000;°C;Kalibrierung - Vorlauf VF2;
+get;cal;comp_in;3;08;B509;3;0DC600;2;1,2;d2c;1.000;°C;Kalibrierung - Kompressor Eintritt;
+get;cal;comp_out;3;08;B509;3;0DC700;2;1,2;d2c;1.000;°C;Kalibrierung - Kompressor Austritt;
+get;cal;buffer_in;3;08;B509;3;0D3400;2;1,2;d2c;1.000;°C;Kalibrierung – Puffer RL;
+get;cal;buffer_out;3;08;B509;3;0D3301;2;1,2;d2c;1.000;°C;Kalibrierung – Puffer VL;

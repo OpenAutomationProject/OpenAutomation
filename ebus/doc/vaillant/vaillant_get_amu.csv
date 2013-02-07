@@ -1,0 +1,50 @@
+# AMU Waermepumpe;;;;;;;;;;;;;;
+get;amu;date;3;08;B509;3;0D2900;3;1,2,3;???;-;d.m.y;Datum;FIXME:datatyp
+get;amu;weekday;3;08;B509;3;0D2A00;1;1;int;1.000;Mo=0;Wochentag;
+get;amu;time;3;08;B509;3;0D2800;3;1,2,3;???;-;s.m.h;Zeit;FIYME:datatyp
+get;amu;wp_stat;3;08;B509;3;0DD000;1;1;int;1.000;-;Waermepumpenstatus;
+get;amu;comp_lock_time;3;08;B509;3;0DC501;4;?;???;-;min;Kompressorsperrzeit;FIYME:datatyp
+get;amu;boiler_avail;3;08;B509;3;0D9200;1;1;int;1.000;-;Zusatzheizung vorhanden;
+get;amu;zh_bivalent;3;08;B509;3;0D6500;2;1,2;d2c;1.000;°C;Zusatzheizung - Bivalenzpunkt;
+get;amu;zh_hysterese;3;08;B509;3;0D7E00;2;1,2;d2c;1.000;°C;Zusatzheizung – Hysterese;
+get;amu;zh_hys_delay;3;08;B509;3;0DE001;1;1;d1b;1.000;min;Zusatzheizung – Verzögerung Hysterese ;
+get;amu;zh_EI;3;08;B509;3;0D7F00;2;1,2;d2b;256.000;°min;Zusatzheizung – EnergieIntegral;
+get;amu;zh_heating;3;08;B509;3;0D6300;1;1;int;1.000;-;Zusatzheizung – Heizung;
+get;amu;zh_water;3;08;B509;3;0D6400;1;1;int;1.000;-;Zusatzheizung – WarmWasser;
+#         ;;;;;;;;;;;;;;
+get;amu;comp_hysteres;3;08;B509;3;0D7D00;2;1,2;d2c;1.000;°C;Kompressor – Hysterese;
+get;amu;comp_energy_int;3;08;B509;3;0D7C00;2;1,2;d2b;256.000;°min;Kompressor  - EnergieIntegral;
+get;amu;comp_start_hour;3;08;B509;3;0D7400;1;1;int;1.000;-;Kompressor – Starts pro Stunde;
+get;amu;comp_max_in;3;08;B509;3;0D7300;2;1,2;d2c;1.000;°C;Kompressor  - max. Rücklauftemperatur;
+#      ;;;;;;;;;;;;;;
+get;amu;brine_spreiz;3;08;B509;3;0D6E00;2;1,2;d2c;1.000;°C;Quelle – zul. Spreizung;
+get;amu;brine_frost;3;08;B509;3;0D7A01;1;1;d1b;1.000;°C;Quelle – Einfrierschutz;
+get;amu;brine_pump_pre_time;3;08;B509;3;0D7600;4;1;???;-;min;Quelle – Vorlaufzeit Quellenpumpe;FIXME:datatyp
+#    ;;;;;;;;;;;;;;
+get;amu;offset_pump_min;3;08;B509;3;0D9901;1;1;int;1.000;min;Ausschaltzeit interne Heizkreispumpe (Minuten);
+get;amu;preset_pump_sek;3;08;B509;3;0DC801;4;1;d1b;1.000;ss;Interne Heizkreispumpe Vorlaufzeit (Sekunden);
+#      ;;;;;;;;;;;;;;
+get;amu;comp_h_heating;3;08;B509;3;0D9B00;4;1,2;d2b;256.000;h;Kompressorlaufzeit Heizung;
+get;amu;comp_h_water;3;08;B509;3;0D9C00;4;1,2;d2b;256.000;h;Kompressorlaufzeit WW;
+get;amu;comp_h_sum;3;08;B509;3;0D9A00;4;1,2;d2b;256.000;h;Kompressorlaufzeit gesamt;
+get;amu;comp_starts;3;08;B509;3;0DA900;4;1,2;d2b;256.000;-;Kompressorstarts;
+get;amu;boiler_h_sum;3;08;B509;3;0DA100;4;1,2;d2b;256.000;h;Zusatzheizung gesamt;
+get;amu;boiler_h_heating;3;08;B509;3;0DA200;4;1,2;d2b;256.000;h;Zusatzheizung Heizen;
+get;amu;boiler_h_water;3;08;B509;3;0DA300;4;1,2;d2b;256.000;h;Zusatzheizung WW;
+get;amu;boiler_starts;3;08;B509;3;0DB300;4;1,2;d2b;256.000;-;Zusatzheizung Starts;
+#        ;;;;;;;;;;;;;;
+get;amu;cooling_preset;3;08;B509;3;0D7401;1;1;d1b;1.000;°C;Kühlungsvorlaufsollwert;
+get;amu;brine_pump_cooling_h;3;08;B509;3;0D7D01;1;1;d1b;1.000;h;Solepumpenlaufzeit Kühlbetrieb;FIXME:datatyp
+#  ;;;;;;;;;;;;;;
+get;amu;service_time;3;08;B509;3;0D6600;1;1;int;1.000;-;Servicezeit;
+get;amu;venting;3;08;B509;3;0D1300;1;1;int;1.000;-;Entlüftung;
+#      ;;;;;;;;;;;;;;
+get;amu;code_1;3;08;B509;3;0D9700;2;1,2;???;-;-;Code 1;FIXME:datatyp
+get;amu;code_2;3;08;B509;3;0D9800;2;1,2;???;-;-;Code 2;FIXME:datatyp
+get;amu;save_codes;3;08;B509;3;0D2400;1;1;int;1.000;-;Codes übernehmen;
+#      ;;;;;;;;;;;;;;
+get;amu;high_eff_pump_stat;3;08;B509;3;0DB801;1;1;int;1.000;-;Hocheffizenzpumpenstatus;
+get;amu;high_eff_pump_perc;3;08;B509;3;0DAC01;1;1;d1b;1.000;%;Hocheffizienzpumpengeschw. %;
+get;amu;high_eff_pump_perc_heating;3;08;B509;3;0DAE01;1;1;d1b;1.000;%;Pumpensollwert in% beim Heizen;
+#      ;;;;;;;;;;;;;;
+get;amu;bivalentmode;3;08;B509;3;0DE301;1;1;int;1.000;-;Bivalenzmodus;

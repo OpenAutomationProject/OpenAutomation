@@ -1,0 +1,12 @@
+# Heizkreis 2;;;;;;;;;;;;;;
+get;cir2;mode;3;50;B509;3;0D2B00;1;1;int;1.000;-;Heizkreis - Betriebsart;
+get;cir2;type;3;50;B509;3;0D3C00;1;1;int;1.000;-;Heizkreis - Kreis Typ;
+get;cir2;rt_day;3;50;B509;3;0D3200;1;1;d1b;0.500;°C;Heizkreis – Raumsolltemperatur;
+get;cir2;rt_night;3;50;B509;3;0D3300;1;1;d1b;0.500;°C;Heizkreis – Absenktemperatur;
+get;cir2;curve;3;50;B509;3;0D3500;2;1;d1b;0.010;-;Heizkreis – Heizkurve;
+get;cir2;at_off;3;50;B509;3;0D3600;1;1;d1b;1.000;°C;Heizkreis – Aussentemperatur Abschaltgrenze;
+get;cir2;vl_min;3;50;B509;3;0D3000;1;1;d1b;1.000;°C;Heizkreis - minimale Vorlauftemperatur;
+get;cir2;vl_max;3;50;B509;3;0D3100;1;1;d1b;1.000;°C;Heizkreis - maximale Vorlauftemperatur;
+get;cir2;pre_hours;3;50;B509;3;0D3800;1;1;int;1.000;h;Heizkreis - max. Voraufheizung in Stunden;
+get;cir2;estrich;3;50;B509;3;0D3B00;1;1;int;1.000;dd;Heizkreis Estrichtrocknung Tag;
+get;cir2;floor_protect;3;50;B509;3;0D7B01;1;1;d1b;1.000;°C;Fußbodenschutz;
