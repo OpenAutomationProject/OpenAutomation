@@ -36,6 +36,7 @@
 #define DAEMON_RAWFILE        "/tmp/ebusd.bin"
 #define DAEMON_RAWDUMP        NO
 #define DAEMON_SENDRETRY      2
+#define DAEMON_SENDRETRY_MAX  10
 
 
 void usage(void);

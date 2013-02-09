@@ -50,13 +50,108 @@
 static struct cmd_get *get = NULL;
 static int getlen = 0;
 
+static struct cmd_set *set = NULL;
+static int setlen = 1;
 
 int
-eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf)
+eb_msg_encode(int id, unsigned char *msg, char *buf)
 {
-	char *c1, *c2, *c3;
+	char *c1, *c2, *c3, *c4;
+	char d_pos[CMD_SET_SIZE_D_POS+1], d1b, d1c, d2b[2], d2c[2];
+	int ret, i, p1, p2, p3, p4;
+	float f;
+
+	memset(d_pos, '\0', sizeof(d_pos));
+	strncpy(d_pos, set[id].d_pos, strlen(set[id].d_pos));
+
+	c1 = strtok(d_pos, " ,\n");
+	c2 = strtok(NULL, " ,\n");
+	c3 = strtok(NULL, " ,\n");
+	c4 = strtok(NULL, " ,\n");
+
+	p1 = c1 ? atoi(c1) : 0;
+	p2 = c2 ? atoi(c2) : 0;
+	p3 = c3 ? atoi(c3) : 0;
+	p4 = c4 ? atoi(c4) : 0;	
+
+	log_print(L_DBG, "id: %d d_pos: %s p1: %d p2: %d p3: %d p4: %d",
+						id, set[id].d_pos, p1, p2, p3, p4);
+	
+	if (strncasecmp(set[id].d_type, "int", 3) == 0) {
+		//~ if (p1 > 0) {
+			//~ ret = eb_bcd_to_int(msg[p1], &i);
+//~ 
+			//~ i *= set[id].d_fac;
+			//~ sprintf(buf, "%3d\n", i);
+		//~ } else {
+			goto on_error;
+		//~ }
+				
+	} else if (strncasecmp(set[id].d_type, "d1b", 3) == 0) {
+		if (p1 > 0) {
+			i = (int) (atof(buf) / set[id].d_fac);
+			
+			ret = eb_int_to_d1b(i, &d1b);
+			sprintf(msg, "%02x", d1b);
+		} else {
+			goto on_error;
+		}
+		
+	} else if (strncasecmp(set[id].d_type, "d1c", 3) == 0) {
+		if (p1 > 0) {
+			f = (atof(buf) / set[id].d_fac);
+			
+			ret = eb_float_to_d1c(f, &d1c);
+			sprintf(msg, "%02x", d1c);
+		} else {
+			goto on_error;
+		}
+		
+	//~ } else if (strncasecmp(set[id].d_type, "d2b", 3) == 0) {
+		//~ 
+		//~ if (p1 > 0 && p2 > 0) {
+			//~ if (p1 > p2)
+				//~ ret = eb_d2b_to_float(msg[p2], msg[p1], &f);
+			//~ else
+				//~ ret = eb_d2b_to_float(msg[p1], msg[p2], &f);
+				//~ 
+			//~ f *= set[id].d_fac;
+			//~ sprintf(buf, "%8.3f\n", f);
+			//~ 
+		//~ } else {
+			//~ goto on_error;
+		//~ }
+		//~ 
+	//~ } else if (strncasecmp(set[id].d_type, "d2c", 3) == 0) {
+		//~ 
+		//~ if (p1 > 0 && p2 > 0) {
+			//~ if (p1 > p2)
+				//~ ret = eb_d2c_to_float(msg[p2], msg[p1], &f);
+			//~ else	
+				//~ ret = eb_d2c_to_float(msg[p1], msg[p2], &f);
+			//~ 
+			//~ f *= set[id].d_fac;
+			//~ sprintf(buf, "%10.4f\n", f);
+		//~ } else {
+			//~ goto on_error;
+		//~ }			
+		
+	}
+
+	return 0;
+
+on_error:
+	strcpy(buf, "error encode\n");
+	return -1;
+
+}
+
+int
+eb_msg_decode(int id, unsigned char *msg, char *buf)
+{
+	char *c1, *c2, *c3, *c4;
 	char r_pos[CMD_GET_SIZE_R_POS+1];
-	int ret, i, p1, p2, p3;
+	int ret, i, p1, p2, p3, p4;
 	float f;
 
 	memset(r_pos, '\0', sizeof(r_pos));
@@ -65,13 +160,15 @@ eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf)
 	c1 = strtok(r_pos, " ,\n");
 	c2 = strtok(NULL, " ,\n");
 	c3 = strtok(NULL, " ,\n");
+	c4 = strtok(NULL, " ,\n");	
 
 	p1 = c1 ? atoi(c1) : 0;
 	p2 = c2 ? atoi(c2) : 0;
 	p3 = c3 ? atoi(c3) : 0;
+	p4 = c4 ? atoi(c4) : 0;	
 
-	log_print(L_DBG, "id: %d r_pos: %s p1: %d p2: %d p3: %d",
-						id, get[id].r_pos, p1, p2, p3);
+	log_print(L_DBG, "id: %d r_pos: %s p1: %d p2: %d p3: %d p4: %d",
+						id, get[id].r_pos, p1, p2, p3, p4);
 	
 	if (strncasecmp(get[id].r_type, "int", 3) == 0) {
 		if (p1 > 0) {
@@ -139,23 +236,66 @@ eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf)
 	return 0;
 
 on_error:
-	strcpy(buf, "error decode answer\n");
+	strcpy(buf, "error decode\n");
 	return -1;
 
 }
 
 void
-eb_msg_send_cmd_prepare(int id, char *msg, int *msglen, int *type)
+eb_msg_send_cmd_prepare_set(int id, char *msg, int *msglen, int *type, char *data)
+{
+	unsigned char tmp[CMD_SET_SIZE_S_MSG];
+	char str[CMD_SET_SIZE_S_ZZ + CMD_SET_SIZE_S_CMD + 2 + CMD_SET_SIZE_S_MSG];
+	char byte;
+	int in[SERIAL_BUFSIZE];
+	int ret, i, j, k;
+	
+	/* encode msg */
+	memset(tmp, '\0', sizeof(tmp));
+	ret = eb_msg_encode(id, tmp, data);
+	
+	memset(str, '\0', sizeof(str));
+	sprintf(str, "%s%s%02X%s%s",
+		set[id].s_zz, set[id].s_cmd, set[id].s_len, set[id].s_msg, tmp);
+
+	memset(in, '\0', sizeof(in));
+	i = 0;
+	j = 0;
+	
+	while (str[j] != '\0') {
+		byte = str[j];
+		if (i < sizeof(in)) {
+
+			ret = eb_htoi(&byte);
+			if (ret != -1) {
+				in[i] = ret;
+				i++;
+			}
+		}
+		j++;
+	}
+
+
+	memset(msg, '\0', sizeof(msg));
+	for (j = 0, k = 0; j < i; j += 2, k++)
+		msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
+
+	*msglen = k;
+
+	*type = set[id].s_type;
+}
+
+void
+eb_msg_send_cmd_prepare_get(int id, char *msg, int *msglen, int *type)
 {
 	char str[CMD_GET_SIZE_S_ZZ + CMD_GET_SIZE_S_CMD + 2 + CMD_GET_SIZE_S_MSG];
-	memset(str, '\0', sizeof(str));
-	
-	sprintf(str, "%s%s%02X%s",
-		get[id].s_zz, get[id].s_cmd, get[id].s_len, get[id].s_msg);
-	
 	char byte;
 	int ret, i, j, k;
-	int in[SERIAL_BUFSIZE];
+	int in[SERIAL_BUFSIZE];	
+
+	memset(str, '\0', sizeof(str));
+	sprintf(str, "%s%s%02X%s",
+		get[id].s_zz, get[id].s_cmd, get[id].s_len, get[id].s_msg);
 
 	memset(in, '\0', sizeof(in));
 	i = 0;
@@ -185,46 +325,50 @@ eb_msg_send_cmd_prepare(int id, char *msg, int *msglen, int *type)
 }
 
 void
-eb_msg_send_cmd(int id, char *buf, int *buflen, int retry)
+eb_msg_send_cmd(int id, int msgtype, char *data, char *buf, int *buflen, int retry)
 {
 	unsigned char msg[SERIAL_BUFSIZE];
-	int msglen, msgtype, ret, send_retry;
+	int msglen, type, ret, send_retry;
 
 	memset(msg, '\0', sizeof(msg));
 	msglen = sizeof(msg);
 
-	msgtype = UNSET;			
+	type = UNSET;			
 
 	/* prepare command */
-	eb_msg_send_cmd_prepare(id, msg, &msglen, &msgtype);
+	if (msgtype == GET)
+		eb_msg_send_cmd_prepare_get(id, msg, &msglen, &type);
+	else if (msgtype = SET)
+		eb_msg_send_cmd_prepare_set(id, msg, &msglen, &type, data);
+		
 	eb_raw_print_hex(msg, msglen);
 	
 	/* send data to bus */
 	ret = -1;
 	send_retry = 0;
-	
+
 	while (ret < 0 && send_retry < retry) {
 		if (send_retry > 0)
 			log_print(L_NOT, "send retry: %d", send_retry);
 				
-		ret = eb_send_data(msg, msglen, msgtype);
+		ret = eb_send_data(msg, msglen, type);
 		send_retry++;
 	}
 
 	if (ret >= 0) {
 		
-		if (msgtype == EBUS_MSG_BROADCAST)
-			strcpy(buf, "broadcast done\n");
+		if (type == EBUS_MSG_BROADCAST)
+			strcpy(buf, " broadcast done\n");
 
-		if (msgtype == EBUS_MSG_MASTER_MASTER) {
+		if (type == EBUS_MSG_MASTER_MASTER) {
 			if (ret == 0) {
-				strcpy(buf, "ACK\n");
+				strcpy(buf, " ACK\n");
 			} else {
-				strcpy(buf, "NAK\n");
+				strcpy(buf, " NAK\n");
 			}
 		}
 
-		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
+		if (type == EBUS_MSG_MASTER_SLAVE) {
 			if (ret == 0) {
 				memset(msg, '\0', sizeof(msg));
 				msglen = sizeof(msg);
@@ -232,27 +376,51 @@ eb_msg_send_cmd(int id, char *buf, int *buflen, int retry)
 				eb_raw_print_hex(msg, msglen);
 
 				/* decode */
-				ret = eb_msg_decode_result(id, msg, msglen, buf);
+				if (msgtype == SET)
+					strcpy(buf, " ACK\n");
+				else
+					ret = eb_msg_decode(id, msg, buf);
 				
 			} else {
-				strcpy(buf, "NAK\n");
+				strcpy(buf, " NAK\n");
 			}
 		}
 
 	} else {
-		strcpy(buf, "error send ebus msg\n");
+		strcpy(buf, " error send ebus msg\n");
 	}
 	*buflen = strlen(buf);
 }
 
 int
-eb_msg_search_cmd_table(const char *class, const char *cmd)
+eb_msg_search_cmd_set(const char *class, const char *cmd)
+{
+	int i;
+
+	for (i = 0; i < setlen; i++) {
+		if ((strncasecmp(class, set[i].class, strlen(set[i].class)) == 0)
+		   && (strncasecmp(cmd, set[i].cmd, strlen(set[i].cmd)) == 0)			   
+		   && strlen(cmd) == strlen(set[i].cmd)) {
+
+			log_print(L_NOT, " found: %s%s%02X%s type: %d ==> id: %d",
+				set[i].s_zz, set[i].s_cmd, set[i].s_len,
+				set[i].s_msg, set[i].s_type, i);
+			return i;
+		}
+	
+	}
+	
+	return -1;
+}
+
+int
+eb_msg_search_cmd_get(const char *class, const char *cmd)
 {
 	int i;
 
 	for (i = 0; i < getlen; i++) {
 		if ((strncasecmp(class, get[i].class, strlen(get[i].class)) == 0)
-		   && (strncasecmp(cmd, get[i].cmd, strlen(get[i].cmd)) == 0)
+		   && (strncasecmp(cmd, get[i].cmd, strlen(get[i].cmd)) == 0)			   
 		   && strlen(cmd) == strlen(get[i].cmd)) {
 
 			log_print(L_NOT, " found: %s%s%02X%s type: %d ==> id: %d",
@@ -260,34 +428,122 @@ eb_msg_search_cmd_table(const char *class, const char *cmd)
 				get[i].s_msg, get[i].s_type, i);
 			return i;
 		}
-			
+	
 	}
 	
 	return -1;
 }
 
 int
-eb_msg_search_cmd(char *buf)
+eb_msg_search_cmd(char *buf, int *msgtype)
 {
-	char *type, *class, *cmd;
+	char *type, *class, *cmd, *data;
 	int ret;
 
 	type = strtok(buf, " ");
 	class = strtok(NULL, " .");
-	cmd = strtok(NULL, " ");	
-	
-	if ((strncasecmp(buf, "get", 3) == 0) && class != NULL && cmd != NULL) {
-		log_print(L_NOT, "search: %s %s.%s", type, class, cmd);
+	cmd = strtok(NULL, " \n\r\t");
+	data = strtok(NULL, " \n\r\t");
 
-		/* search command */
-		ret = eb_msg_search_cmd_table(class, cmd);
-		return ret;
+	if (class != NULL && cmd != NULL) {
+		log_print(L_NOT, "search: %s %s.%s %s", type, class, cmd, data);
+		
+		if (strncasecmp(buf, "get", 3) == 0) {
+			/* search command */
+			ret = eb_msg_search_cmd_get(class, cmd);
+			memset(buf, '\0', sizeof(buf));
+			strncpy(buf, "-", 1);
+			*msgtype = GET;
+			return ret;
 
+		} else if (strncasecmp(buf, "set", 3) == 0) {
+			/* search command */
+			ret = eb_msg_search_cmd_set(class, cmd);
+			
+			if (data != NULL) {
+				*msgtype = SET;
+				memset(buf, '\0', sizeof(buf));
+				strncpy(buf, data, strlen(data));
+				return ret;
+			} else {
+				return -1;
+			}
+		}		
 	}
 	
 	return -1;
 }
 
+
+
+int
+eb_cmd_fill_set(const char *tok)
+{
+
+	set = (struct cmd_set *) realloc(set, (setlen + 1) * sizeof(struct cmd_set));
+	err_ret_if(set == NULL, -1);
+
+	memset(set + setlen, '\0', sizeof(struct cmd_set));
+		
+	/* key */
+	set[setlen].key = setlen;
+	
+	/* cmd */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].class, tok, strlen(tok));
+
+	/* sub */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].cmd, tok, strlen(tok));
+
+	/* s_type */
+	tok = strtok(NULL, ";");
+	set[setlen].s_type = atoi(tok);	
+	
+	/* s_zz */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].s_zz, tok, strlen(tok));
+
+	/* s_cmd */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].s_cmd, tok, strlen(tok));
+
+	/* s_len */
+	tok = strtok(NULL, ";");
+	set[setlen].s_len = atoi(tok);
+
+	/* s_msg */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].s_msg, tok, strlen(tok));
+
+	/* d_len */
+	tok = strtok(NULL, ";");
+	set[setlen].d_len = atoi(tok);
+
+	/* d_pos */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].d_pos, tok, strlen(tok));
+
+	/* d_type */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].d_type, tok, strlen(tok));
+	
+	/* d_fac */
+	tok = strtok(NULL, ";");
+	set[setlen].d_fac = atof(tok);
+
+	/* d_unit */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].d_unit, tok, strlen(tok));
+	
+	/* com */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].com, tok, strlen(tok)-1);
+
+	setlen++;
+
+	return 0;	
+}
 
 
 int
@@ -402,7 +658,7 @@ eb_cmd_file_read(const char *file)
 						return -2;
 					
 				} else if (strncasecmp(tok, "set", 3) == 0) {
-					//~ eb_cmd_fill_set(j, tok);
+					ret = eb_cmd_fill_set(tok);
 					if (ret < 0)
 						return -2;
 					
@@ -478,8 +734,8 @@ eb_cmd_dir_free(void)
 	if (getlen > 0)
 		free(get);
 
-	//~ if (setlen > 0)
-		//~ free(set);
+	if (setlen > 0)
+		free(set);
 
 	//~ if (cyclen > 0)
 		//~ free(cyc);				

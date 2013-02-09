@@ -40,6 +40,7 @@
 
 #define EBUS_QQ                 0xFF
 #define EBUS_GET_RETRY          3
+#define EBUS_GET_RETRY_MAX      10
 #define EBUS_SKIP_ACK           1
 #define EBUS_MAX_WAIT           4000
 

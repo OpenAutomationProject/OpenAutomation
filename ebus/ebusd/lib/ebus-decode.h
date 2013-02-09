@@ -54,6 +54,17 @@
 #define CMD_GET_SIZE_R_UNIT    6
 #define CMD_GET_SIZE_COMMENT 256
 
+#define CMD_SET_SIZE_CLASS     5
+#define CMD_SET_SIZE_CMD      30
+#define CMD_SET_SIZE_S_ZZ      2
+#define CMD_SET_SIZE_S_CMD     4
+#define CMD_SET_SIZE_S_MSG    30
+#define CMD_SET_SIZE_D_POS    10
+#define CMD_SET_SIZE_D_TYPE    3
+#define CMD_SET_SIZE_D_UNIT    6
+#define CMD_SET_SIZE_COMMENT 256
+
+
 enum enum_cmd_type {GET, SET, CYC};
 
 /**
@@ -76,12 +87,44 @@ struct cmd_get {
 	char com[CMD_GET_SIZE_COMMENT+1]; /**< just a comment */
 };
 
+/**
+ * @brief set commando structure
+ */
+struct cmd_set {
+	int key; /**< internal number - do we need this ? */
+	char class[CMD_SET_SIZE_CLASS+1]; /**< ci */
+	char cmd[CMD_SET_SIZE_CMD+1]; /**< hydraulic */
+	int s_type; /**< message type */
+	char s_zz[CMD_SET_SIZE_S_ZZ+1]; /**< zz */ 
+	char s_cmd[CMD_SET_SIZE_S_CMD+1]; /**< pb sb */
+	int s_len; /**< number of send bytes */
+	char s_msg[CMD_SET_SIZE_S_MSG+1]; /**< max 15 data bytes */
+	int d_len; /**< number of data bytes */
+	char d_pos[CMD_SET_SIZE_D_POS+1]; /**< position at data string */
+	char d_type[CMD_SET_SIZE_D_TYPE+1]; /**< data type */
+	float d_fac; /**< facter */
+	char d_unit[CMD_SET_SIZE_D_UNIT+1]; /**< unit of data like °C,...) */
+	char com[CMD_SET_SIZE_COMMENT+1]; /**< just a comment */
+};
 
 
+/**
+ * @brief encode msg
+ * @param [in] id is index in command array of sent msg.
+ * @param [out] *msg pointer to message array
+ * @param [out] *buf pointer to decoded answer
+ * @return 0 ok | -1 error at decode answer
+ */
+int eb_msg_encode(int id, unsigned char *msg, char *buf);
 
-
-int eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf);
-
+/**
+ * @brief decode msg
+ * @param [in] id is index in command array of sent msg.
+ * @param [out] *msg pointer to message array
+ * @param [out] *buf pointer to decoded answer
+ * @return 0 ok | -1 error at decode answer
+ */
+int eb_msg_decode(int id, unsigned char *msg, char *buf);
 
 /**
  * @brief prepare message string for given ebus cmd from array
@@ -91,18 +134,29 @@ int eb_msg_decode_result(int id, unsigned char *msg, int msglen, char *buf);
  * @param [out] *type pointer to message type
  * @return none
  */
-void eb_msg_send_cmd_prepare(int id, char *msg, int *msglen, int *type);
+void eb_msg_send_cmd_prepare_set(int id, char *msg, int *msglen, int *type, char *data);
 
+/**
+ * @brief prepare message string for given ebus cmd from array
+ * @param [in] id is index in command array to sending msg.
+ * @param [out] *msg pointer to message array
+ * @param [out] *msglen pointer to message length
+ * @param [out] *type pointer to message type
+ * @return none
+ */
+void eb_msg_send_cmd_prepare_get(int id, char *msg, int *msglen, int *type);
 
 /**
  * @brief handle send ebus cmd 
  * @param [in] id is index in command array to sending msg.
+ * @param [in] type of msg (get/set)
+ * @param [in] *data pointer to data bytes for set command
  * @param [out] *buf pointer to answer array
  * @param [out] *buflen point to answer length
  * @param [in] retry send msg
  * @return none
  */
-void eb_msg_send_cmd(int id, char *buf, int *buflen, int retry);
+void eb_msg_send_cmd(int id, int type, char *data, char *buf, int *buflen, int retry);
 
 /**
  * @brief decode input data string with command data
@@ -110,14 +164,23 @@ void eb_msg_send_cmd(int id, char *buf, int *buflen, int retry);
  * @param [in] *cmd pointer to a ebus command array
  * @return 0-x id of found ebus command in array | -1 command not found
  */
-int eb_msg_search_cmd_table(const char *class, const char *cmd);
+int eb_msg_search_cmd_set(const char *class, const char *cmd);
+
+/**
+ * @brief decode input data string with command data
+ * @param [in] *class pointer to a ebus class array
+ * @param [in] *cmd pointer to a ebus command array
+ * @return 0-x id of found ebus command in array | -1 command not found
+ */
+int eb_msg_search_cmd_get(const char *class, const char *cmd);
 
 /**
  * @brief decode input data string with command data
  * @param [in] *buf pointer to a byte array
+ * @param [in] *msgtype pointer which hold the msg type (get/set)
  * @return 0-x id of found ebus command in array | -1 command not found
  */
-int eb_msg_search_cmd(char *buf);
+int eb_msg_search_cmd(char *buf, int *msgtype);
 
 
 

@@ -54,6 +54,8 @@ msg_queue_init(void)
 	
 	if (dummy != NULL) {
 		dummy->id = -1;
+		dummy->msgtype = -1;
+		memset(dummy->data, '\0', sizeof(dummy->data));
 		dummy->clientfd = -1;
 		dummy->prev = NULL;
 
@@ -110,7 +112,7 @@ msg_queue_get(void)
 }
 
 void
-msg_queue_msg_add(int id, int clientfd)
+msg_queue_msg_add(int id, int msgtype, char *data, int clientfd)
 {
 	struct msg_queue *new;
 
@@ -118,29 +120,35 @@ msg_queue_msg_add(int id, int clientfd)
 
 	if (new != NULL) {
 		new->id = id;
+		new->msgtype = msgtype;
+		memset(new->data, '\0', sizeof(new->data));
+		strncpy(new->data, data, strlen(data));
 		new->clientfd = clientfd;
 		new->prev = NULL;
 		
 		msg_queue_put(new);
 		msg_entries++;
 	
-		log_print(L_DBG, "add: id: %d clientfd: %d ==> entries: %d",
-					new->id, new->clientfd, msg_entries);
+		log_print(L_DBG, "add: id: %d msgtype: %d data: %s clientfd: %d ==> entries: %d",
+			new->id, new->msgtype, new->data, new->clientfd, msg_entries);
 	}
 }
 
 void
-msg_queue_msg_del(int *id, int *clientfd)
+msg_queue_msg_del(int *id, int *msgtype, char *data, int *clientfd)
 {
 	if (dummy->prev != NULL) {
 		*id = dummy->prev->id;
+		*msgtype = dummy->prev->msgtype;
+		memset(data, '\0', sizeof(data));
+		strncpy(data, dummy->prev->data, strlen(dummy->prev->data));		
 		*clientfd = dummy->prev->clientfd;
 			
 		msg_queue_get();
 		msg_entries--;
 
-		log_print(L_DBG, "del: id: %d clientfd: %d ==> entries: %d",
-						*id, *clientfd, msg_entries);
+		log_print(L_DBG, "del: id: %d msgtype: %d data: %s clientfd: %d ==> entries: %d",
+					*id, *msgtype, data, *clientfd, msg_entries);
 		
 	} else {
 		log_print(L_NOT, "msg queue empty");
@@ -375,7 +383,11 @@ sock_client_read(int fd, char *buf, int *buflen)
 		return -1;
 	}
 
-	buf[strcspn(buf,"\n")] = '\0';
+	if (strchr(buf, '\n') != NULL) {
+		buf[strcspn(buf, "\n")] = '\0';
+		*buflen -= 1;
+	}
+	
 	log_print(L_NET, ">>> client [%d] %s", fd, buf);
 
 	return 0;

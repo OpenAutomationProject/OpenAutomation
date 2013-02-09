@@ -267,6 +267,9 @@ set_unset(void)
 
 	if (get_retry == UNSET)
 		get_retry = EBUS_GET_RETRY;
+	/* set max */
+	if (get_retry > EBUS_GET_RETRY_MAX)
+		get_retry = EBUS_GET_RETRY_MAX;
 
 	if (skip_ack == UNSET)
 		skip_ack = EBUS_SKIP_ACK;
@@ -276,6 +279,9 @@ set_unset(void)
 
 	if (send_retry == UNSET)
 		send_retry = DAEMON_SENDRETRY;
+	/* set max */
+	if (send_retry > DAEMON_SENDRETRY_MAX)
+		send_retry = DAEMON_SENDRETRY_MAX;
 		
 }
 
@@ -476,17 +482,17 @@ main_loop(void)
 
 			/* send msg to bus - only when cyc buf is empty */
 			if (ret == 0 && msg_queue_entries() > 0) {
-				char tcpbuf[SOCKET_BUFSIZE];
-				int tcpbuflen, id, clientfd;
+				char tcpbuf[SOCKET_BUFSIZE], data[MSG_QUEUE_MSG_SIZE];
+				int tcpbuflen, id, msgtype, clientfd;
 				
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
 				tcpbuflen = sizeof(tcpbuf);
 
 				/* get next entry from msg queue */
-				msg_queue_msg_del(&id, &clientfd);
+				msg_queue_msg_del(&id, &msgtype, data, &clientfd);
 
 				/* just do it */		
-				eb_msg_send_cmd(id, tcpbuf, &tcpbuflen, send_retry);
+				eb_msg_send_cmd(id, msgtype, data, tcpbuf, &tcpbuflen, send_retry);
 
 				/* send answer */
 				sock_client_write(clientfd, tcpbuf, tcpbuflen);
@@ -512,7 +518,7 @@ main_loop(void)
 			/* check all connected clients */
 			if (FD_ISSET(readfd, &readfds)) {
 				char tcpbuf[SOCKET_BUFSIZE];
-				int tcpbuflen;
+				int tcpbuflen, msgtype;
 
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
 				tcpbuflen = sizeof(tcpbuf);
@@ -531,11 +537,11 @@ main_loop(void)
 					cleanup(EXIT_SUCCESS);
 
 				/* search ebus command */
-				ret = eb_msg_search_cmd(tcpbuf, &tcpbuflen);
+				ret = eb_msg_search_cmd(tcpbuf, &msgtype);
 
 				/* command not found */
 				if (ret < 0) {
-					memset(tcpbuf, '\0', strlen(tcpbuf));
+					memset(tcpbuf, '\0', sizeof(tcpbuf));
 					strcpy(tcpbuf, "command not found\n");
 					tcpbuflen = strlen(tcpbuf);
 					
@@ -543,7 +549,7 @@ main_loop(void)
 					sock_client_write(readfd, tcpbuf, tcpbuflen);
 
 				} else {
-					msg_queue_msg_add(ret, readfd);
+					msg_queue_msg_add(ret, msgtype, tcpbuf, readfd);
 				}
 				
 			}
