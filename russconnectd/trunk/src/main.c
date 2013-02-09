@@ -161,8 +161,19 @@ void *sendrussPolling(unsigned char zone) {
     }
 
     //Get Poweron-Volume
+    /* same stuff, cc zz twice
+    8.8.3 Get Turn On Volume
+    The current Turn On Volume for a particular zone can be obtained using the following message.
+    Byte # 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
+    Value F0 cc 00 7F cc zz kk 01 05 02 00 zz 00 04 00 00 xx F7
+    cc = controller number -1
+    zz = zone number -1
+    kk = keypad id = 0x70 (0x71 when connected to an ACA-E5).
+    xx = checksum */ 
     char buf_onvol[25] = { 0xF0, 0, 0, 0x7F, 0, 0, keypadid, 0x01, 0x05, 0x02, 0, 0, 0, 0x04, 0, 0, 0, 0xF7 };
     buf_onvol[1] = zone/ZONES_PER_CONTROLLER;
+    buf_onvol[4] = zone/ZONES_PER_CONTROLLER;
+    buf_onvol[5] = zone%ZONES_PER_CONTROLLER;
     buf_onvol[11] = zone%ZONES_PER_CONTROLLER;
     buf_onvol[16] = (int) russChecksum (buf_onvol,18-2);
     if (sendto(udpSocket, buf_onvol, 18, 0, (struct sockaddr *) &si_other, slen)==-1)
@@ -181,6 +192,8 @@ void *sendrussPolling(unsigned char zone) {
     xx = checksum
     */
     buf_getzone[1] = zone/ZONES_PER_CONTROLLER;
+    buf_getzone[4] = zone/ZONES_PER_CONTROLLER;
+    buf_getzone[5] = zone%ZONES_PER_CONTROLLER;
     buf_getzone[11] = zone%ZONES_PER_CONTROLLER;
     buf_getzone[15] = (int) russChecksum (buf_getzone,17-2);
     if (sendto(udpSocket, buf_getzone, 17, 0, (struct sockaddr *) &si_other, slen)==-1)
@@ -212,9 +225,23 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
     */
     char buf_msg1[25] = { 0, 0, 0, 0x7F, 0, 0, keypadid, 0x05, 0x02, 0x02, 0, 0, 0xF1, 0x23, 0, 0, 0, 0, 0, 0x01, 0, 0xF7 };
     buf_msg1[1] = controller;
+    buf_msg1[4] = controller;
+    buf_msg1[5] = zone;
     buf_msg1[17] = zone;
+    /* Same stuff here: 8.4.2 Set Bass
+    Select the Bass level for a particular zone using a discrete message.
+    Byte # 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
+    Value F0 cc 00 7F cc zz kk 00 05 02 00 zz 00 00 00 00 00 01 00 01 00 ## xx F7
+    cc = controller number -1
+    zz = zone number -1
+    kk = keypad id = 0x70 (0x71 when connected to an ACA-E5).
+    xx = checksum
+    Byte #22 = Bass level (0x00 = -10 ... 0x0A = Flat ... 0x14 = +10)
+    */
     char buf_msg2[25] = { 0, 0, 0, 0x7F, 0, 0, keypadid, 0, 0x05, 0x02, 0, 0, 0, 0, 0, 0, 0, 0x01, 0, 0x01, 0, 0, 0, 0xF7 };
     buf_msg2[1] = controller;
+    buf_msg2[4] = controller;
+    buf_msg2[5] = zone;
     buf_msg2[11] = zone;
 
     switch (func) {
