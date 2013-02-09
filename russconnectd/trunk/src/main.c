@@ -1,7 +1,7 @@
 /* -*- Mode: C; indent-tabs-mode: nil; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * main.c
- * Copyright (C) Michael Markstaller 2011-2012 <devel@wiregate.de>
+ * Copyright (C) Michael Markstaller 2011-2013 <devel@wiregate.de>
  * 
  * russconnectd is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -26,7 +26,6 @@
 #include <syslog.h>
 #include <string.h>
 #include <signal.h>
-//#include <assert.h>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -150,7 +149,7 @@ void *sendrussPolling(unsigned char zone) {
     syslog(LOG_DEBUG, "polling zone %d",zone);
     pthread_mutex_trylock(&standbylock);
 
-    //Send device reset-event to wakeup (at least) C3 - yet untested
+    //Send device reset-event to wakeup (at least) E5 *NOT* C3/C5! - untested and most likely useless
     if (keypadid == 0x71) {
         char buf_devreset[25] = { 0xF0, 0, 0, 0x7F, 0, 0, keypadid, 0x05, 0x02, 0x02, 0, 0, 0x55, 0x01, 0x03, 0, 0x35, 0, 0x01, 0, 0xF7 };
         buf_devreset[4] = zone/ZONES_PER_CONTROLLER;
@@ -172,6 +171,15 @@ void *sendrussPolling(unsigned char zone) {
 
     //Get zonestate
     char buf_getzone[25] = { 0xF0, 0, 0, 0x7F, 0, 0, keypadid, 0x01, 0x04, 0x02, 0, 0, 0x07, 0, 0, 0, 0xF7 };
+    //FIXME: according to RNet 1.004 controller and zone are inserted twice!
+    /* This is the Request message for the parameter values of the selected Zone.
+    Byte # 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17
+    Value F0 cc 00 7F cc zz kk 01 04 02 00 zz 07 00 00 xx F7
+    cc = controller number -1
+    zz = zone number -1
+    kk = keypad id = 0x70 (0x71 when connected to an ACA-E5).
+    xx = checksum
+    */
     buf_getzone[1] = zone/ZONES_PER_CONTROLLER;
     buf_getzone[11] = zone%ZONES_PER_CONTROLLER;
     buf_getzone[15] = (int) russChecksum (buf_getzone,17-2);
@@ -190,6 +198,18 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
     //block here until something is received from russound (it's turned off)
     pthread_mutex_lock(&standbylock);
     pthread_mutex_unlock(&standbylock);
+    /* The whole stuff in RNET is a little different than it's written for the C5
+    Zone and controller are set twice now, CA* understands the old, C5 not:
+    8.1.1 Set State
+    Turn a specific Zone ON or OFF using a discrete message.
+    Byte # 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22
+    Value F0 cc 00 7F cc zz kk 05 02 02 00 00 F1 23 00 ## 00 zz 00 01 xx F7
+    cc = controller number -1
+    zz = zone number -1
+    kk = 0x70 (0x71 when connected to an ACA-E5).
+    xx = checksum
+    Byte #16 = 0x00 (off) or 0x01(on)
+    */
     char buf_msg1[25] = { 0, 0, 0, 0x7F, 0, 0, keypadid, 0x05, 0x02, 0x02, 0, 0, 0xF1, 0x23, 0, 0, 0, 0, 0, 0x01, 0, 0xF7 };
     buf_msg1[1] = controller;
     buf_msg1[17] = zone;
@@ -199,6 +219,12 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
 
     switch (func) {
         case -9: //all zones
+            //FIXME: different on C5!
+            /* controller 0:
+            All On F0 7E 00 7F 00 00 71 05 02 02 00 00 F1 22 00 01 00 00 00 01 10 F7
+            All Off F0 7E 00 7F 00 00 71 05 02 02 00 00 F1 22 00 00 00 00 00 01 0F F7
+            CAV/CAM/CAA All On F0 7E 00 7F 00 00 70 05 02 02 00 00 F1 22 00 00 01 00 00 01 0F F7
+            */
             buf_msg1[0] = 0xF0;
             buf_msg1[1] = 0x7E;
             buf_msg1[13] = 0x22;
@@ -626,6 +652,8 @@ void *parseRussMsg(unsigned char* buf, int len) {
         buf[12] = (buf[4]*ZONES_PER_CONTROLLER)+buf[12]; //controller + zonenumber
         if (buf[21] != zones[buf[12]].onvolume || (sendOnStart && !zones[buf[12]].inited))
             updateZone(buf[12],buf[21],10);
+    } else if ((len==23) && (buf[0]==0xF0) && (buf[7]==0x05)) { //FIXME: C5 sends this periodically
+        printf(" not parsed yet, len: %d ",len);
     } else {
         //FIXME: just for debugging
         //for (i=0; i<len; i++)
@@ -848,7 +876,7 @@ int main(int argc, char **argv) {
         close(STDERR_FILENO);
     }
     //FIXME: output errors to stderr, change order
-    pidFilehandle = open(pidfilename, O_RDWR|O_CREAT, 0600);
+    pidFilehandle = open(pidfilename, O_RDWR|O_CREAT, 0644);
     if (pidFilehandle == -1 )
     {
         syslog(LOG_INFO, "Could not open pidfile %s, exiting", pidfilename);

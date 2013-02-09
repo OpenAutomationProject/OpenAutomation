@@ -38,5 +38,9 @@ Example: Start-address given 10/1/0
 -> implement RIO protocal partially
 -> connect to lirc directly?
 - don't depend on libeibclient then
-- *maybe* add outgoing interfaces for KNX-> mpd,vdr,.. to stick multiroom togehter
+- *maybe* add outgoing interfaces for KNX-> mpd,vdr,.. to stick multiroom together (sort of mpc/svdrp-client)
 - add at least a KNX-address to switch on/off to avoid ext. logic here
+
+*** PENDING
+- make RNET work on C5
+- global GA for source of all zones?
