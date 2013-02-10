@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-10:
+* Changed decode datatype from int to bcd
+
 2013-02-09:
 * Upgrade the send ability for ebus SET commands. (only d1b and d1c)
 

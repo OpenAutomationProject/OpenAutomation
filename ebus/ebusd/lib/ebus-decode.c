@@ -77,7 +77,7 @@ eb_msg_encode(int id, unsigned char *msg, char *buf)
 	log_print(L_DBG, "id: %d d_pos: %s p1: %d p2: %d p3: %d p4: %d",
 						id, set[id].d_pos, p1, p2, p3, p4);
 	
-	if (strncasecmp(set[id].d_type, "int", 3) == 0) {
+	if (strncasecmp(set[id].d_type, "bcd", 3) == 0) {
 		//~ if (p1 > 0) {
 			//~ ret = eb_bcd_to_int(msg[p1], &i);
 //~ 
@@ -170,7 +170,7 @@ eb_msg_decode(int id, unsigned char *msg, char *buf)
 	log_print(L_DBG, "id: %d r_pos: %s p1: %d p2: %d p3: %d p4: %d",
 						id, get[id].r_pos, p1, p2, p3, p4);
 	
-	if (strncasecmp(get[id].r_type, "int", 3) == 0) {
+	if (strncasecmp(get[id].r_type, "bcd", 3) == 0) {
 		if (p1 > 0) {
 			ret = eb_bcd_to_int(msg[p1], &i);
 
@@ -446,9 +446,9 @@ eb_msg_search_cmd(char *buf, int *msgtype)
 	data = strtok(NULL, " \n\r\t");
 
 	if (class != NULL && cmd != NULL) {
-		log_print(L_NOT, "search: %s %s.%s %s", type, class, cmd, data);
 		
 		if (strncasecmp(buf, "get", 3) == 0) {
+			log_print(L_NOT, "search: %s %s.%s", type, class, cmd);
 			/* search command */
 			ret = eb_msg_search_cmd_get(class, cmd);
 			memset(buf, '\0', sizeof(buf));
@@ -457,6 +457,8 @@ eb_msg_search_cmd(char *buf, int *msgtype)
 			return ret;
 
 		} else if (strncasecmp(buf, "set", 3) == 0) {
+			log_print(L_NOT, "search: %s %s.%s %s",
+							type, class, cmd, data);
 			/* search command */
 			ret = eb_msg_search_cmd_set(class, cmd);
 			
