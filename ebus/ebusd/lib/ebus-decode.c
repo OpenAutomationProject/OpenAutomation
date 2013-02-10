@@ -479,13 +479,17 @@ eb_cmd_fill_set(const char *tok)
 	/* key */
 	set[setlen].key = setlen;
 	
-	/* cmd */
+	/* class */
 	tok = strtok(NULL, ";");
 	strncpy(set[setlen].class, tok, strlen(tok));
 
-	/* sub */
+	/* cmd */
 	tok = strtok(NULL, ";");
 	strncpy(set[setlen].cmd, tok, strlen(tok));
+	
+	/* com */
+	tok = strtok(NULL, ";");
+	strncpy(set[setlen].com, tok, strlen(tok));	
 
 	/* s_type */
 	tok = strtok(NULL, ";");
@@ -525,11 +529,7 @@ eb_cmd_fill_set(const char *tok)
 
 	/* d_unit */
 	tok = strtok(NULL, ";");
-	strncpy(set[setlen].d_unit, tok, strlen(tok));
-	
-	/* com */
-	tok = strtok(NULL, ";");
-	strncpy(set[setlen].com, tok, strlen(tok)-1);
+	strncpy(set[setlen].d_unit, tok, strlen(tok)-1);
 
 	setlen++;
 
@@ -549,13 +549,17 @@ eb_cmd_fill_get(const char *tok)
 	/* key */
 	get[getlen].key = getlen;
 	
-	/* cmd */
+	/* class */
 	tok = strtok(NULL, ";");
 	strncpy(get[getlen].class, tok, strlen(tok));
 
-	/* sub */
+	/* cmd */
 	tok = strtok(NULL, ";");
 	strncpy(get[getlen].cmd, tok, strlen(tok));
+
+	/* com */
+	tok = strtok(NULL, ";");
+	strncpy(get[getlen].com, tok, strlen(tok));
 
 	/* s_type */
 	tok = strtok(NULL, ";");
@@ -595,11 +599,7 @@ eb_cmd_fill_get(const char *tok)
 
 	/* r_unit */
 	tok = strtok(NULL, ";");
-	strncpy(get[getlen].r_unit, tok, strlen(tok));
-	
-	/* com */
-	tok = strtok(NULL, ";");
-	strncpy(get[getlen].com, tok, strlen(tok)-1);
+	strncpy(get[getlen].r_unit, tok, strlen(tok)-1);
 
 	getlen++;
 

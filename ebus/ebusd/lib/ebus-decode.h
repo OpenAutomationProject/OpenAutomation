@@ -46,23 +46,25 @@
 
 #define CMD_GET_SIZE_CLASS     5
 #define CMD_GET_SIZE_CMD      30
+#define CMD_GET_SIZE_COM     256
 #define CMD_GET_SIZE_S_ZZ      2
 #define CMD_GET_SIZE_S_CMD     4
 #define CMD_GET_SIZE_S_MSG    30
 #define CMD_GET_SIZE_R_POS    10
 #define CMD_GET_SIZE_R_TYPE    3
 #define CMD_GET_SIZE_R_UNIT    6
-#define CMD_GET_SIZE_COMMENT 256
+
 
 #define CMD_SET_SIZE_CLASS     5
 #define CMD_SET_SIZE_CMD      30
+#define CMD_SET_SIZE_COM     256
 #define CMD_SET_SIZE_S_ZZ      2
 #define CMD_SET_SIZE_S_CMD     4
 #define CMD_SET_SIZE_S_MSG    30
 #define CMD_SET_SIZE_D_POS    10
 #define CMD_SET_SIZE_D_TYPE    3
 #define CMD_SET_SIZE_D_UNIT    6
-#define CMD_SET_SIZE_COMMENT 256
+
 
 
 enum enum_cmd_type {GET, SET, CYC};
@@ -74,6 +76,7 @@ struct cmd_get {
 	int key; /**< internal number - do we need this ? */
 	char class[CMD_GET_SIZE_CLASS+1]; /**< ci */
 	char cmd[CMD_GET_SIZE_CMD+1]; /**< hydraulic */
+	char com[CMD_GET_SIZE_COM+1]; /**< just a comment */	
 	int s_type; /**< message type */
 	char s_zz[CMD_GET_SIZE_S_ZZ+1]; /**< zz */ 
 	char s_cmd[CMD_GET_SIZE_S_CMD+1]; /**< pb sb */
@@ -84,7 +87,6 @@ struct cmd_get {
 	char r_type[CMD_GET_SIZE_R_TYPE+1]; /**< data type */
 	float r_fac; /**< facter */
 	char r_unit[CMD_GET_SIZE_R_UNIT+1]; /**< unit of data like °C,...) */
-	char com[CMD_GET_SIZE_COMMENT+1]; /**< just a comment */
 };
 
 /**
@@ -94,6 +96,7 @@ struct cmd_set {
 	int key; /**< internal number - do we need this ? */
 	char class[CMD_SET_SIZE_CLASS+1]; /**< ci */
 	char cmd[CMD_SET_SIZE_CMD+1]; /**< hydraulic */
+	char com[CMD_SET_SIZE_COM+1]; /**< just a comment */
 	int s_type; /**< message type */
 	char s_zz[CMD_SET_SIZE_S_ZZ+1]; /**< zz */ 
 	char s_cmd[CMD_SET_SIZE_S_CMD+1]; /**< pb sb */
@@ -104,8 +107,7 @@ struct cmd_set {
 	char d_type[CMD_SET_SIZE_D_TYPE+1]; /**< data type */
 	float d_fac; /**< facter */
 	char d_unit[CMD_SET_SIZE_D_UNIT+1]; /**< unit of data like °C,...) */
-	char com[CMD_SET_SIZE_COMMENT+1]; /**< just a comment */
-};
+};		
 
 
 /**

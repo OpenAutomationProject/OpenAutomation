@@ -1,0 +1,4 @@
+# Heizkreis 2;class;cmd;comment;msg type: 1=BROAD, 2=MM, 3=MS;ZZ;PBSB;NN;D1D2D3;data bytes;position;datatype;factor;unit;???
+set;cir2;rt_day;Heizkreis – Raumsolltemperatur;3;50;B509;4;0E3200;1;1;d1b;0.500;°C;
+#;;;;;;;;;;;;;;
+set;hw;temp;WW – Solltemperatur;3;25;B509;5;0E8200;2;1,2;d2c;1.000;°C;
