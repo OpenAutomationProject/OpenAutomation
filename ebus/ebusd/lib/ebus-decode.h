@@ -115,7 +115,7 @@ struct cmd_set {
  * @param [out] *buf pointer to decoded answer
  * @return 0 ok | -1 error at decode answer
  */
-int eb_msg_encode(int id, unsigned char *msg, char *buf);
+int eb_msg_send_cmd_encode(int id, unsigned char *msg, char *buf);
 
 /**
  * @brief decode msg
@@ -124,7 +124,7 @@ int eb_msg_encode(int id, unsigned char *msg, char *buf);
  * @param [out] *buf pointer to decoded answer
  * @return 0 ok | -1 error at decode answer
  */
-int eb_msg_decode(int id, unsigned char *msg, char *buf);
+int eb_msg_send_cmd_decode(int id, unsigned char *msg, char *buf);
 
 /**
  * @brief prepare message string for given ebus cmd from array

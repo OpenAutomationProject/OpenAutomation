@@ -54,11 +54,12 @@ static struct cmd_set *set = NULL;
 static int setlen = 1;
 
 int
-eb_msg_encode(int id, unsigned char *msg, char *buf)
+eb_msg_send_cmd_encode(int id, unsigned char *msg, char *buf)
 {
-	char *c1, *c2, *c3, *c4;
-	char d_pos[CMD_SET_SIZE_D_POS+1], d1b, d1c, d2b[2], d2c[2];
-	int ret, i, p1, p2, p3, p4;
+	char *c1, *c2;
+	char d_pos[CMD_SET_SIZE_D_POS+1];
+	unsigned char bcd, d1b, d1c, d2b[2], d2c[2];
+	int ret, i, p1, p2;
 	float f;
 
 	memset(d_pos, '\0', sizeof(d_pos));
@@ -66,26 +67,22 @@ eb_msg_encode(int id, unsigned char *msg, char *buf)
 
 	c1 = strtok(d_pos, " ,\n");
 	c2 = strtok(NULL, " ,\n");
-	c3 = strtok(NULL, " ,\n");
-	c4 = strtok(NULL, " ,\n");
 
 	p1 = c1 ? atoi(c1) : 0;
 	p2 = c2 ? atoi(c2) : 0;
-	p3 = c3 ? atoi(c3) : 0;
-	p4 = c4 ? atoi(c4) : 0;	
 
-	log_print(L_DBG, "id: %d d_pos: %s p1: %d p2: %d p3: %d p4: %d",
-						id, set[id].d_pos, p1, p2, p3, p4);
+	log_print(L_DBG, "id: %d d_pos: %s p1: %d p2: %d",
+						id, set[id].d_pos, p1, p2);
 	
 	if (strncasecmp(set[id].d_type, "bcd", 3) == 0) {
-		//~ if (p1 > 0) {
-			//~ ret = eb_bcd_to_int(msg[p1], &i);
-//~ 
-			//~ i *= set[id].d_fac;
-			//~ sprintf(buf, "%3d\n", i);
-		//~ } else {
+		if (p1 > 0) {
+			i = (int) (atof(buf) / set[id].d_fac);
+
+			ret = eb_int_to_bcd(i, &bcd);
+			sprintf(msg, "%02x\n", bcd);
+		} else {
 			goto on_error;
-		//~ }
+		}
 				
 	} else if (strncasecmp(set[id].d_type, "d1b", 3) == 0) {
 		if (p1 > 0) {
@@ -107,34 +104,34 @@ eb_msg_encode(int id, unsigned char *msg, char *buf)
 			goto on_error;
 		}
 		
-	//~ } else if (strncasecmp(set[id].d_type, "d2b", 3) == 0) {
-		//~ 
-		//~ if (p1 > 0 && p2 > 0) {
-			//~ if (p1 > p2)
-				//~ ret = eb_d2b_to_float(msg[p2], msg[p1], &f);
-			//~ else
-				//~ ret = eb_d2b_to_float(msg[p1], msg[p2], &f);
-				//~ 
-			//~ f *= set[id].d_fac;
-			//~ sprintf(buf, "%8.3f\n", f);
-			//~ 
-		//~ } else {
-			//~ goto on_error;
-		//~ }
-		//~ 
-	//~ } else if (strncasecmp(set[id].d_type, "d2c", 3) == 0) {
-		//~ 
-		//~ if (p1 > 0 && p2 > 0) {
-			//~ if (p1 > p2)
-				//~ ret = eb_d2c_to_float(msg[p2], msg[p1], &f);
-			//~ else	
-				//~ ret = eb_d2c_to_float(msg[p1], msg[p2], &f);
-			//~ 
-			//~ f *= set[id].d_fac;
-			//~ sprintf(buf, "%10.4f\n", f);
-		//~ } else {
-			//~ goto on_error;
-		//~ }			
+	} else if (strncasecmp(set[id].d_type, "d2b", 3) == 0) {
+		if (p1 > 0 && p2 > 0) {
+			f = (atof(buf) / set[id].d_fac);
+			
+			if (p1 > p2)
+				ret = eb_float_to_d2b(f, &d2b[1], &d2b[0]);
+			else
+				ret = eb_float_to_d2b(f, &d2b[0], &d2b[1]);
+				
+			sprintf(msg, "%02x%02x\n", d2b[0], d2b[1]);	
+		} else {
+			goto on_error;
+		}
+		
+	} else if (strncasecmp(set[id].d_type, "d2c", 3) == 0) {
+		
+		if (p1 > 0 && p2 > 0) {
+			f = (atof(buf) / set[id].d_fac);
+			
+			if (p1 > p2)
+				ret = eb_float_to_d2c(f, &d2c[1], &d2c[0]);
+			else
+				ret = eb_float_to_d2c(f, &d2c[0], &d2c[1]);
+				
+			sprintf(msg, "%02x%02x\n", d2c[0], d2c[1]);
+		} else {
+			goto on_error;
+		}			
 		
 	}
 
@@ -147,11 +144,11 @@ on_error:
 }
 
 int
-eb_msg_decode(int id, unsigned char *msg, char *buf)
+eb_msg_send_cmd_decode(int id, unsigned char *msg, char *buf)
 {
-	char *c1, *c2, *c3, *c4;
+	char *c1, *c2;
 	char r_pos[CMD_GET_SIZE_R_POS+1];
-	int ret, i, p1, p2, p3, p4;
+	int ret, i, p1, p2;
 	float f;
 
 	memset(r_pos, '\0', sizeof(r_pos));
@@ -159,16 +156,12 @@ eb_msg_decode(int id, unsigned char *msg, char *buf)
 
 	c1 = strtok(r_pos, " ,\n");
 	c2 = strtok(NULL, " ,\n");
-	c3 = strtok(NULL, " ,\n");
-	c4 = strtok(NULL, " ,\n");	
 
 	p1 = c1 ? atoi(c1) : 0;
 	p2 = c2 ? atoi(c2) : 0;
-	p3 = c3 ? atoi(c3) : 0;
-	p4 = c4 ? atoi(c4) : 0;	
 
-	log_print(L_DBG, "id: %d r_pos: %s p1: %d p2: %d p3: %d p4: %d",
-						id, get[id].r_pos, p1, p2, p3, p4);
+	log_print(L_DBG, "id: %d r_pos: %s p1: %d p2: %d",
+						id, get[id].r_pos, p1, p2);
 	
 	if (strncasecmp(get[id].r_type, "bcd", 3) == 0) {
 		if (p1 > 0) {
@@ -186,7 +179,6 @@ eb_msg_decode(int id, unsigned char *msg, char *buf)
 
 			f = i * get[id].r_fac;
 			sprintf(buf, "%6.2f\n", f);
-			//~ sprintf(buf, "%4d\n", i);
 		} else {
 			goto on_error;
 		}
@@ -197,13 +189,11 @@ eb_msg_decode(int id, unsigned char *msg, char *buf)
 
 			f *= get[id].r_fac;
 			sprintf(buf, "%6.2f\n", f);			
-			//~ sprintf(buf, "%5.1f\n", f);
 		} else {
 			goto on_error;
 		}
 		
 	} else if (strncasecmp(get[id].r_type, "d2b", 3) == 0) {
-		
 		if (p1 > 0 && p2 > 0) {
 			if (p1 > p2)
 				ret = eb_d2b_to_float(msg[p2], msg[p1], &f);
@@ -211,14 +201,12 @@ eb_msg_decode(int id, unsigned char *msg, char *buf)
 				ret = eb_d2b_to_float(msg[p1], msg[p2], &f);
 				
 			f *= get[id].r_fac;
-			sprintf(buf, "%8.3f\n", f);
-			
+			sprintf(buf, "%8.3f\n", f);		
 		} else {
 			goto on_error;
 		}
 		
 	} else if (strncasecmp(get[id].r_type, "d2c", 3) == 0) {
-		
 		if (p1 > 0 && p2 > 0) {
 			if (p1 > p2)
 				ret = eb_d2c_to_float(msg[p2], msg[p1], &f);
@@ -252,7 +240,7 @@ eb_msg_send_cmd_prepare_set(int id, char *msg, int *msglen, int *type, char *dat
 	
 	/* encode msg */
 	memset(tmp, '\0', sizeof(tmp));
-	ret = eb_msg_encode(id, tmp, data);
+	ret = eb_msg_send_cmd_encode(id, tmp, data);
 	
 	memset(str, '\0', sizeof(str));
 	sprintf(str, "%s%s%02X%s%s",
@@ -379,7 +367,7 @@ eb_msg_send_cmd(int id, int msgtype, char *data, char *buf, int *buflen, int ret
 				if (msgtype == SET)
 					strcpy(buf, " ACK\n");
 				else
-					ret = eb_msg_decode(id, msg, buf);
+					ret = eb_msg_send_cmd_decode(id, msg, buf);
 				
 			} else {
 				strcpy(buf, " NAK\n");
@@ -391,6 +379,7 @@ eb_msg_send_cmd(int id, int msgtype, char *data, char *buf, int *buflen, int ret
 	}
 	*buflen = strlen(buf);
 }
+
 
 int
 eb_msg_search_cmd_set(const char *class, const char *cmd)
