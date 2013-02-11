@@ -1,3 +1,10 @@
+russconnectd (0.31-1) lenny; urgency=low
+
+  * make zones more flexible, support 8 Zones on C5
+  * add monit
+
+ -- Michael Markstaller <devel@wiregate.de>  Mon, 11 Feb 2013 17:37:08 +0100
+
 russconnectd (0.30-1) lenny; urgency=low
 
   * adjust RNet for C5 - older models are untestet!

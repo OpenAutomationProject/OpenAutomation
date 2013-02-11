@@ -11,7 +11,7 @@ my $CV_source_mapping_name = "RussoundSRC";
 
 ### End config - Don't change below ###
 #######################################
-my $ZONES_PER_CONTROLLER = 6; #static
+my $zones_per_controller = 6;
 my @gfuncnames = qw(SetAllZonesPower WRITEONLYACT NA3 NA4 NA5 AllZonesPowerState);
 
 use File::Copy; 
@@ -22,7 +22,13 @@ use Data::Dumper;
 use XML::Simple;
 getopts("a:z:n:f:", \my %opts);
 my $conf = Config::Tiny->new;
- 
+
+my $ga_per_zone = 40;
+if ($opts{z} % 8 == 0) {
+    $zones_per_controller = 8;
+    $ga_per_zone = 30;
+}
+
 my @funcdpts =     qw (1.001 5.010 5.001 6.001 6.001 1.001 6.001 1.001 1.001 5.001 5.010 5.010 1.008);
 my @funcdpts_sub = qw (DPT_Switch DPT_Value_1_Ucount DPT_Scaling DPT_Percent_V8 DPT_Percent_V8 DPT_Switch DPT_Percent_V8 DPT_Switch DPT_Switch DPT_Scaling DPT_Value_1_Ucount  DPT_Value_1_Ucount  DPT_UpDown);
 my @statedpts = qw(1.001 5.010 5.001 6.001 6.001 1.001 6.001 1.001 1.001 5.001);
@@ -85,11 +91,11 @@ print XML "#<?xml version=\"1.0\" ?>\n<config>\n\t<objects>\n";
 print XML "\t\t<object id=\"$NamePrefix"."_$gfuncnames[0]\" gad=\"" . addr2str($startga+1,1) . "\" type=\"1.001\">$NamePrefix $gfuncnames[0]</object>\n";
 
 for (my $zone=0;$zone<$opts{z};$zone++) {
-	#sendKNXdgram (0x80,1,(knxstartaddress+30)+(zone*40)+(controller*256),val);
-	my $ctrl = int($zone/$ZONES_PER_CONTROLLER);
-	my $czone = int($zone%$ZONES_PER_CONTROLLER);
-	my $basega = $startga+10 + ($czone*40) + ($ctrl*256);
+	my $ctrl = int($zone/$zones_per_controller);
+	my $czone = int($zone%$zones_per_controller);
+	my $basega = $startga+10 + ($czone*$ga_per_zone) + ($ctrl*256);
 	my $basegastr = addr2str($basega,1);
+	$zonenames[$zone] = "Zone " . ($zone+1) unless $zonenames[$zone];
 	print STDERR "Zone " . ($zone+1) . " is $zonenames[$zone] base: $basegastr\n";
 	# funcs
 	for (my $i=0;$i<$#funcnames+1;$i++) {

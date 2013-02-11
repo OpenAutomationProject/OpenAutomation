@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+do_monit () {
+    if [ -x /usr/sbin/monit ]; then
+        monit reload
+    fi
+}
+
+do_monit
+

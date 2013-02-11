@@ -1,0 +1,6 @@
+check process russconnectd with pidfile /var/run/russconnectd.pid
+    start program = "/etc/init.d/russconnectd start"
+    stop program  = "/etc/init.d/russconnectd stop"
+    if cpu > 80% for 5 cycles then alert
+    if totalmem > 2.0 MB for 5 cycles then restart
+
