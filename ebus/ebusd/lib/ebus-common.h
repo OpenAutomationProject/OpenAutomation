@@ -39,10 +39,13 @@
 #define EBUS_NAK                0xFF
 
 #define EBUS_QQ                 0xFF
+
 #define EBUS_GET_RETRY          3
 #define EBUS_GET_RETRY_MAX      10
 #define EBUS_SKIP_ACK           1
 #define EBUS_MAX_WAIT           4000
+#define EBUS_SEND_RETRY         2
+#define EBUS_SEND_RETRY_MAX     10
 
 #define EBUS_MSG_BROADCAST      1
 #define EBUS_MSG_MASTER_MASTER  2

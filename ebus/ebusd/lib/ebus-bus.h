@@ -36,6 +36,60 @@
 
 
 
+#define CMD_LINELEN        512
+#define CMD_FILELEN        1024
+
+#define CMD_SIZE_TYPE      3
+#define CMD_SIZE_CLASS     5
+#define CMD_SIZE_CMD       30
+#define CMD_SIZE_COM       256
+#define CMD_SIZE_S_ZZ      2
+#define CMD_SIZE_S_CMD     4
+#define CMD_SIZE_S_MSG     32
+#define CMD_SIZE_D_SUB     20
+#define CMD_SIZE_D_POS     10
+#define CMD_SIZE_D_TYPE    3
+#define CMD_SIZE_D_UNIT    6
+#define CMD_SIZE_D_VALID   30
+#define CMD_SIZE_D_COM     256
+
+#define CMD_DATA_SIZE      256
+
+
+
+//~ enum enum_cmd_type {GET, SET, CYC};
+
+/**
+ * @brief element structure
+ */
+struct element {
+	char d_sub[CMD_SIZE_D_SUB+1]; /**< pin1 */
+	char d_pos[CMD_SIZE_D_POS+1]; /**< data position at bytes */
+	char d_type[CMD_SIZE_D_TYPE+1]; /**< data type */
+	float d_fac; /**< facter */
+	char d_unit[CMD_SIZE_D_UNIT+1]; /**< unit of data like °C,...) */
+	char d_valid[CMD_SIZE_D_VALID+1]; /**< valid data */
+	char d_com[CMD_SIZE_D_COM+1]; /**< just a comment */
+};
+
+/**
+ * @brief commands structure
+ */
+struct commands {
+	int key; /**< internal number - do we need this ? */
+	char type[CMD_SIZE_TYPE+1]; /**< type of message */
+	char class[CMD_SIZE_CLASS+1]; /**< ci */
+	char cmd[CMD_SIZE_CMD+1]; /**< hydraulic */
+	char com[CMD_SIZE_COM+1]; /**< just a comment */	
+	int s_type; /**< message type */
+	char s_zz[CMD_SIZE_S_ZZ+1]; /**< zz */ 
+	char s_cmd[CMD_SIZE_S_CMD+1]; /**< pb sb */
+	int s_len; /**< number of send bytes */
+	char s_msg[CMD_SIZE_S_MSG+1]; /**< max 15 data bytes */
+	int d_elem; /**< number of elements */
+	struct element *elem; /**< pointer of array with elements */
+};
+
 /**
  * @brief sending data structure
  */
@@ -103,6 +157,13 @@ void eb_set_skip_ack(int skip);
  */
 void eb_set_max_wait(long usec);
 
+/**
+ * @brief set number of retry to send message
+ * @param [in] retry
+ * @return none
+ */
+void eb_set_send_retry(int retry);
+
 
 
 /**
@@ -114,6 +175,106 @@ void eb_set_max_wait(long usec);
  */
 int eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
 							struct timeval *tdiff);
+
+
+
+/**
+ * @brief decode input data string with command data
+ * @param [in] *class pointer to a ebus class array
+ * @param [in] *cmd pointer to a ebus command array
+ * @return 0-x id of found ebus command in array | -1 command not found
+ */
+int eb_msg_search_cmd_id(const char *type, const char *class, const char *cmd);
+
+/**
+ * @brief decode input data string with command data
+ * @param [in] *buf pointer to a byte array
+ * @param [out] *data pointer to data array for passing to decode/encode
+ * @return 0-x id of found ebus command in array | -1 command not found
+ */
+int eb_msg_search_cmd(char *buf, char *data);
+
+
+
+/**
+ * @brief decode given element
+ * @param [in] id is index in command array of sent msg.
+ * @param [in] elem is index of data position
+ * @param [in] *data pointer to data bytes for encode
+ * @param [out] *msg pointer to message array
+ * @param [out] *buf pointer to decoded answer
+ * @return 0 ok | -1 error at decode
+ */
+int eb_cmd_encode_value(int id, int elem, char *data, unsigned char *msg, char *buf);
+
+/**
+ * @brief encode msg
+ * @param [in] id is index in command array of sent msg.
+ * @param [in] *data pointer to data bytes for encode
+ * @param [out] *msg pointer to message array
+ * @param [out] *buf pointer to decoded answer
+ * @return 0 ok | -1 error at encode
+ */
+int eb_cmd_encode(int id, char *data, unsigned char *msg, char *buf);
+
+/**
+ * @brief decode given element
+ * @param [in] id is index in command array of sent msg.
+ * @param [in] elem is index of data position
+ * @param [out] *msg pointer to message array
+ * @param [out] *buf pointer to decoded answer
+ * @return 0 ok | -1 error at decode
+ */
+int eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf);
+
+/**
+ * @brief decode msg
+ * @param [in] id is index in command array of sent msg.
+ * @param [in] *data pointer to data bytes for decode
+ * @param [out] *msg pointer to message array
+ * @param [out] *buf pointer to decoded answer
+ * @return 0 ok | -1 error at decode
+ */
+int eb_cmd_decode(int id, char *data, unsigned char *msg, char *buf);
+
+/**
+ * @brief fill command structure
+ * @param [in] *tok pointer to given token
+ * @return 0 ok | -1 error
+ */
+int eb_cmd_fill(const char *tok);
+
+/**
+ * @brief prevent buffer overflow
+ * 
+ * number of tokens must be >= number of columns - 1 of file
+ * 
+ * @param [in] *buf pointer to a byte array
+ * @param [in] delimeter
+ * @return number of found delimeters
+ */ 
+int eb_cmd_num_c(const char *buf, const char c);
+
+/**
+ * @brief set cfgdir address
+ * @param [in] *file pointer to configuration file with *.csv
+ * @return 0 ok | -1 error | -2  read token error
+ */
+int eb_cmd_file_read(const char *file);
+
+/**
+ * @brief get all files with given extension from given configuration directory
+ * @param [in] *cfgdir pointer to configuration directory
+ * @param [in] *suffix pointer to given extension
+ * @return 0 ok | -1 error | 1 read file error | 2 no command files found
+ */
+int eb_cmd_dir_read(const char *cfgdir, const char *extension);
+
+/**
+ * @brief free mem for ebus commands
+ * @return none
+ */
+void eb_cmd_dir_free(void);
 
 
 
@@ -268,6 +429,27 @@ void eb_send_data_prepare(const unsigned char *buf, int buflen);
  * @return 0 ok | 1 neg. ACK from Slave | -1 error
  */ 
 int eb_send_data(const unsigned char *buf, int buflen, int type);
+
+/**
+ * @brief prepare message string for given ebus cmd from array
+ * @param [in] id is index in command array to sending msg.
+ * @param [in] *data pointer to data bytes for decode/encode
+ * @param [out] *msg pointer to message array
+ * @param [out] *msglen pointer to message length
+ * @param [out] *msgtype pointer to message type 
+ * @return none
+ */
+void eb_send_cmd_prepare(int id, char *data, char *msg, int *msglen, int *msgtype, char *buf);
+
+/**
+ * @brief handle send ebus cmd 
+ * @param [in] id is index in command array to sending msg.
+ * @param [in] *data pointer to data bytes for decode/encode
+ * @param [out] *buf pointer to answer array
+ * @param [out] *buflen point to answer length
+ * @return none
+ */
+void eb_send_cmd(int id, char *data, char *buf, int *buflen);
 
 
 

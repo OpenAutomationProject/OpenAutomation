@@ -1,6 +1,14 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-16:
+* Structure for commands improved so only one structure for GET/SET/CYC is needed
+* Possible formats for GET / SET (asc, bcd, d1b, d1c, d2b, d2c, dat, tim)
+* Commands with format hex will return undecoded data.
+* Add d_valid to structure. It will be used to check answers with given items.
+* Add functions to decode/encode date and time to library.
+* Changed CSV file struture to fit new data structure.
+
 2013-02-10:
 * Changed decode datatype from int to bcd
 * Add bcd, d2b and d2c too available SET commands

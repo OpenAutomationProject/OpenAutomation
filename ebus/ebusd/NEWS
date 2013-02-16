@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-02-16:
+* Dtructure for commands improved so only one structure for GET/SET/CYC is needed
+* Possible formats for GET / SET (asc, bcd, d1b, d1c, d2b, d2c, dat, tim)
+
 2013-02-06:
 * Fix some malfunctions of command decode function
 * Add parameter send_retry so the daemon can try x times to send command

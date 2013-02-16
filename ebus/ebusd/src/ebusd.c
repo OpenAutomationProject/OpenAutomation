@@ -278,10 +278,10 @@ set_unset(void)
 		max_wait = EBUS_MAX_WAIT;
 
 	if (send_retry == UNSET)
-		send_retry = DAEMON_SENDRETRY;
+		send_retry = EBUS_SEND_RETRY;
 	/* set max */
-	if (send_retry > DAEMON_SENDRETRY_MAX)
-		send_retry = DAEMON_SENDRETRY_MAX;
+	if (send_retry > EBUS_SEND_RETRY_MAX)
+		send_retry = EBUS_SEND_RETRY_MAX;
 		
 }
 
@@ -482,17 +482,20 @@ main_loop(void)
 
 			/* send msg to bus - only when cyc buf is empty */
 			if (ret == 0 && msg_queue_entries() > 0) {
-				char tcpbuf[SOCKET_BUFSIZE], data[MSG_QUEUE_MSG_SIZE];
+				char tcpbuf[SOCKET_BUFSIZE];
+				char data[MSG_QUEUE_MSG_SIZE];
 				int tcpbuflen, id, msgtype, clientfd;
 				
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
 				tcpbuflen = sizeof(tcpbuf);
 
+				memset(data, '\0', sizeof(data));
+
 				/* get next entry from msg queue */
-				msg_queue_msg_del(&id, &msgtype, data, &clientfd);
+				msg_queue_msg_del(&id, data, &clientfd);
 
 				/* just do it */		
-				eb_msg_send_cmd(id, msgtype, data, tcpbuf, &tcpbuflen, send_retry);
+				eb_send_cmd(id, data, tcpbuf, &tcpbuflen);
 
 				/* send answer */
 				sock_client_write(clientfd, tcpbuf, tcpbuflen);
@@ -518,10 +521,13 @@ main_loop(void)
 			/* check all connected clients */
 			if (FD_ISSET(readfd, &readfds)) {
 				char tcpbuf[SOCKET_BUFSIZE];
-				int tcpbuflen, msgtype;
+				char data[MSG_QUEUE_MSG_SIZE];
+				int tcpbuflen;
 
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
 				tcpbuflen = sizeof(tcpbuf);
+
+				memset(data, '\0', sizeof(data));
 
 				/* get message from client */
 				ret = sock_client_read(readfd, tcpbuf, &tcpbuflen);
@@ -537,7 +543,7 @@ main_loop(void)
 					cleanup(EXIT_SUCCESS);
 
 				/* search ebus command */
-				ret = eb_msg_search_cmd(tcpbuf, &msgtype);
+				ret = eb_msg_search_cmd(tcpbuf, data);
 
 				/* command not found */
 				if (ret < 0) {
@@ -549,7 +555,7 @@ main_loop(void)
 					sock_client_write(readfd, tcpbuf, tcpbuflen);
 
 				} else {
-					msg_queue_msg_add(ret, msgtype, tcpbuf, readfd);
+					msg_queue_msg_add(ret, data, readfd);
 				}
 				
 			}
@@ -596,6 +602,7 @@ main(int argc, char *argv[])
 	eb_set_get_retry(get_retry);
 	eb_set_skip_ack(skip_ack);
 	eb_set_max_wait(max_wait);
+	eb_set_send_retry(send_retry);
 
 	/* open log */
 	log_level(loglevel);
