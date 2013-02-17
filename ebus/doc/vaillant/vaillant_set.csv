@@ -1,7 +1,7 @@
 # type;class;cmd;comment;msg type: 1=BROAD, 2=MM, 3=MS;ZZ;PBSB;NN;D1D2D3;elements;sub;position;datatype;factor;unit;valid;comment;sub;position;datatype;factor;unit;valid;comment;sub;position;datatype;factor;unit;valid;comment;sub;position;datatype;factor;unit;valid;comment
 # Heizkreis 2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 set;ci;language;Sprachvariante;3;15;B509;4;0E2600;1;-;1;bcd;1.000;-;-;-;;;;;;;;;;;;;;;;;;;;;
-set;ci;holiday_period;Ferienzeitraum;3;15;B509;15;0E4300;4;start1;1,2,3;dat;-;-;-;Start 1;start2;4,5,6;dat;-;-;-;Start 2;end1;7,8,9;dat;-;-;-;Ende 1;end2;10,11,12;dat;-;-;-;Ende 2
+set;ci;holiday_period;Ferienzeitraum;3;15;B509;15;0E4300;4;start1;1,2,3;hda;-;-;-;Start 1;start2;4,5,6;hda;-;-;-;Start 2;end1;7,8,9;hda;-;-;-;Ende 1;end2;10,11,12;hda;-;-;-;Ende 2
 #set;ci;holiday_cir2_temp;Heizkreis-Solltemperatur Ferien;3;15;B509;5;0E2200;1;-;-;???;-;°C;-;-;;;;;;;;;;;;;;;;;;;;;
 set;ci;password;Passwort Konfiguration;3;15;B509;7;0E2C00;4;pin1;1;bcd;1.000;-;-;Pin 1;pin2;2;bcd;1.000;-;-;Pin 2;pin3;3;bcd;1.000;-;-;Pin 3;pin4;4;bcd;1.000;-;-;Pin 4
 set;ci;hw_wait_time;WW-Zeit max. bei Heizanforderung;3;15;B509;4;0E4C00;1;-;1;d1b;1.000;-;-;5-40 Minuten;;;;;;;;;;;;;;;;;;;;;

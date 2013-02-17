@@ -37,6 +37,10 @@
 
 
 
+const char *days[] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+
+
+
 int
 eb_htoi(const char *buf)
 {
@@ -133,6 +137,22 @@ eb_unesc(unsigned char *buf, int *buflen)
 	*buflen = tmplen;
 }
 
+
+
+int
+eb_day_to_str(unsigned char day, char *tgt)
+{
+	int ret, dd;
+	
+	if (dd >= 0x00 && dd <= 0x06) {
+		ret = eb_bcd_to_int(day, &dd);
+		sprintf(tgt, "%s ", days[day]);
+	} else {
+		return -1;
+	}
+	
+	return 0;
+}
 
 
 int

@@ -180,8 +180,16 @@ int eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
 
 /**
  * @brief decode input data string with command data
- * @param [in] *class pointer to a ebus class array
- * @param [in] *cmd pointer to a ebus command array
+ * @param [in] *hex pointer to hex string
+ * @return 0-x id of found ebus command in array | -1 command not found
+ */
+int eb_msg_search_hex(const unsigned char *hex, int hexlen);
+
+/**
+ * @brief decode input data string with command data
+ * @param [in] *type pointer to message type 
+ * @param [in] *class pointer to a ebus class
+ * @param [in] *cmd pointer to a ebus command
  * @return 0-x id of found ebus command in array | -1 command not found
  */
 int eb_msg_search_cmd_id(const char *type, const char *class, const char *cmd);
@@ -236,6 +244,15 @@ int eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf);
  * @return 0 ok | -1 error at decode
  */
 int eb_cmd_decode(int id, char *data, unsigned char *msg, char *buf);
+
+/**
+ * @brief print readed ebus commands
+ * @param [in] *type (get/set/cyc)
+ * @param [in] all print all
+ * @param [in] detail show details of command
+ * @return none
+ */
+void eb_cmd_print(const char *type, int all, int detail);
 
 /**
  * @brief fill command structure
