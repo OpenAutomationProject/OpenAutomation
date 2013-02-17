@@ -57,7 +57,16 @@
 
 
 
-//~ enum enum_cmd_type {GET, SET, CYC};
+/**
+ * @brief cycbuf structure
+ */
+struct cycbuf {
+	int id; /**< internal number - now we need it */
+	unsigned char msg[CMD_SIZE_S_MSG+1]; /**< zz + cmd + len + msg */
+	unsigned char buf[CMD_SIZE_S_MSG+1]; /**< NN + Data */
+};
+
+
 
 /**
  * @brief element structure
@@ -76,7 +85,7 @@ struct element {
  * @brief commands structure
  */
 struct commands {
-	int key; /**< internal number - do we need this ? */
+	int id; /**< internal number - do we need this ? */
 	char type[CMD_SIZE_TYPE+1]; /**< type of message */
 	char class[CMD_SIZE_CLASS+1]; /**< ci */
 	char cmd[CMD_SIZE_CMD+1]; /**< hydraulic */
@@ -89,6 +98,8 @@ struct commands {
 	int d_elem; /**< number of elements */
 	struct element *elem; /**< pointer of array with elements */
 };
+
+
 
 /**
  * @brief sending data structure
