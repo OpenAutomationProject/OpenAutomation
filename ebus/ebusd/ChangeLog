@@ -1,6 +1,13 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-17:
+* Add csv tool to print command configuration.
+* Add deconding of cyc commands.
+* Fix daemon crash when telnet command window closed without quit signal.
+* Split dat (date) decode format into bda (bcd) and hda (hex).
+* Split tim (time) decode format into bti (bcd) and hti (hex).
+
 2013-02-16:
 * Structure for commands improved so only one structure for GET/SET/CYC is needed
 * Possible formats for GET / SET (asc, bcd, d1b, d1c, d2b, d2c, dat, tim)

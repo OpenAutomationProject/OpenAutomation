@@ -1,8 +1,12 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-02-17:
+* Add csv tool to print command configuration.
+* Add deconding of cyc commands.
+
 2013-02-16:
-* Dtructure for commands improved so only one structure for GET/SET/CYC is needed
+* Structure for commands improved so only one structure for GET/SET/CYC is needed
 * Possible formats for GET / SET (asc, bcd, d1b, d1c, d2b, d2c, dat, tim)
 
 2013-02-06:

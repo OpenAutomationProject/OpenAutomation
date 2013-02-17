@@ -586,9 +586,6 @@ eb_cmd_decode(int id, char *data, unsigned char *msg, char *buf)
 			strncat(buf, hlp, strlen(hlp));
 		}				
 	}
-
-	//~ if (strlen(buf) > 0)
-		//~ strncat(buf, "\n", 1);
 		
 	return 0;
 }

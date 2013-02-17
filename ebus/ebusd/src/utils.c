@@ -373,7 +373,7 @@ sock_client_read(int fd, char *buf, int *buflen)
 	*buflen = read(fd, buf, *buflen);
 	err_ret_if(*buflen < 0, -1);
 	
-	if (strncasecmp("quit", buf , 4) == 0) {
+	if (strncasecmp("quit", buf , 4) == 0 || *buflen <= 0) {
 		/* close tcp connection */
 		log_print(L_NET, "client [%d] disconnected.", fd);
 		sock_close(fd);

@@ -155,6 +155,7 @@ eb_day_to_str(unsigned char day, char *tgt)
 }
 
 
+
 int
 eb_dat_to_str(unsigned char dd, unsigned char mm, unsigned char yy, char *tgt)
 {
@@ -184,6 +185,8 @@ eb_str_to_dat(int dd, int mm, int yy, unsigned char *tgt)
 
 	return 0;
 }
+
+
 
 int
 eb_tim_to_str(unsigned char hh, unsigned char mm, unsigned char ss, char *tgt)

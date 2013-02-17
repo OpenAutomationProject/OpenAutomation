@@ -542,8 +542,11 @@ main_loop(void)
 				if (strncasecmp("shutdown", tcpbuf, 8) == 0)
 					cleanup(EXIT_SUCCESS);
 
-				/* search ebus command */
-				ret = eb_msg_search_cmd(tcpbuf, data);
+				if (tcpbuflen > 0)
+					/* search ebus command */
+					ret = eb_msg_search_cmd(tcpbuf, data);
+				else
+					ret = -1;
 
 				/* command not found */
 				if (ret < 0) {

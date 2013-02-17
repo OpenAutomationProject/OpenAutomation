@@ -68,6 +68,7 @@ void eb_esc(unsigned char *buf, int *buflen);
 void eb_unesc(unsigned char *buf, int *buflen);
 
 
+
 /**
  * @brief convert hex bytes to day
  * @param [in] day hex byte
@@ -75,6 +76,8 @@ void eb_unesc(unsigned char *buf, int *buflen);
  * @return 0 OK | -1 values out of range
  */ 
 int eb_day_to_str(unsigned char day, char *tgt);
+
+
 
 /**
  * @brief convert hex bytes to date
@@ -95,6 +98,8 @@ int eb_dat_to_str(unsigned char dd, unsigned char mm, unsigned char yy, char *tg
  * @return 0 OK | -1 values out of range
  */ 
 int eb_str_to_dat(int dd, int mm, int yy, unsigned char *tgt);
+
+
 
 /**
  * @brief convert hex bytes to date
