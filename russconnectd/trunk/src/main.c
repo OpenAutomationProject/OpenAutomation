@@ -159,7 +159,7 @@ void *sendrussPolling(unsigned char zone) {
         buf_devreset[19] = (int) russChecksum (buf_devreset,21-2);
         if (sendto(udpSocket, buf_devreset, 21, 0, (struct sockaddr *) &si_other, slen)==-1)
             syslog(LOG_WARNING,"sendto failed!");
-        usleep(20*1000); //FIXME: throttle a little
+        usleep(50*1000); //FIXME: throttle a little
     }
 
     //Get Poweron-Volume    8.8.3 Get Turn On Volume
@@ -171,7 +171,7 @@ void *sendrussPolling(unsigned char zone) {
     buf_onvol[16] = (int) russChecksum (buf_onvol,18-2);
     if (sendto(udpSocket, buf_onvol, 18, 0, (struct sockaddr *) &si_other, slen)==-1)
         syslog(LOG_WARNING,"sendto failed!");
-    usleep(20*1000); //FIXME: throttle a little (20ms)
+    usleep(50*1000); //FIXME: throttle a little (50ms)
 
     //Get zonestate in once
     char buf_getzone[25] = { 0xF0, 0, 0, 0x7F, 0, 0, keypadid, 0x01, 0x04, 0x02, 0, 0, 0x07, 0, 0, 0, 0xF7 };
@@ -312,7 +312,7 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
     if (buf_msg2[0])
         if (sendto(udpSocket, buf_msg2, 24, 0, (struct sockaddr *) &si_other, slen)==-1)
             syslog(LOG_WARNING,"sendrussfunc sendto failed!");
-    usleep(20*1000); //FIXME: throttle a little (20ms)
+    usleep(50*1000); //FIXME: throttle a little (50ms)
     if (buf_msg1[0] || buf_msg2[0])
         sendrussPolling (zone+(controller*zones_per_controller)); //fire update of states
     return 0;
@@ -323,7 +323,7 @@ void *sendKNXdgram(int type, int dpt, eibaddr_t dest, unsigned char val) {
     EIBConnection *con;
     unsigned char buf[255] = { 0, 0x80 };
     buf[1] = type; //0x40 response, 0x80 write
-    syslog(LOG_DEBUG,"Send KNX dgram Type %d DPT %d dest %d val %d",type,dpt,dest,val);
+    syslog(LOG_DEBUG,"Send KNX dgram Type %d DPT %d dest %d/%d/%d val %d",type,dpt,(dest >> 11) & 0x1f, (dest >> 8) & 0x07, dest & 0xff,val);
     con = EIBSocketURL (eibd_url);
     if (!con)
         syslog(LOG_WARNING,"sendknxdgram: Open failed");
@@ -396,7 +396,7 @@ void *sendKNXdgram(int type, int dpt, eibaddr_t dest, unsigned char val) {
 
 
 void *sendKNXresponse(eibaddr_t dest, int zone, int func) {
-    syslog(LOG_DEBUG, "KNX response %d zone %d func %d", dest,zone,func);
+    syslog(LOG_DEBUG, "KNX response %d/%d/%d zone %d func %d", (dest >> 11) & 0x1f, (dest >> 8) & 0x07, dest & 0xff,zone,func);
     pthread_mutex_lock (&zonelock);
     switch (func) {
         case 0:
@@ -518,7 +518,7 @@ void *knxhandler()
                 break;
             }
             if (buf[0] & 0x3 || (buf[1] & 0xC0) == 0xC0) {
-                syslog(LOG_WARNING, "eibd: Unknown APDU from %d to %d",src,dest);
+                syslog(LOG_WARNING, "eibd: Unknown APDU from %d to %d/%d/%d",src,(dest >> 11) & 0x1f, (dest >> 8) & 0x07, dest & 0xff);
                 break;
             } else {
                 if ( dest<knxstartaddress || dest > (knxstartaddress+(numzones/zones_per_controller*256)-1)  ) //not for us
@@ -612,32 +612,36 @@ void *updateZone(unsigned char num, unsigned char val, int func) {
 
 void *parseRussMsg(unsigned char* buf, int len) {
     int i;
-    if ((len==34) && (buf[0]==0xF0) && (buf[9]==0x04)) { //zone-status
-            syslog(LOG_DEBUG,"russ Controller:%d Zone:%d Status:%d src:%d vol:%d bass:%d treb:%d loud:%d bal:%d sys:%d shrsrc:%d party:%d,DnD:%d\n",
+    if ((len==34) && (buf[0]==0xF0) && (buf[9]==0x04)) { //zone-status 
+        syslog(LOG_DEBUG,"russ Controller:%d Zone:%d Status:%d src:%d vol:%d bass:%d treb:%d loud:%d bal:%d sys:%d shrsrc:%d party:%d,DnD:%d\n",
                    buf[4],buf[12],buf[20],buf[21],buf[22],buf[23],buf[24],buf[25],buf[26],buf[27],buf[28],buf[29],buf[30]);
-        buf[12] = (buf[4]*zones_per_controller)+buf[12]; //controller + zonenumber
+        //buf[12] = (buf[4]*zones_per_controller)+buf[12]; //controller + zonenumber
+        int controller = buf[4];
+        int zone = buf[12];
+        int localzone = zone + (controller * zones_per_controller);
         
-        if (buf[20] != zones[buf[12]].zonepower || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[20],1);
-        if (buf[21] != zones[buf[12]].srcid  || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[21],2);
-        if (buf[22] != zones[buf[12]].volume || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[22],3);
-        if (buf[23] != zones[buf[12]].bass || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[23],4);
-        if (buf[24] != zones[buf[12]].treble || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[24],5);
-        if (buf[25] != zones[buf[12]].loudness || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[25],6);
-        if (buf[26] != zones[buf[12]].balance || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[26],7);
-        if (buf[29] != zones[buf[12]].partymode || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[29],8);
-        if (buf[30] != zones[buf[12]].dnd || (sendOnStart && !zones[buf[12]].inited))
-            updateZone(buf[12],buf[30],9);
-        zones[buf[12]].inited = 1;
+        if (buf[20] != zones[localzone].zonepower || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[20],1);
+        if (buf[21] != zones[localzone].srcid  || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[21],2);
+        if (buf[22] != zones[localzone].volume || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[22],3);
+        if (buf[23] != zones[localzone].bass || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[23],4);
+        if (buf[24] != zones[localzone].treble || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[24],5);
+        if (buf[25] != zones[localzone].loudness || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[25],6);
+        if (buf[26] != zones[localzone].balance || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[26],7);
+        if (buf[29] != zones[localzone].partymode || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[29],8);
+        if (buf[30] != zones[localzone].dnd || (sendOnStart && !zones[localzone].inited))
+            updateZone(localzone,buf[30],9);
+        zones[localzone].inited = 1;
     } else if ((len==24) && (buf[0]==0xF0) && (buf[9]==0x05) && (buf[13]==0x00)) { //zone turn-on volume
         //FIXME: this *might* be wrong and trigger also on other msgs, as it's written otherwise in the docs, the checked bytes are just a guess!
+        //FIXME: this *is* wrong and could be made more readable, see above if
         syslog(LOG_DEBUG,"russ Controller:%d Zone:%d TurnOnVolume:%d",
                buf[4],buf[12],buf[21]);
         buf[12] = (buf[4]*zones_per_controller)+buf[12]; //controller + zonenumber
@@ -645,6 +649,9 @@ void *parseRussMsg(unsigned char* buf, int len) {
             updateZone(buf[12],buf[21],10);
     } else if ((len==23) && (buf[0]==0xF0) && (buf[7]==0x05)) { //FIXME: C5 sends this periodically
         printf(" not parsed yet, len: %d ",len);
+        for (i=0; i<len; i++)
+            printf("0x%02X ",buf[i]);
+        printf("\n");
     } else {
         //FIXME: just for debugging
         //for (i=0; i<len; i++)
@@ -849,8 +856,8 @@ int main(int argc, char **argv) {
     if (!daemonize) {
         setlogmask(LOG_UPTO(LOG_DEBUG));
         openlog(DAEMON_NAME, LOG_CONS | LOG_NDELAY | LOG_PERROR | LOG_PID, LOG_USER);
-        syslog(LOG_DEBUG, "startup with debug; Russ-IP: %s:%d, listenport %d, pidfile: %s, start address: %d, number of zones/per controller/GAs: %d/%d/%d, eibd: %s SendonStartup: %d KeypadID: %li", 
-               russipaddr, russport, listenport, pidfilename, knxstartaddress, numzones, zones_per_controller, ga_per_zone, eibd_url, sendOnStart, keypadid);
+        syslog(LOG_DEBUG, "startup with debug; Russ-IP: %s:%d, listenport %d, pidfile: %s, start address: %d/%d/%d, number of zones/per controller/GAs: %d/%d/%d, eibd: %s SendonStartup: %d KeypadID: %li", 
+               russipaddr, russport, listenport, pidfilename, (knxstartaddress >> 11) & 0x1f, (knxstartaddress >> 8) & 0x07, knxstartaddress & 0xff, numzones, zones_per_controller, ga_per_zone, eibd_url, sendOnStart, keypadid);
     } else {
         setlogmask(LOG_UPTO(LOG_INFO));
         openlog(DAEMON_NAME, LOG_CONS, LOG_USER);

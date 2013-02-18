@@ -7,4 +7,5 @@ do_monit () {
 }
 
 do_monit
+/etc/init.d/russconnectd restart
 

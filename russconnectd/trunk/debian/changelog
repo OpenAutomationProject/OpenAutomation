@@ -1,3 +1,15 @@
+russconnectd (0.32-1) lenny; urgency=low
+
+  * upstream version fixed multi-ctrl-bug, improved debugging
+
+ -- Michael Markstaller <devel@wiregate.de>  Mon, 18 Feb 2013 18:29:34 +0100
+
+russconnectd (0.31-2) lenny; urgency=low
+
+  * increase delay
+
+ -- Michael Markstaller <devel@wiregate.de>  Thu, 14 Feb 2013 21:14:01 +0100
+
 russconnectd (0.31-1) lenny; urgency=low
 
   * make zones more flexible, support 8 Zones on C5

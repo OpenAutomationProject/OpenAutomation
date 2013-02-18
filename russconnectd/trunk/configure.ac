@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl Created by Anjuta application wizard.
 
-AC_INIT(russconnectd, 0.31, devel@wiregate.de, , http://openautomation.sourceforge.net)
+AC_INIT(russconnectd, 0.32, devel@wiregate.de, , http://openautomation.sourceforge.net)
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
