@@ -495,7 +495,7 @@ main_loop(void)
 				msg_queue_msg_del(&id, data, &clientfd);
 
 				/* just do it */		
-				eb_send_cmd(id, data, tcpbuf, &tcpbuflen);
+				eb_msg_execute(id, data, tcpbuf, &tcpbuflen);
 
 				/* send answer */
 				sock_client_write(clientfd, tcpbuf, tcpbuflen);

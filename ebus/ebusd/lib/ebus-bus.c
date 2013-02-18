@@ -136,7 +136,7 @@ eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
 
 
 int
-eb_msg_search_hex(const unsigned char *hex, int hexlen)
+eb_msg_search_cyc(const unsigned char *hex, int hexlen)
 {
 	int i;
 	unsigned char hlp[CMD_SIZE_S_MSG+1];		
@@ -220,6 +220,137 @@ eb_msg_search_cmd(char *buf, char *data)
 	return -1;
 }
 
+void
+eb_msg_execute_prepare(int id, char *data, char *msg, int *msglen, int *msgtype, char *buf)
+{
+	unsigned char tmp[CMD_SIZE_S_MSG+1];
+	char str[CMD_SIZE_S_ZZ + CMD_SIZE_S_CMD + 2 + CMD_SIZE_S_MSG+1];
+	char byte;
+	int ret, i, j, k;
+	int in[SERIAL_BUFSIZE];	
+
+	*msgtype = com[id].s_type;
+
+	/* encode msg */
+	memset(tmp, '\0', sizeof(tmp));
+	if (strncasecmp(com[id].type, "set", 3) == 0)
+		eb_cmd_encode(id, data, tmp, buf);
+
+	memset(str, '\0', sizeof(str));
+	sprintf(str, "%s%s%02X%s%s",
+		com[id].s_zz, com[id].s_cmd, com[id].s_len, com[id].s_msg, tmp);
+
+	memset(in, '\0', sizeof(in));
+	i = 0;
+	j = 0;
+	
+	while (str[j] != '\0') {
+		byte = str[j];
+		if (i < sizeof(in)) {
+
+			ret = eb_htoi(&byte);
+			if (ret != -1) {
+				in[i] = ret;
+				i++;
+			}
+		}
+		j++;
+	}
+
+	memset(msg, '\0', sizeof(msg));
+	for (j = 0, k = 0; j < i; j += 2, k++)
+		msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
+
+	*msglen = k;
+	
+}
+
+void
+eb_msg_execute(int id, char *data, char *buf, int *buflen)
+{
+	unsigned char msg[SERIAL_BUFSIZE];
+	int msglen, msgtype, ret, retry, cycdata, i;
+
+	memset(msg, '\0', sizeof(msg));
+	msglen = sizeof(msg);
+	msgtype = UNSET;
+				
+	cycdata = NO;
+	ret = -1;
+	retry = 0;
+		
+	if (strncasecmp(com[id].type, "cyc", 3) != 0) {
+		/* prepare command - if prepare failed buflen > 0 */
+		eb_msg_execute_prepare(id, data, msg, &msglen, &msgtype, buf);
+		eb_raw_print_hex(msg, msglen);
+	} else {
+		cycdata = YES;
+	}
+
+	if (cycdata == NO && strlen(buf) == 0) {
+		/* send data to bus */
+		while (ret < 0 && retry < send_retry) {
+			if (retry > 0)
+				log_print(L_NOT, "send retry: %d", retry);
+					
+			ret = eb_send_data(msg, msglen, msgtype);
+			retry++;
+		}
+	}
+
+	/* handle answer for sent messages */
+	if (cycdata == NO && ret >= 0)  {
+		
+		if (msgtype == EBUS_MSG_BROADCAST)
+			strcpy(buf, " broadcast done\n");
+
+		if (msgtype == EBUS_MSG_MASTER_MASTER) {
+			if (ret == 0) {
+				strcpy(buf, " ACK\n");
+			} else {
+				strcpy(buf, " NAK\n");
+			}
+		}
+
+		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
+			if (ret == 0) {
+				memset(msg, '\0', sizeof(msg));
+				msglen = sizeof(msg);
+				eb_get_recv_data(msg, &msglen);
+				eb_raw_print_hex(msg, msglen);
+
+				/* decode */
+				if (strncasecmp(com[id].type, "set", 3) == 0) {
+					strcpy(buf, " ACK\n");
+				} else {
+					eb_cmd_decode(id, data, msg, buf);
+					if (strlen(buf) > 0)
+						strncat(buf, "\n", 1);
+				}
+				
+			} else {
+				strcpy(buf, " NAK\n");
+			}
+		}
+
+	} else if (cycdata == YES) {
+		for (i = 0; i < cyclen; i++)
+			if (cyc[i].id == com[id].id)
+				break;
+			
+		eb_cmd_decode(id, data, cyc[i].buf, buf);
+		if (strlen(buf) > 0)
+			strncat(buf, "\n", 1);
+		else
+			strncpy(buf, "error get cyc data\n", 2);
+			
+	} else {
+		strcpy(buf, " error send ebus msg\n");
+	}
+	
+	*buflen = strlen(buf);
+	
+}
 
 
 
@@ -1556,138 +1687,6 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	return val;
 }
 
-void
-eb_send_cmd_prepare(int id, char *data, char *msg, int *msglen, int *msgtype, char *buf)
-{
-	unsigned char tmp[CMD_SIZE_S_MSG+1];
-	char str[CMD_SIZE_S_ZZ + CMD_SIZE_S_CMD + 2 + CMD_SIZE_S_MSG+1];
-	char byte;
-	int ret, i, j, k;
-	int in[SERIAL_BUFSIZE];	
-
-	*msgtype = com[id].s_type;
-
-	/* encode msg */
-	memset(tmp, '\0', sizeof(tmp));
-	if (strncasecmp(com[id].type, "set", 3) == 0)
-		eb_cmd_encode(id, data, tmp, buf);
-
-	memset(str, '\0', sizeof(str));
-	sprintf(str, "%s%s%02X%s%s",
-		com[id].s_zz, com[id].s_cmd, com[id].s_len, com[id].s_msg, tmp);
-
-	memset(in, '\0', sizeof(in));
-	i = 0;
-	j = 0;
-	
-	while (str[j] != '\0') {
-		byte = str[j];
-		if (i < sizeof(in)) {
-
-			ret = eb_htoi(&byte);
-			if (ret != -1) {
-				in[i] = ret;
-				i++;
-			}
-		}
-		j++;
-	}
-
-	memset(msg, '\0', sizeof(msg));
-	for (j = 0, k = 0; j < i; j += 2, k++)
-		msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
-
-	*msglen = k;
-	
-}
-
-void
-eb_send_cmd(int id, char *data, char *buf, int *buflen)
-{
-	unsigned char msg[SERIAL_BUFSIZE];
-	int msglen, msgtype, ret, retry, cycdata, i;
-
-	memset(msg, '\0', sizeof(msg));
-	msglen = sizeof(msg);
-
-	msgtype = UNSET;			
-
-	cycdata = NO;
-
-	/* prepare command */
-	if (strncasecmp(com[id].type, "cyc", 3) != 0) {
-		eb_send_cmd_prepare(id, data, msg, &msglen, &msgtype, buf);
-		eb_raw_print_hex(msg, msglen);
-	} else {
-		cycdata = YES;
-	}
-	
-	/* send data to bus */
-	ret = -1;
-	retry = 0;
-
-	while (ret < 0 && retry < send_retry
-		&& strlen(buf) == 0 && cycdata == NO) {
-		if (retry > 0)
-			log_print(L_NOT, "send retry: %d", retry);
-				
-		ret = eb_send_data(msg, msglen, msgtype);
-		retry++;
-	}
-
-	if (ret >= 0 && strlen(buf) == 0 && cycdata == NO) {
-		
-		if (msgtype == EBUS_MSG_BROADCAST)
-			strcpy(buf, " broadcast done\n");
-
-		if (msgtype == EBUS_MSG_MASTER_MASTER) {
-			if (ret == 0) {
-				strcpy(buf, " ACK\n");
-			} else {
-				strcpy(buf, " NAK\n");
-			}
-		}
-
-		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
-			if (ret == 0) {
-				memset(msg, '\0', sizeof(msg));
-				msglen = sizeof(msg);
-				eb_get_recv_data(msg, &msglen);
-				eb_raw_print_hex(msg, msglen);
-
-				/* decode */
-				if (strncasecmp(com[id].type, "set", 3) == 0) {
-					strcpy(buf, " ACK\n");
-				} else {
-					eb_cmd_decode(id, data, msg, buf);
-					if (strlen(buf) > 0)
-						strncat(buf, "\n", 1);
-				}
-				
-			} else {
-				strcpy(buf, " NAK\n");
-			}
-		}
-
-	} else if (cycdata == YES) {
-		for (i = 0; i < cyclen; i++)
-			if (cyc[i].id == com[id].id)
-				break;
-			
-		eb_cmd_decode(id, data, cyc[i].buf, buf);
-		if (strlen(buf) > 0)
-			strncat(buf, "\n", 1);
-		else
-			strncpy(buf, "error get cyc data\n", 2);
-			
-	} else {
-		strcpy(buf, " error send ebus msg\n");
-	}
-	
-	*buflen = strlen(buf);
-	
-}
-
 
 
 int
@@ -1718,7 +1717,7 @@ eb_cyc_data_recv(unsigned char *buf, int *buflen)
 		if (buf[i] == EBUS_SYN && msglen > 0) {
 			eb_raw_print_hex(msg, msglen);
 			/* decode and save data */
-			ret = eb_msg_search_hex(&msg[1], msglen - 1);
+			ret = eb_msg_search_cyc(&msg[1], msglen - 1);
 			if (ret >= 0) {
 				memset(tmp, '\0', sizeof(tmp));
 				eb_cmd_decode(ret, "-", &msg[4], tmp);

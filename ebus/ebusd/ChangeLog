@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-18:
+* Change name of functions for message handling from eb_send_cmd to eb_msg_execute.
+* Change name of eb_msg_search_hex function to eb_msg_search_cyc.
+
 2013-02-17:
 * Add csv tool to print command configuration.
 * Add deconding of cyc commands.
