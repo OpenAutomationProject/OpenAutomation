@@ -1,0 +1,15 @@
+#GA;DPT;RRD_TYPE;RRD_STEP;TYPE;CMD;COMMENT
+0/5/120;1;;;set;hw mode;WW/ Betriebsmodus 
+0/5/121;9;;;set;hw temp;WW/ Solltemperatur 
+0/5/111;1;;;set;short cir2_party;Quick/ Party-Modus 
+0/5/110;1;;;set;short cir2_mode;Quick/ Heizkreis Betriebsmodus 
+0/5/123;1;;;set;short hw_load;Quick - WW Speicherladung 
+0/5/202;9;g;;get;ci cir2_set_temp;Heizkreis2-Solltemperatur 
+0/5/203;12;c;24;get;ci yield_transfer;Mitternacht †bertragswert Energieertrag 
+0/5/206;12;c;0.5;get;mv yield_sum;Energieertrag 
+0/5/204;9;g;;get;mv brine_in temp;Quellentemperatur 
+0/5/205;9;g;;get;mv brine_out temp;Austrittstemperatur 
+0/5/201;9;g;;get;mv VF2_temp temp;Vorlauftemperatur VF2 
+0/5/200;9;g;;get;mv at_temp temp;Aussentempertur 
+0/5/102;9;g;;get;cir2 rt_day;Heizkreis Ð Raumsolltemperatur 
+0/5/101;9;g;;set;cir2 rt_day;Heizkreis Ð Raumsolltemperatur 

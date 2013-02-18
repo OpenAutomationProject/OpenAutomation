@@ -1,0 +1,19 @@
+/var/log/knxd-plugin.log {
+	rotate 7
+	size 1M
+	copytruncate
+	compress
+	missingok
+	notifempty
+	weekly
+}
+
+/var/log/knxd-eib.log {
+	rotate 7
+	size 1M
+	copytruncate
+	compress
+	missingok
+	notifempty
+	weekly
+}

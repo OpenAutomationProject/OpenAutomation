@@ -1,17 +1,20 @@
 #return;
 use warnings;
 use strict;
-use IO::Socket;
+use Net::Telnet ();
 
 ### READ PLUGIN-CONF
 my ($config,$ip,$port,$base_time,$debug);
 &readConf;
+$debug = 1;
 
 $plugin_info{$plugname.'_cycle'} = 60;
 $plugin_info{$plugname.'_number'} = 0 unless (defined $plugin_info{$plugname.'_number'});
-my (@gets,@sets,@cycs);
+my (@gets,@sets,$answer);
 
 ### READ CONFIG
+### FIXME! try to read config only once until changed
+### Where to save the arrays ? Maybe global in knxd?
 my $id = 0;
 open (CFG,'<',$config) || die $!;
 while (<CFG>){
@@ -30,18 +33,14 @@ my ($ga,$dpt,$rrd_type,$rrd_step,$type,$short,$comment) = @array;
 undef @array;
 #maybe !?
 
-###define @gets###
-if ($type eq "get" && ($ga or $rrd_type)){
+###define @gets### includes cyclic
+if ($type ne "set" && ($ga or $rrd_type)){
     $id++;
     push @gets,{ga => $ga, dpt => $dpt, rrd_type => $rrd_type, rrd_step => $rrd_step, type => $type, short => $short, comment => $comment, id => $id};
 }
 ###define @sets###
 if ($type eq "set" && $ga){
     push @sets,{ga => $ga, dpt => $dpt, rrd_type => $rrd_type, rrd_step => $rrd_step, type => $type, short => $short, comment => $comment, id => $id};
-}
-###define @cycs###
-if ($type eq "cyc" && ($ga or $rrd_type)){
-    push @cycs,{ga => $ga, dpt => $dpt, rrd_type => $rrd_type, rrd_step => $rrd_step, type => $type, short => $short, comment => $comment, id => $id};
 }
 }
 }
@@ -50,16 +49,7 @@ close CFG;
 ### CREATE DYNAMIC PLUGIN-CYCLE
 $plugin_info{$plugname.'_cycle'} = $base_time/(@gets+1);
 my $commands = @gets;
-if ($debug){plugin_log($plugname,"Anzahl GET: $commands");}
-
-
-### OPEN SOCKET
-my $sock = new IO::Socket::INET (
-PeerAddr => $ip,
-PeerPort => $port,
-Proto => 'tcp');
-return "Error: $!" unless $sock;
-
+if ($debug){plugin_log($plugname,"Anzahl GET-Komandos: $commands");}
 
 #### SET ###
 foreach my $set(@sets){
@@ -68,11 +58,10 @@ if ($debug){plugin_log($plugname,"$set->{ga} subscribed \n")};
 }
 
 foreach my $set(@sets){
-if ($msg{'apci'} eq "A_GroupValue_Write" && $msg{'dst'} eq $set->{ga}){
-	my $send_set = $set->{type}." ".$set->{short}." ".$msg{'value'}."\n" ;
+if ($msg{'apci'} eq "A_GroupValue_Write" && $msg{'dst'} eq $set->{ga} && defined $msg{'value'}){
+	my $send_set = $set->{type}." ".$set->{short}." ".$msg{'value'} ;
 	plugin_log($plugname,$send_set);
-	print $sock ($send_set);
-	my $answer = <$sock>;
+	$answer = send_ebusd ($send_set);
 	chomp $answer;	
 	$answer =~ s!\s!!g;
 	plugin_log($plugname,"$set->{type} $set->{short} $msg{'value'} $answer");
@@ -80,9 +69,8 @@ if ($msg{'apci'} eq "A_GroupValue_Write" && $msg{'dst'} eq $set->{ga}){
 	### Check for Response
 	foreach my $get (@gets){
 		if ($get->{short} eq $set->{short}){
-			print $sock ($get->{type}." ".$get->{short}."\n");
-			my $answer = <$sock>;
-			chomp $answer;	
+			my $send_get = $get->{type}." ".$get->{short};
+			$answer = send_ebusd ($send_get);	
 			$answer =~ s!\s!!g;
 			plugin_log($plugname,"$get->{type} $get->{short} $answer");
 			if ($answer =~ m/^[-+]?\d+(?:\.\d*)?(?:[eE][-+]?\d+(?:\.\d*)?)?$/ ) # check if $answer ist any number
@@ -92,47 +80,43 @@ if ($msg{'apci'} eq "A_GroupValue_Write" && $msg{'dst'} eq $set->{ga}){
 			#print $sock ("quit \n");
 			#return;
 			}}
-	print $sock ("quit \n");
-	#close $sock;
 	return;
 	}
 }
 
 ####Response
-#
+####FIXME !
+#### No surprise ... ists to slow ... but working
 #foreach my $get (@gets){
 #$plugin_subscribe{$get->{ga}}{$plugname} = 1;
 #if ($msg{'apci'} eq "A_GroupValue_Read" && $msg{'dst'} eq $get->{ga}){
 #	plugin_log($plugname,"Response $msg{'apci'}");
-#	my $get_send = $get->{type}." ".$get->{short}."\n";
-#	print $sock ($get_send);
-#	my $answer = <$sock>;
+#	my $send_get = $get->{type}." ".$get->{short};
+#	$answer = send_ebusd ($send_get);
 #	chomp $answer;	
 #	$answer =~ s!\s!!g;
 #	plugin_log($plugname,"Response $get->{short} $answer");
 #	if ($answer =~ m/^[-+]?\d+(?:\.\d*)?(?:[eE][-+]?\d+(?:\.\d*)?)?$/ ) # check if $answer ist any number
 #		{knx_write($get->{ga},$answer,$get->{dpt},0x40)}
-#	print $sock ("quit \n");
 #}
 #}
 
 #### GET ###
-$plugin_info{$plugname.'_number'}++; #increase number to read next
 
+$plugin_info{$plugname.'_number'}++; #increase number to read next value
 
 foreach my $get (@gets){
 if ($plugin_info{$plugname.'_number'} > $commands) {$plugin_info{$plugname.'_number'} = 1}
 if ($get->{id} == $plugin_info{$plugname.'_number'}){
 	if ($debug){plugin_log($plugname,"ID: $get->{id}");}
 	if ($debug){plugin_log($plugname,"$get->{short}")};	
-	my $get_send = $get->{type}." ".$get->{short}."\n";
-	print $sock ($get_send);
-	my $answer = <$sock>;
+	my $send_get = $get->{type}." ".$get->{short};
+        $answer = send_ebusd ($send_get);
 	chomp $answer;	
 	$answer =~ s!\s!!g;
 	plugin_log($plugname,"$get->{type} $get->{short} $answer");
 	if ($answer =~ m/^[-+]?\d+(?:\.\d*)?(?:[eE][-+]?\d+(?:\.\d*)?)?$/ ) # check if $answer ist any number
-	###SEND KNX###
+		###SEND KNX###
         	{knx_write($get->{ga},$answer,$get->{dpt})}
         
         ###FILL/CREATE RRD###
@@ -145,21 +129,35 @@ if ($get->{id} == $plugin_info{$plugname.'_number'}){
             update_rrd ("eBus_".$get->{short},"",$answer)
             }      
 
-    print $sock ("quit \n");
+   # print $sock ("quit \n");
     #close $sock;
 }
 }
 
-@sets = (); 
-@gets = ();
-$sock = ();
+sub send_ebusd{
+    my $cmd = shift;
+    my $t = new Net::Telnet (Timeout => 10,
+                    port => $port,
+                    Prompt => '/\n/');
+    $t->open($ip);
+    if ($debug){plugin_log($plugname,"Sende:$cmd")};
+    my @answer = $t->cmd($cmd);
+    $answer = $answer[0];
+    $t->close;
+    return $answer;
+}
 
-undef @gets;
-undef @sets;
-undef $sock;
+####possible this prevents a memleak
+# @sets = (); 
+# @gets = ();
+# $sock = ();
 
+# undef @gets;
+# undef @sets;
+# undef $sock;
+####maybe !?
 
-return "MBi ".$plugin_info{$plugname.'_meminc'};
+return sprintf("%.2f",$plugin_info{$plugname.'_meminc'})." mb lost";
 
 ### READ CONF ###
 sub readConf
