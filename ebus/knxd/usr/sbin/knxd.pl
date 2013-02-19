@@ -216,16 +216,25 @@ if($eib_logging) {
     print "Muss jetzt eibloggen";
 }
 
-# make it hot
-select((select(FILE_EIBLOG), $|=1)[0]);
-my $select = IO::Select->new();
-$socksel = IO::Select->new();
+# make it hot & define local vars - prevents Highload for eib = 0
 my $retryinfo;
 my $lastplugintime;
-my $eibpoll = 1;
-my $eibsrc=EIBConnection::EIBAddr();
-my $eibdst=EIBConnection::EIBAddr();
-my $eibbuf2=EIBConnection::EIBBuffer();
+my $select = IO::Select->new();
+$socksel = IO::Select->new();
+my $eibpoll;
+my $eibsrc;
+my $eibdst;
+my $eibbuf2;
+
+if ($eib == 1){
+select((select(FILE_EIBLOG), $|=1)[0]);
+$select = IO::Select->new();
+$socksel = IO::Select->new();
+$eibpoll = 1;
+$eibsrc=EIBConnection::EIBAddr();
+$eibdst=EIBConnection::EIBAddr();
+$eibbuf2=EIBConnection::EIBBuffer();
+}
 
 while ($running) {
     my $eibcon2;
@@ -251,14 +260,14 @@ while ($running) {
          my %msg = decode_vbusmonitor($$eibbuf2);
        $retryinfo = 0;
          # case ReadRequest for configured owsensor-value
-         if ($msg{'apci'} eq "A_GroupValue_Read" and $ga_to_ow{$msg{'dst'}}) {
-             LOGGER('DEBUG',"---> Send reply for $msg{'dst'} $ga_to_ow{$msg{'dst'}}");
-             send_sensor_response($msg{'dst'});
-         }
-         # case Write for PIO
-         if ($msg{'apci'} eq "A_GroupValue_Write" and $ga_to_ow{$msg{'dst'}}) {
-             set_sensor_value($msg{'dst'},$msg{'data'});
-         }
+         # if ($msg{'apci'} eq "A_GroupValue_Read" and $ga_to_ow{$msg{'dst'}}) {
+             # LOGGER('DEBUG',"---> Send reply for $msg{'dst'} $ga_to_ow{$msg{'dst'}}");
+             # send_sensor_response($msg{'dst'});
+         # }
+         # # case Write for PIO
+         # if ($msg{'apci'} eq "A_GroupValue_Write" and $ga_to_ow{$msg{'dst'}}) {
+             # set_sensor_value($msg{'dst'},$msg{'data'});
+         # }
     
        # Log it
        print FILE_EIBLOG getISODateStamp.",$msg{'apci'},$msg{'src'},$msg{'dst'},$msg{'data'},$msg{'value'}"
@@ -288,12 +297,20 @@ while ($running) {
             check_generic_plugins($k,\%msg);
           }
        }
-
+	#possible this prevents a memleak
+	%msg = ();
+	undef %msg;
+    #maybe !?
     } elsif ($msglen==414) {
       # process other?
     } 
-    }}  # EIB Packet processing end, back in main loop
-
+    }
+	}  
+	# EIB Packet processing end, back in main loop
+	
+#possible this prevents a memleak
+$select->remove($eibcon2->EIB_Poll_FD);
+#maybe !?
   }
 	###LOG continious Memory if DEBUG
     #if ($opts{d}) {
@@ -363,7 +380,6 @@ $eibpoll = 1;
 sleep 5;
 }
 }
-
 if($eib_logging) { close FILE_EIBLOG , ">>$eiblogfile"; }
 }
 
@@ -436,10 +452,20 @@ sub check_generic_plugins {#check Plugins
                LOGGER('DEBUG',"ERROR in $plugname $@");
                $plugin_info{$plugname.'_result'} = $@;
           }
+	  
+    #possible this prevents a memleak
+    @lines = ();
+    undef @lines;
+    #maybe !?
       }
     }
     # check for orphaned/old values in tied hash here!
     $plugin_initflag = 1;
+    
+    #possible this prevents a memleak
+    @plugins = ();
+    undef @plugins;
+    #maybe !?
 }
 
 
@@ -841,6 +867,7 @@ sub knx_read {
 }
 
 sub knx_write {
+if ($eib == 1){
   my ($dst,$value,$dpt,$response,$dbgmsg) = @_;
   my $bytes;
   my $apci = ($response) ? 0x40 : 0x80; # 0x40=response, 0x80=write
@@ -904,7 +931,9 @@ sub knx_write {
   my $res=$leibcon->EIBSendAPDU($bytes);
   $leibcon->EIBClose();
   return $res;
-}
+  }else{
+return;
+}}
 
 # addr2str: Convert an integer to an EIB address string, in the form "1/2/3" or "1.2.3"
 sub addr2str {

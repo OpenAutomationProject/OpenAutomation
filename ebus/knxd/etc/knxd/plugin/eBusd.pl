@@ -3,10 +3,25 @@ use warnings;
 use strict;
 use Net::Telnet ();
 
+
+#use Devel::Leak;
+####TRY MEMORY
+#my $handle; # apparently this doesn't need to be anything at all
+#my $leaveCount = 0;
+#my $enterCount = Devel::Leak::NoteSV($handle);
+##print STDERR "ENTER: $enterCount SVs\n";
+#plugin_log($plugname,"ENTER: $enterCount SVs");
+#$leaveCount = Devel::Leak::CheckSV($handle);
+##print STDERR "\nLEAVE: $leaveCount SVs\n";
+#plugin_log($plugname,"LEAVE: $leaveCount SVs");
+
+
+
+
 ### READ PLUGIN-CONF
 my ($config,$ip,$port,$base_time,$debug);
 &readConf;
-$debug = 1;
+#$debug = 1;
 
 $plugin_info{$plugname.'_cycle'} = 60;
 $plugin_info{$plugname.'_number'} = 0 unless (defined $plugin_info{$plugname.'_number'});
@@ -77,10 +92,9 @@ if ($msg{'apci'} eq "A_GroupValue_Write" && $msg{'dst'} eq $set->{ga} && defined
 			{knx_write($get->{ga},$answer,$get->{dpt});
 			plugin_log($plugname,"$get->{ga} $answer $get->{dpt}");
 			}
-			#print $sock ("quit \n");
-			#return;
+			last;
 			}}
-	return;
+	last;
 	}
 }
 
@@ -128,9 +142,7 @@ if ($get->{id} == $plugin_info{$plugname.'_number'}){
             $get->{short} =~ s/ /_/g;   #replace spaces
             update_rrd ("eBus_".$get->{short},"",$answer)
             }      
-
-   # print $sock ("quit \n");
-    #close $sock;
+last;
 }
 }
 
@@ -144,18 +156,21 @@ sub send_ebusd{
     my @answer = $t->cmd($cmd);
     $answer = $answer[0];
     $t->close;
+		####possible this prevents a memleak
+		@answer = (); 
+		undef @answer;
+		####maybe !?
     return $answer;
+    eval { close $t; };undef $t;
 }
 
 ####possible this prevents a memleak
-# @sets = (); 
-# @gets = ();
-# $sock = ();
-
-# undef @gets;
-# undef @sets;
-# undef $sock;
+@sets = (); 
+@gets = ();
+undef @gets;
+undef @sets;
 ####maybe !?
+
 
 return sprintf("%.2f",$plugin_info{$plugname.'_meminc'})." mb lost";
 
@@ -178,4 +193,8 @@ sub readConf
    plugin_log($plugname, "--> $_") foreach (@parts);
   }
  }
+####possible this prevents a memleak
+@lines = (); 
+undef @lines;
+####maybe !?
 }
