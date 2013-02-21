@@ -1,13 +1,21 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-21:
+* Improve decoding of cyc commands to all ebus message types.
+* Add function eb_cyc_data_process to decode all cyc ebus message types.
+* Removed hex bitmask of logging output.
+
+2013-02-19:
+* Add some usefull description of ebusd to README
+
 2013-02-18:
 * Change name of functions for message handling from eb_send_cmd to eb_msg_execute.
 * Change name of eb_msg_search_hex function to eb_msg_search_cyc.
 
 2013-02-17:
 * Add csv tool to print command configuration.
-* Add deconding of cyc commands.
+* Add decoding of cyc commands.
 * Fix daemon crash when telnet command window closed without quit signal.
 * Split dat (date) decode format into bda (bcd) and hda (hex).
 * Split tim (time) decode format into bti (bcd) and hti (hex).
@@ -25,15 +33,15 @@ ebus Daemon (ebusd) - ChangeLog
 2013-02-10:
 * Changed decode datatype from int to bcd
 * Add bcd, d2b and d2c too available SET commands
-* Change CSV file strutur - move comment on position 4
+* Change CSV file structur - move comment on position 4
 
 2013-02-09:
 * Upgrade the send ability for ebus SET commands. (only d1b and d1c)
 
 2013-02-06:
-* Fix: increase length of ebus command from 20 to 30
-* Fix: set initiale value of crclen before escape in eb_send_data_prepare()
-* Fix: in eb_msg_decode_result() do strtok on local copy from r_pos. Maybe
+* Fix increase length of ebus command from 20 to 30
+* Fix set initiale value of crclen before escape in eb_send_data_prepare()
+* Fix in eb_msg_decode_result() do strtok on local copy from r_pos. Maybe
        we don't wont do modife the original value.
 * Fix: compare strlen of given command with command from csv file too.
 * Add: send_retry parameter (2=default) to daemon configuration.

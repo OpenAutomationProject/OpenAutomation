@@ -139,5 +139,23 @@ main(int argc, char *argv[])
 
 	eb_cmd_dir_free();
 
+	/* test */
+	//~ const unsigned char tmp[] = {'\x10','\xfe','\xb5','\x05','\x03','\x4a','\x01','\x00','\xf4'};
+	//~ const unsigned char tmp[] = {'\x10','\xfe','\xb5','\x05','\x03','\x4a','\x01','\xa9','\x01','\xb8'};
+	
+	//~ const unsigned char tmp[] = {'\x10','\x23','\xb5','\x04','\x01','\x31','\xf6','\x00'};
+	//~ const unsigned char tmp[] = {'\x10','\x23','\xb5','\x04','\x01','\x31','\xf6','\xff'};
+
+	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x09','\x03','\x29','\x01','\x00','\x23',
+	                             //~ '\x00','\x05','\x01','\x00','\x1d','\x02','\x00','\x60','\x00'};
+
+	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x09','\x03','\x29','\x01','\x00','\x23',
+	                             //~ '\x00','\x05','\x01','\xa9','\x01','\x1d','\x02','\x00','\xec','\x00'};	                             
+	//~ 
+	//~ const int tmplen = sizeof(tmp) / sizeof(unsigned char);
+//~ 
+	//~ eb_raw_print_hex(tmp, tmplen);
+	//~ eb_cyc_data_process(tmp, tmplen);
+
 	return 0;
 }

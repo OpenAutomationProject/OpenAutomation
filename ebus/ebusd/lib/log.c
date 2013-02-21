@@ -162,13 +162,16 @@ log_print(unsigned char lvl, const char *txt, ...)
 
 	if ((loglvl & lvl) != 0x00) {
 		if (logfp) {
-			fprintf(logfp, "%s [0x%02x %s] %s\n",
-					log_time(time), lvl , log_txt(lvl), buf);								
+			//~ fprintf(logfp, "%s [0x%02x %s] %s\n",
+					//~ log_time(time), lvl , log_txt(lvl), buf);
+			fprintf(logfp, "%s [%s] %s\n",
+					log_time(time), log_txt(lvl), buf);												
 			fflush(logfp);
 
 		} else {
-			syslog(LOG_INFO, "[0x%02x %s] %s\n",
-							lvl, log_txt(lvl), txt);
+			//~ syslog(LOG_INFO, "[0x%02x %s] %s\n",
+							//~ lvl, log_txt(lvl), txt);
+			syslog(LOG_INFO, "[%s] %s\n", log_txt(lvl), txt);							
 		}
 	}
 

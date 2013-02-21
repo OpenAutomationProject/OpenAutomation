@@ -285,7 +285,6 @@ set_unset(void)
 		
 }
 
-
 void
 signal_handler(int sig) {
 	switch(sig) {
@@ -471,14 +470,9 @@ main_loop(void)
 
 		/* new data from serial port? */
 		if (FD_ISSET(serialfd, &readfds)) {
-			unsigned char serbuf[SERIAL_BUFSIZE];
-			int serbuflen;
-
-			memset(serbuf, '\0', sizeof(serbuf));
-			serbuflen = sizeof(serbuf);
-
+			
 			/* get cycle message from bus */
-			ret = eb_cyc_data_recv(serbuf, &serbuflen);
+			ret = eb_cyc_data_recv();
 
 			/* send msg to bus - only when cyc buf is empty */
 			if (ret == 0 && msg_queue_entries() > 0) {
@@ -495,7 +489,7 @@ main_loop(void)
 				msg_queue_msg_del(&id, data, &clientfd);
 
 				/* just do it */		
-				eb_msg_execute(id, data, tcpbuf, &tcpbuflen);
+				eb_execute(id, data, tcpbuf, &tcpbuflen);
 
 				/* send answer */
 				sock_client_write(clientfd, tcpbuf, tcpbuflen);
@@ -544,7 +538,7 @@ main_loop(void)
 
 				if (tcpbuflen > 0)
 					/* search ebus command */
-					ret = eb_msg_search_cmd(tcpbuf, data);
+					ret = eb_search_cmd(tcpbuf, data);
 				else
 					ret = -1;
 

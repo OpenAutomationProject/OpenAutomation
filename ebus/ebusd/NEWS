@@ -1,6 +1,12 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-02-21:
+* Improve decoding of cyc commands to all ebus message types.
+
+2013-02-19:
+* Add some usefull description of ebusd to README
+
 2013-02-17:
 * Add csv tool to print command configuration.
 * Add deconding of cyc commands.

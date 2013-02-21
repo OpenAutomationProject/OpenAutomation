@@ -194,7 +194,7 @@ int eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
  * @param [in] *hex pointer to hex string
  * @return 0-x id of found ebus command in array | -1 command not found
  */
-int eb_msg_search_cyc(const unsigned char *hex, int hexlen);
+int eb_search_cyc(const unsigned char *hex, int hexlen);
 
 /**
  * @brief decode input data string with command data
@@ -203,7 +203,7 @@ int eb_msg_search_cyc(const unsigned char *hex, int hexlen);
  * @param [in] *cmd pointer to a ebus command
  * @return 0-x id of found ebus command in array | -1 command not found
  */
-int eb_msg_search_cmd_id(const char *type, const char *class, const char *cmd);
+int eb_search_cmd_id(const char *type, const char *class, const char *cmd);
 
 /**
  * @brief decode input data string with command data
@@ -211,28 +211,7 @@ int eb_msg_search_cmd_id(const char *type, const char *class, const char *cmd);
  * @param [out] *data pointer to data array for passing to decode/encode
  * @return 0-x id of found ebus command in array | -1 command not found
  */
-int eb_msg_search_cmd(char *buf, char *data);
-
-/**
- * @brief prepare message string for given ebus cmd from array
- * @param [in] id is index in command array to sending msg.
- * @param [in] *data pointer to data bytes for decode/encode
- * @param [out] *msg pointer to message array
- * @param [out] *msglen pointer to message length
- * @param [out] *msgtype pointer to message type 
- * @return none
- */
-void eb_msg_execute_prepare(int id, char *data, char *msg, int *msglen, int *msgtype, char *buf);
-
-/**
- * @brief handle send ebus cmd 
- * @param [in] id is index in command array to sending msg.
- * @param [in] *data pointer to data bytes for decode/encode
- * @param [out] *buf pointer to answer array
- * @param [out] *buflen point to answer length
- * @return none
- */
-void eb_msg_execute(int id, char *data, char *buf, int *buflen);
+int eb_search_cmd(char *buf, char *data);
 
 
 
@@ -397,13 +376,14 @@ int eb_serial_recv(unsigned char *buf, int *buflen);
 void eb_print_result(void);
 
 
+
 /**
  * @brief get received data
  * @param [out] *buf pointer to a byte array of received bytes
  * @param [out] *buflen length of received bytes
  * @return none
  */
-void eb_get_recv_data(unsigned char *buf, int *buflen);
+void eb_recv_data_get(unsigned char *buf, int *buflen);
 
 /**
  * @brief prepare received data
@@ -482,12 +462,41 @@ int eb_send_data(const unsigned char *buf, int buflen, int type);
 
 
 /**
- * @brief handle reading cycle ebus data
- * @param [out] *buf pointer to a byte array
- * @param [out] *buflen length of byte array
+ * @brief prepare message string for given ebus cmd from array
+ * @param [in] id is index in command array to sending msg.
+ * @param [in] *data pointer to data bytes for decode/encode
+ * @param [out] *msg pointer to message array
+ * @param [out] *msglen pointer to message length
+ * @param [out] *msgtype pointer to message type 
+ * @return none
+ */
+void eb_execute_prepare(int id, char *data, char *msg, int *msglen, int *msgtype, char *buf);
+
+/**
+ * @brief handle send ebus cmd 
+ * @param [in] id is index in command array to sending msg.
+ * @param [in] *data pointer to data bytes for decode/encode
+ * @param [out] *buf pointer to answer array
+ * @param [out] *buflen point to answer length
+ * @return none
+ */
+void eb_execute(int id, char *data, char *buf, int *buflen);
+
+
+
+/**
+ * @brief handle one collected message
+ * @param [in] *buf pointer to a byte array
+ * @param [in] *buflen length of byte array
  * @return 0-x length of collected msg | -1 error
  */
-int eb_cyc_data_recv(unsigned char *buf, int *buflen);
+void eb_cyc_data_process(const unsigned char *buf, int buflen);
+
+/**
+ * @brief handle reading cycle ebus data
+ * @return 0-x length of collected msg | -1 error
+ */
+int eb_cyc_data_recv();
 
 
 
