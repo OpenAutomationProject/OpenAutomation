@@ -5,6 +5,7 @@ ebus Daemon (ebusd) - ChangeLog
 * Improve decoding of cyc commands to all ebus message types.
 * Add function eb_cyc_data_process to decode all cyc ebus message types.
 * Removed hex bitmask of logging output.
+* Fix uninitialized buffer in eb_cyc_data_recv.
 
 2013-02-19:
 * Add some usefull description of ebusd to README

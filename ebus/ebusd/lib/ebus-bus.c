@@ -1835,6 +1835,9 @@ eb_cyc_data_recv()
 	unsigned char buf[SERIAL_BUFSIZE];
 	int ret, i, buflen;
 
+	memset(buf, '\0', sizeof(buf));
+	buflen = 0;
+
 	if (msglen == 0)
 		memset(msg, '\0', sizeof(msg));
 
