@@ -1836,7 +1836,7 @@ eb_cyc_data_recv()
 	int ret, i, buflen;
 
 	memset(buf, '\0', sizeof(buf));
-	buflen = 0;
+	buflen = sizeof(buf);
 
 	if (msglen == 0)
 		memset(msg, '\0', sizeof(msg));
