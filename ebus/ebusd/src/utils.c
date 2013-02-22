@@ -395,6 +395,10 @@ sock_client_write(int fd, char *buf, int buflen)
 {
 	int ret;
 
+	/* add <cr> to each line */
+	buf[buflen] = '\r';
+	buflen++;
+	
 	ret = write(fd, buf, buflen);
 	err_ret_if(ret < 0, -1);
 

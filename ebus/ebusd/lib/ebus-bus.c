@@ -208,7 +208,7 @@ eb_search_cmd(char *buf, char *data)
 			else
 				strncpy(data, tok, strlen(tok));			
 			
-			log_print(L_DBG, "  data: %s", data);
+			log_print(L_NOT, "  data: %s", data);
 			return ret;
 
 		}

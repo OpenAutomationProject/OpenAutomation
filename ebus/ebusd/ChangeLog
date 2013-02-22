@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-22:
+* Add <cr> too each client answer (no need of special config for putty)
+
 2013-02-21:
 * Improve decoding of cyc commands to all ebus message types.
 * Add function eb_cyc_data_process to decode all cyc ebus message types.

@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-02-22:
+* Changed client answer code so normal telnet client can handle it
+
 2013-02-21:
 * Improve decoding of cyc commands to all ebus message types.
 
