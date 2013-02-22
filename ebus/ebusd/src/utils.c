@@ -319,7 +319,7 @@ sock_open(int *fd, int port)
 	*fd = socket(PF_INET, SOCK_STREAM, 0);
 	err_ret_if(fd < 0, -1);
 
-	//todo: verify if this realy work
+	/* todo: verify if this realy work */
 	/* prevent "Error Address already in use" error message */
 	opt = 1;
 	ret = setsockopt(*fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));

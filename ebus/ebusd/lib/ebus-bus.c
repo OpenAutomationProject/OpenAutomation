@@ -1631,7 +1631,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 	cycdata = NO;
 	ret = -1;
 	retry = 0;
-		
+	
 	if (strncasecmp(com[id].type, "cyc", 3) != 0) {
 		/* prepare command - if prepare failed buflen > 0 */
 		eb_execute_prepare(id, data, msg, &msglen, &msgtype, buf);
@@ -1695,7 +1695,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 		if (strlen(buf) > 0)
 			strncat(buf, "\n", 1);
 		else
-			strncpy(buf, "error get cyc data\n", 2);
+			strcpy(buf, " error get cyc data\n");
 			
 	} else {
 		strcpy(buf, " error send ebus msg\n");

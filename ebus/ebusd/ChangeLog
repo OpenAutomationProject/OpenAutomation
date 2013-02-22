@@ -3,6 +3,7 @@ ebus Daemon (ebusd) - ChangeLog
 
 2013-02-22:
 * Add <cr> too each client answer (no need of special config for putty)
+* Minor print cosmetic with cyc commands on Master Slave types 
 
 2013-02-21:
 * Improve decoding of cyc commands to all ebus message types.
