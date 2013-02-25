@@ -30,7 +30,7 @@ int main() {
 
 	int i, j, end, ret;
 
-	int bcd, d1b, data[SERIAL_BUFSIZE];
+	int bcd, d1b, data[SERIAL_BUFSIZE + 1];
 	float d1c, d2b, d2c;
 
 	char byte;

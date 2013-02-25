@@ -41,7 +41,7 @@ struct config {
 
 struct msg_queue {
 	int id;
-	char data[MSG_QUEUE_MSG_SIZE];
+	char data[MSG_QUEUE_MSG_SIZE + 1];
 	int clientfd;
 	struct msg_queue *prev;
 };

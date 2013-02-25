@@ -150,9 +150,9 @@ int
 main(int argc, char *argv[])
 {
 	int i, j, k, end, ret, val, max_argc;
-	int in[SERIAL_BUFSIZE];
+	int in[SERIAL_BUFSIZE + 1];
 	char byte;
-	unsigned char msg[SERIAL_BUFSIZE];
+	unsigned char msg[SERIAL_BUFSIZE + 1];
 
 	progname = (const char *)strrchr(argv[0], '/');
 	progname = progname ? (progname + 1) : argv[0];

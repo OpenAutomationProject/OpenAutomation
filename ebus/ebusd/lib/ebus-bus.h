@@ -39,8 +39,8 @@
 #define CMD_LINELEN        512
 #define CMD_FILELEN        1024
 
-#define CMD_SIZE_TYPE      3
-#define CMD_SIZE_CLASS     5
+#define CMD_SIZE_TYPE      3 
+#define CMD_SIZE_CLASS     5 
 #define CMD_SIZE_CMD       30
 #define CMD_SIZE_COM       256
 #define CMD_SIZE_S_ZZ      2
@@ -62,8 +62,8 @@
  */
 struct cycbuf {
 	int id; /**< internal number - now we need it */
-	unsigned char msg[CMD_SIZE_S_MSG+1]; /**< zz + cmd + len + msg */
-	unsigned char buf[CMD_SIZE_S_MSG+1]; /**< NN + Data */
+	unsigned char msg[CMD_SIZE_S_MSG + 1]; /**< zz + cmd + len + msg */
+	unsigned char buf[CMD_SIZE_S_MSG + 1]; /**< NN + Data */
 };
 
 
@@ -72,13 +72,13 @@ struct cycbuf {
  * @brief element structure
  */
 struct element {
-	char d_sub[CMD_SIZE_D_SUB+1]; /**< pin1 */
-	char d_pos[CMD_SIZE_D_POS+1]; /**< data position at bytes */
-	char d_type[CMD_SIZE_D_TYPE+1]; /**< data type */
+	char d_sub[CMD_SIZE_D_SUB + 1]; /**< pin1 */
+	char d_pos[CMD_SIZE_D_POS + 1]; /**< data position at bytes */
+	char d_type[CMD_SIZE_D_TYPE + 1]; /**< data type */
 	float d_fac; /**< facter */
-	char d_unit[CMD_SIZE_D_UNIT+1]; /**< unit of data like °C,...) */
-	char d_valid[CMD_SIZE_D_VALID+1]; /**< valid data */
-	char d_com[CMD_SIZE_D_COM+1]; /**< just a comment */
+	char d_unit[CMD_SIZE_D_UNIT + 1]; /**< unit of data like °C,...) */
+	char d_valid[CMD_SIZE_D_VALID + 1]; /**< valid data */
+	char d_com[CMD_SIZE_D_COM + 1]; /**< just a comment */
 };
 
 /**
@@ -86,15 +86,15 @@ struct element {
  */
 struct commands {
 	int id; /**< internal number - do we need this ? */
-	char type[CMD_SIZE_TYPE+1]; /**< type of message */
-	char class[CMD_SIZE_CLASS+1]; /**< ci */
-	char cmd[CMD_SIZE_CMD+1]; /**< hydraulic */
-	char com[CMD_SIZE_COM+1]; /**< just a comment */	
+	char type[CMD_SIZE_TYPE + 1]; /**< type of message */
+	char class[CMD_SIZE_CLASS + 1]; /**< ci */
+	char cmd[CMD_SIZE_CMD + 1]; /**< hydraulic */
+	char com[CMD_SIZE_COM + 1]; /**< just a comment */	
 	int s_type; /**< message type */
-	char s_zz[CMD_SIZE_S_ZZ+1]; /**< zz */ 
-	char s_cmd[CMD_SIZE_S_CMD+1]; /**< pb sb */
+	char s_zz[CMD_SIZE_S_ZZ + 1]; /**< zz */ 
+	char s_cmd[CMD_SIZE_S_CMD + 1]; /**< pb sb */
 	int s_len; /**< number of send bytes */
-	char s_msg[CMD_SIZE_S_MSG+1]; /**< max 15 data bytes */
+	char s_msg[CMD_SIZE_S_MSG + 1]; /**< max 15 data bytes */
 	int d_elem; /**< number of elements */
 	struct element *elem; /**< pointer of array with elements */
 };
@@ -106,9 +106,9 @@ struct commands {
  */
 struct send_data {
 	unsigned char crc; /**< crc of escaped message */
-	unsigned char msg[SERIAL_BUFSIZE]; /**< original message */
+	unsigned char msg[SERIAL_BUFSIZE + 1]; /**< original message */
 	int len; /**< length of original message */
-	unsigned char msg_esc[SERIAL_BUFSIZE]; /**< esacaped message */
+	unsigned char msg_esc[SERIAL_BUFSIZE + 1]; /**< esacaped message */
 	int len_esc; /**< length of  esacaped message */
 };
 
@@ -118,9 +118,9 @@ struct send_data {
 struct recv_data {
 	unsigned char crc_recv; /**< received crc */
 	unsigned char crc_calc;	/**< calculated crc */
-	unsigned char msg[SERIAL_BUFSIZE]; /**< unescaped message */
+	unsigned char msg[SERIAL_BUFSIZE + 1]; /**< unescaped message */
 	int len; /**< length of unescaped message */
-	unsigned char msg_esc[SERIAL_BUFSIZE]; /**< received message */
+	unsigned char msg_esc[SERIAL_BUFSIZE + 1]; /**< received message */
 	int len_esc; /**< length of received message */
 };
 

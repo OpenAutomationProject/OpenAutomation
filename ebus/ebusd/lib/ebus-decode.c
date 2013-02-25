@@ -63,7 +63,7 @@ eb_htoi(const char *buf)
 void
 eb_esc(unsigned char *buf, int *buflen)
 {
-	unsigned char tmp[SERIAL_BUFSIZE];
+	unsigned char tmp[SERIAL_BUFSIZE + 1];
 	int tmplen, i;
 
 	memset(tmp, '\0', sizeof(tmp));
@@ -100,7 +100,7 @@ eb_esc(unsigned char *buf, int *buflen)
 void
 eb_unesc(unsigned char *buf, int *buflen)
 {
-	unsigned char tmp[SERIAL_BUFSIZE];
+	unsigned char tmp[SERIAL_BUFSIZE + 1];
 	int tmplen, i, found;
 
 	memset(tmp, '\0', sizeof(tmp));
@@ -421,6 +421,7 @@ eb_calc_crc_byte(unsigned char byte, unsigned char init_crc)
 		crc = (unsigned char) (crc ^ polynom);
 		byte = (unsigned char) (byte << 1);
 	}
+	
 	return crc;
 }
 

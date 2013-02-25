@@ -137,7 +137,7 @@ main(int argc, char *argv[])
 	if (set)
 		eb_cmd_print("set", all, detail);		
 
-	eb_cmd_dir_free();
+	
 
 	/* test */
 	//~ const unsigned char tmp[] = {'\x10','\xfe','\xb5','\x05','\x03','\x4a','\x01','\x00','\xf4'};
@@ -154,12 +154,26 @@ main(int argc, char *argv[])
 
 	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x10','\x09','\x00','\x02','\x40','\x00',
 				     //~ '\x00','\x00','\x00','\x00','\x02','\x15','\x00','\x00','\x00','\x00'};
-	                             	                             //~ 
-	//~ 
-	//~ const int tmplen = sizeof(tmp) / sizeof(unsigned char);
-//~ 
-	//~ eb_raw_print_hex(tmp, tmplen);
-	//~ eb_cyc_data_process(tmp, tmplen);
+
+	const unsigned char tmp[] = {'\x10','\x08','\xb5','\x11','\x02','\x03','\x00','\x00','\x27','\x02','\x07',
+				     '\x04','\x2c','\x00','\x10','\xb5','\x01','\x02','\x00','\x00','\x00','\x00',
+				     '\xc8','\xca','\x00'};
+
+
+	//~ const unsigned char tmp[] = {'\x01','\x02','\x03','\x04','\x04','\x05','\x06','\x07','\x08','\x09',
+				     //~ '\x11','\x12','\x13','\x14','\x14','\x15','\x16','\x17','\x18','\x19',
+				     //~ '\x21','\x22','\x23','\x24','\x24','\x25','\x26','\x27','\x28','\x29',
+				     //~ '\x31','\x32','\x33','\x34','\x34','\x35','\x36','\x37','\x38','\x39',
+				     //~ '\x41','\x42','\x43','\x44','\x44','\x45','\x46','\x47','\x48','\x49',
+				     //~ '\x51','\x52','\x53','\x54','\x54','\x55','\x56','\x57','\x58','\x59',
+				     //~ '\x61','\x62','\x63','\x64','\x64','\x65','\x66','\x67','\x68','\x69'};				     
+	
+	const int tmplen = sizeof(tmp) / sizeof(unsigned char);
+
+	eb_raw_print_hex(tmp, tmplen);
+	eb_cyc_data_process(tmp, tmplen);
+
+	eb_cmd_dir_free();
 
 	return 0;
 }

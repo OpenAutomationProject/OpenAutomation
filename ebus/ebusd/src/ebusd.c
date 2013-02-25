@@ -476,8 +476,8 @@ main_loop(void)
 
 			/* send msg to bus - only when cyc buf is empty */
 			if (ret == 0 && msg_queue_entries() > 0) {
-				char tcpbuf[SOCKET_BUFSIZE];
-				char data[MSG_QUEUE_MSG_SIZE];
+				char tcpbuf[SOCKET_BUFSIZE + 1];
+				char data[MSG_QUEUE_MSG_SIZE + 1];
 				int tcpbuflen, id, msgtype, clientfd;
 				
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
@@ -514,8 +514,8 @@ main_loop(void)
 
 			/* check all connected clients */
 			if (FD_ISSET(readfd, &readfds)) {
-				char tcpbuf[SOCKET_BUFSIZE];
-				char data[MSG_QUEUE_MSG_SIZE];
+				char tcpbuf[SOCKET_BUFSIZE + 1];
+				char data[MSG_QUEUE_MSG_SIZE + 1];
 				int tcpbuflen;
 
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
