@@ -46,6 +46,7 @@
 #define EBUS_MAX_WAIT           4000
 #define EBUS_SEND_RETRY         2
 #define EBUS_SEND_RETRY_MAX     10
+#define EBUS_PRINT_SIZE         30
 
 #define EBUS_MSG_BROADCAST      1
 #define EBUS_MSG_MASTER_MASTER  2

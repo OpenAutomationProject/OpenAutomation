@@ -61,6 +61,8 @@ static int get_retry = EBUS_GET_RETRY;
 static int skip_ack = EBUS_SKIP_ACK;
 static long max_wait = EBUS_MAX_WAIT;
 static int send_retry = EBUS_SEND_RETRY;
+static int print_size = EBUS_PRINT_SIZE;
+
 
 static unsigned char qq = EBUS_QQ;
 
@@ -115,6 +117,12 @@ void
 eb_set_send_retry(int retry)
 {
 	send_retry = retry;
+}
+
+void
+eb_set_print_size(int size)
+{
+	print_size = size;
 }
 
 
@@ -185,7 +193,7 @@ int
 eb_search_cmd(char *buf, char *data)
 {
 	char *type, *class, *cmd, *tok;
-	char tmp[CMD_DATA_SIZE + 1];
+	char tmp[CMD_DATA_SIZE];
 	int ret;
 
 	type = strtok(buf, " ");
@@ -567,7 +575,7 @@ int
 eb_cmd_decode(int id, char *data, unsigned char *msg, char *buf)
 {
 	char *tok;
-	char tmp[CMD_DATA_SIZE + 1], hlp[CMD_DATA_SIZE + 1];
+	char tmp[CMD_DATA_SIZE], hlp[CMD_DATA_SIZE];
 	int ret, i, found;
 
 	for (i = 0; i < com[id].d_elem; i++) {
@@ -929,22 +937,27 @@ void
 eb_raw_print_hex(const unsigned char *buf, int buflen)
 {
 	int i, j, k;
-	char msg[35];	
+	char msg[3 * print_size];	
 
 	memset(msg, '\0', sizeof(msg));
 	k = 1;
-	
+
 	for (i = 0, j = 0; i < buflen; i++, j++) {			
 		sprintf(&msg[3 * j], " %02x", buf[i]);
 		
-		if (j + 1 == 30) {
-			log_print(L_EBH, "%d: %s", k, msg);
+		if (j + 1 == print_size) {
+			log_print(L_EBH, "%d%s", k, msg);
 			memset(msg, '\0', sizeof(msg));		
 			j = -1;
 			k++;
 		}
 	}
-	log_print(L_EBH, "%d: %s", k, msg);
+
+	if (j > 0)
+		if (k > 1)
+			log_print(L_EBH, "%d%s", k, msg);
+		else
+			log_print(L_EBH, " %s", msg);
 }
 
 
@@ -1076,7 +1089,7 @@ eb_recv_data_get(unsigned char *buf, int *buflen)
 void
 eb_recv_data_prepare(const unsigned char *buf, int buflen)
 {
-	unsigned char tmp[SERIAL_BUFSIZE + 1];
+	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, crc;
 
 	memset(tmp, '\0', sizeof(tmp));
@@ -1119,7 +1132,7 @@ eb_recv_data_prepare(const unsigned char *buf, int buflen)
 int
 eb_recv_data(unsigned char *buf, int *buflen)
 {
-	unsigned char tmp[SERIAL_BUFSIZE + 1], msg[SERIAL_BUFSIZE + 1];
+	unsigned char tmp[SERIAL_BUFSIZE], msg[SERIAL_BUFSIZE];
 	int tmplen, msglen, ret, i, esc, found;
 
 	memset(msg, '\0', sizeof(msg));
@@ -1218,7 +1231,7 @@ eb_recv_data(unsigned char *buf, int *buflen)
 int
 eb_get_ack(unsigned char *buf, int *buflen)
 {
-	unsigned char tmp[SERIAL_BUFSIZE + 1];
+	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, ret, i, j, found;
 	
 	j = 0;
@@ -1283,7 +1296,7 @@ eb_get_ack(unsigned char *buf, int *buflen)
 int
 eb_wait_bus_syn(int *skip)
 {
-	unsigned char buf[SERIAL_BUFSIZE + 1];
+	unsigned char buf[SERIAL_BUFSIZE];
 	int buflen, ret, i, found;
 	
 	found = 99;
@@ -1320,7 +1333,7 @@ eb_wait_bus_syn(int *skip)
 int
 eb_wait_bus(void)
 {
-	unsigned char buf[SERIAL_BUFSIZE + 1];
+	unsigned char buf[SERIAL_BUFSIZE];
 	int buflen, ret, skip, retry;
 	struct timeval tact, tlast, tdiff;
 
@@ -1393,7 +1406,7 @@ eb_free_bus(void)
 void
 eb_send_data_prepare(const unsigned char *buf, int buflen)
 {
-	unsigned char crc[2], tmp[SERIAL_BUFSIZE + 1];
+	unsigned char crc[2], tmp[SERIAL_BUFSIZE];
 	int tmplen, crclen;
 
 	/* reset struct */
@@ -1439,7 +1452,7 @@ eb_send_data_prepare(const unsigned char *buf, int buflen)
 int
 eb_send_data(const unsigned char *buf, int buflen, int type)
 {
-	unsigned char tmp[SERIAL_BUFSIZE + 1];
+	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, ret, val, i;
 	ret = 0;
 	i = 0;
@@ -1588,7 +1601,7 @@ eb_execute_prepare(int id, char *data, char *msg, int *msglen, int *msgtype, cha
 	char str[CMD_SIZE_S_ZZ + CMD_SIZE_S_CMD + 2 + CMD_SIZE_S_MSG + 1];
 	char byte;
 	int ret, i, j, k;
-	int in[SERIAL_BUFSIZE + 1];	
+	int in[SERIAL_BUFSIZE];	
 
 	*msgtype = com[id].s_type;
 
@@ -1629,7 +1642,7 @@ eb_execute_prepare(int id, char *data, char *msg, int *msglen, int *msgtype, cha
 void
 eb_execute(int id, char *data, char *buf, int *buflen)
 {
-	unsigned char msg[SERIAL_BUFSIZE + 1];
+	unsigned char msg[SERIAL_BUFSIZE];
 	int msglen, msgtype, ret, retry, cycdata, i;
 
 	memset(msg, '\0', sizeof(msg));
@@ -1718,9 +1731,9 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 void
 eb_cyc_data_process(const unsigned char *buf, int buflen)
 {
-	unsigned char msg[CMD_DATA_SIZE + 1], hlp[CMD_DATA_SIZE + 1];
+	unsigned char msg[CMD_DATA_SIZE], hlp[CMD_DATA_SIZE];
 	unsigned char crc_recv, crc_calc;
-	char tmp[CMD_DATA_SIZE + 1];
+	char tmp[CMD_DATA_SIZE];
 	int ret, crc, len, msglen, hlplen;
 
 	memset(msg, '\0', sizeof(msg));
@@ -1837,10 +1850,10 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 int
 eb_cyc_data_recv()
 {
-	static unsigned char msg[SERIAL_BUFSIZE + 1];
+	static unsigned char msg[SERIAL_BUFSIZE];
 	static int msglen = 0;
 	
-	unsigned char buf[SERIAL_BUFSIZE + 1];
+	unsigned char buf[SERIAL_BUFSIZE];
 	int ret, i, buflen;
 
 	memset(buf, '\0', sizeof(buf));
@@ -1868,7 +1881,7 @@ eb_cyc_data_recv()
 			
 			eb_cyc_data_process(msg, msglen);
 
-			memset(msg, '\0', sizeof(msg));
+			memset(msg, '\0', sizeof(msg));		
 			msglen = 0;
 		}
 		

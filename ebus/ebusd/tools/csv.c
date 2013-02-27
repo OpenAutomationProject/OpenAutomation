@@ -155,9 +155,9 @@ main(int argc, char *argv[])
 	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x10','\x09','\x00','\x02','\x40','\x00',
 				     //~ '\x00','\x00','\x00','\x00','\x02','\x15','\x00','\x00','\x00','\x00'};
 
-	const unsigned char tmp[] = {'\x10','\x08','\xb5','\x11','\x02','\x03','\x00','\x00','\x27','\x02','\x07',
-				     '\x04','\x2c','\x00','\x10','\xb5','\x01','\x02','\x00','\x00','\x00','\x00',
-				     '\xc8','\xca','\x00'};
+	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x11','\x02','\x03','\x00','\x00','\x27','\x02','\x07',
+				     //~ '\x04','\x2c','\x00','\x10','\xb5','\x01','\x02','\x00','\x00','\x00','\x00',
+				     //~ '\xc8','\xca','\x00'};
 
 
 	//~ const unsigned char tmp[] = {'\x01','\x02','\x03','\x04','\x04','\x05','\x06','\x07','\x08','\x09',
@@ -166,12 +166,15 @@ main(int argc, char *argv[])
 				     //~ '\x31','\x32','\x33','\x34','\x34','\x35','\x36','\x37','\x38','\x39',
 				     //~ '\x41','\x42','\x43','\x44','\x44','\x45','\x46','\x47','\x48','\x49',
 				     //~ '\x51','\x52','\x53','\x54','\x54','\x55','\x56','\x57','\x58','\x59',
-				     //~ '\x61','\x62','\x63','\x64','\x64','\x65','\x66','\x67','\x68','\x69'};				     
-	
-	const int tmplen = sizeof(tmp) / sizeof(unsigned char);
+				     //~ '\x61','\x62','\x63','\x64','\x64','\x65','\x66','\x67','\x68','\x69'};
 
-	eb_raw_print_hex(tmp, tmplen);
-	eb_cyc_data_process(tmp, tmplen);
+	//~ const unsigned char tmp[] = {'\x10','\x03','\x05','\x07','\x09','\xbb','\x06','\x1b','\x02','\x00',
+				     //~ '\x80','\xff','\x6e','\xff','\xf2','\x00'};				     
+	//~ 
+	//~ const int tmplen = sizeof(tmp) / sizeof(unsigned char);
+//~ 
+	//~ eb_raw_print_hex(tmp, tmplen);
+	//~ eb_cyc_data_process(tmp, tmplen);
 
 	eb_cmd_dir_free();
 

@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-02-27:
+* Added new config parameter print_size to adjust number of bytes at output stream.
+
 2013-02-22:
 * Changed client answer code so normal telnet client can handle it
 

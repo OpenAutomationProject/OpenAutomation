@@ -39,8 +39,8 @@
 #define CMD_LINELEN        512
 #define CMD_FILELEN        1024
 
-#define CMD_SIZE_TYPE      3 
-#define CMD_SIZE_CLASS     5 
+#define CMD_SIZE_TYPE      3
+#define CMD_SIZE_CLASS     5
 #define CMD_SIZE_CMD       30
 #define CMD_SIZE_COM       256
 #define CMD_SIZE_S_ZZ      2
@@ -174,6 +174,13 @@ void eb_set_max_wait(long usec);
  * @return none
  */
 void eb_set_send_retry(int retry);
+
+/**
+ * @brief set number of printed hex bytes
+ * @param [in] size
+ * @return none
+ */
+void eb_set_print_size(int size);
 
 
 

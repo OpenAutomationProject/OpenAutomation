@@ -69,6 +69,8 @@ static int get_retry = UNSET;
 static int skip_ack = UNSET;
 static int max_wait = UNSET;
 static int send_retry = UNSET;
+static int print_size = UNSET;
+
 
 
 static char options[] = "a:c:C:d:e:fl:L:P:p:rR:sSvh";
@@ -114,6 +116,7 @@ static struct config cfg[] = {
 {"skip_ack",   NUM, &skip_ack, NULL},
 {"max_wait",   NUM, &max_wait, NULL},
 {"send_retry", NUM, &send_retry, NULL},
+{"print_size", NUM, &print_size, NULL},
 {"version",    STR, NULL, "\tprint version information"},
 {"help",       STR, NULL, "\tprint this message"}
 };
@@ -282,6 +285,9 @@ set_unset(void)
 	/* set max */
 	if (send_retry > EBUS_SEND_RETRY_MAX)
 		send_retry = EBUS_SEND_RETRY_MAX;
+
+	if (print_size == UNSET)
+		print_size = EBUS_PRINT_SIZE;		
 		
 }
 
@@ -476,8 +482,8 @@ main_loop(void)
 
 			/* send msg to bus - only when cyc buf is empty */
 			if (ret == 0 && msg_queue_entries() > 0) {
-				char tcpbuf[SOCKET_BUFSIZE + 1];
-				char data[MSG_QUEUE_MSG_SIZE + 1];
+				char tcpbuf[SOCKET_BUFSIZE];
+				char data[MSG_QUEUE_MSG_SIZE];
 				int tcpbuflen, id, msgtype, clientfd;
 				
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
@@ -514,8 +520,8 @@ main_loop(void)
 
 			/* check all connected clients */
 			if (FD_ISSET(readfd, &readfds)) {
-				char tcpbuf[SOCKET_BUFSIZE + 1];
-				char data[MSG_QUEUE_MSG_SIZE + 1];
+				char tcpbuf[SOCKET_BUFSIZE];
+				char data[MSG_QUEUE_MSG_SIZE];
 				int tcpbuflen;
 
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
@@ -600,6 +606,7 @@ main(int argc, char *argv[])
 	eb_set_skip_ack(skip_ack);
 	eb_set_max_wait(max_wait);
 	eb_set_send_retry(send_retry);
+	eb_set_print_size(print_size);
 
 	/* open log */
 	log_level(loglevel);
@@ -615,8 +622,6 @@ main(int argc, char *argv[])
 	/* read ebus command configuration files */
 	if (eb_cmd_dir_read(cfgdir, extension) == -1)
 		log_print(L_WAR, "error during read command file");
-	else
-		log_print(L_INF, "command files read.");
 
 	/* open raw file */
 	if (rawdump == YES) {

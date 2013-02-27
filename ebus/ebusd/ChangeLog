@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-27:
+* Fix memory leak in eb_raw_print_hex twice.
+* Added new config parameter print_size to adjust number of bytes at output stream.
+
 2013-02-25:
 * Fix possible memory leaks in eb_raw_print_hex and eb_search_cyc
 
@@ -10,49 +14,49 @@ ebus Daemon (ebusd) - ChangeLog
 
 2013-02-21:
 * Improve decoding of cyc commands to all ebus message types.
-* Add function eb_cyc_data_process to decode all cyc ebus message types.
+* Added function eb_cyc_data_process to decode all cyc ebus message types.
 * Removed hex bitmask of logging output.
-* Fix uninitialized buffer in eb_cyc_data_recv.
+* Fixed uninitialized buffer in eb_cyc_data_recv.
 
 2013-02-19:
-* Add some usefull description of ebusd to README
+* Added some usefull description of ebusd to README
 
 2013-02-18:
-* Change name of functions for message handling from eb_send_cmd to eb_msg_execute.
-* Change name of eb_msg_search_hex function to eb_msg_search_cyc.
+* Changed name of functions for message handling from eb_send_cmd to eb_msg_execute.
+* Changed name of eb_msg_search_hex function to eb_msg_search_cyc.
 
 2013-02-17:
-* Add csv tool to print command configuration.
-* Add decoding of cyc commands.
-* Fix daemon crash when telnet command window closed without quit signal.
+* Added csv tool to print command configuration.
+* Added decoding of cyc commands.
+* Fixed daemon crash when telnet command window closed without quit signal.
 * Split dat (date) decode format into bda (bcd) and hda (hex).
 * Split tim (time) decode format into bti (bcd) and hti (hex).
-* Add internal buffer for cyc data, so cyc commands can be used like get/set
+* Added internal buffer for cyc data, so cyc commands can be used like get/set
   to fetch last data.
 
 2013-02-16:
 * Structure for commands improved so only one structure for GET/SET/CYC is needed
 * Possible formats for GET / SET (asc, bcd, d1b, d1c, d2b, d2c, dat, tim)
 * Commands with format hex will return undecoded data.
-* Add d_valid to structure. It will be used to check answers with given items.
-* Add functions to decode/encode date and time to library.
+* Added d_valid to structure. It will be used to check answers with given items.
+* Added functions to decode/encode date and time to library.
 * Changed CSV file struture to fit new data structure.
 
 2013-02-10:
 * Changed decode datatype from int to bcd
-* Add bcd, d2b and d2c too available SET commands
-* Change CSV file structur - move comment on position 4
+* Added bcd, d2b and d2c too available SET commands
+* Changed CSV file structur - move comment on position 4
 
 2013-02-09:
 * Upgrade the send ability for ebus SET commands. (only d1b and d1c)
 
 2013-02-06:
-* Fix increase length of ebus command from 20 to 30
-* Fix set initiale value of crclen before escape in eb_send_data_prepare()
-* Fix in eb_msg_decode_result() do strtok on local copy from r_pos. Maybe
+* Fixed increase length of ebus command from 20 to 30
+* Fixed set initiale value of crclen before escape in eb_send_data_prepare()
+* Fixed eb_msg_decode_result() do strtok on local copy from r_pos. Maybe
        we don't wont do modife the original value.
-* Fix: compare strlen of given command with command from csv file too.
-* Add: send_retry parameter (2=default) to daemon configuration.
+* Fixed compare strlen of given command with command from csv file too.
+* Added send_retry parameter (2=default) to daemon configuration.
 
 2013-02-04:
 * Add the ability to send commands via telnet to daemon
@@ -61,22 +65,22 @@ ebus Daemon (ebusd) - ChangeLog
   If the cycle buffer is free, only one command is sent.
 
 2013-02-01:
-* Add functions to read ebus command get files and load them into nested
+* Added functions to read ebus command get files and load them into nested
   structure. This will be used to send and decode ebus messages. 
 * Try to read daemon configuration file at daemon directory too.
 * ebus files splitted into ebus-decode and ebus-bus part.
 * Moved log.* from src to lib directory and build liblog.a
 
 2013-01-25:
-* Add autogen.sh script in main dir. Just type ./autogen.sh for build all.
+* Added autogen.sh script in main dir. Just type ./autogen.sh for build all.
 * Logging functions changed from level to class system. The advantage of this
   system is that different classes can be easily mixed together.
   There are now 8 classes: INF, NOT, WAR, ERR, DBG, EBH, EBS, NET
   and ALL for just all messages.
 
 2013-01-24:
-* Add new directory contrib with daemon configuration file
-* Add functions with cfg_ prefix (utils). These parse 
+* Added new directory contrib with daemon configuration file
+* Added functions with cfg_ prefix (utils). These parse 
   the daemon configuration file and set parameters.
   Priority of given configuration by:
 	1. commandline argurments

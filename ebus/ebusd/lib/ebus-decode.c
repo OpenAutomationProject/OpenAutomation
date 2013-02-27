@@ -63,7 +63,7 @@ eb_htoi(const char *buf)
 void
 eb_esc(unsigned char *buf, int *buflen)
 {
-	unsigned char tmp[SERIAL_BUFSIZE + 1];
+	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, i;
 
 	memset(tmp, '\0', sizeof(tmp));
@@ -100,7 +100,7 @@ eb_esc(unsigned char *buf, int *buflen)
 void
 eb_unesc(unsigned char *buf, int *buflen)
 {
-	unsigned char tmp[SERIAL_BUFSIZE + 1];
+	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, i, found;
 
 	memset(tmp, '\0', sizeof(tmp));
