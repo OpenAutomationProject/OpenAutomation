@@ -35,7 +35,8 @@
 
 #include "log.h"
 #include "utils.h"
-//~ #include "ebus-common.h"
+#include "ebus-decode.h"
+#include "ebus-cmd.h"
 #include "ebus-bus.h"
 #include "ebusd.h"
 
@@ -382,25 +383,28 @@ cleanup(int state)
 	}
 
 	/* close listing tcp socket */
-	if (socketfd > 0)
+	if (socketfd > 0) {
 		if (sock_close(socketfd) == -1)
 			log_print(L_ERR, "can't close port: %d", port);
 		else
 			log_print(L_INF, "port %d closed.", port);
+	}
 
 	/* close serial device */
-	if (serialfd > 0)
+	if (serialfd > 0) {
 		if (eb_serial_close() == -1)
 			log_print(L_ERR, "can't close device: %s", device);
 		else
 			log_print(L_INF, "%s closed.", device);
+	}
 
 	/* close rawfile */
-	if (rawdump == YES)
+	if (rawdump == YES) {
 		if (eb_raw_file_close() == -1)
 			log_print(L_ERR, "can't close rawfile: %s\n", rawfile);
 		else
 			log_print(L_INF, "%s closed.", rawfile);
+	}
 			
 
 	/* free mem for ebus commands */
@@ -455,7 +459,7 @@ main_loop(void)
 	for (;;) {
 		fd_set readfds;
 		int readfd;
-		int ret, i;
+		int ret;
 
 		/* set readfds to inital listenfds */
 		readfds = listenfds;
@@ -484,7 +488,7 @@ main_loop(void)
 			if (ret == 0 && msg_queue_entries() > 0) {
 				char tcpbuf[SOCKET_BUFSIZE];
 				char data[MSG_QUEUE_MSG_SIZE];
-				int tcpbuflen, id, msgtype, clientfd;
+				int tcpbuflen, id, clientfd;
 				
 				memset(tcpbuf, '\0', sizeof(tcpbuf));
 				tcpbuflen = sizeof(tcpbuf);
@@ -541,10 +545,17 @@ main_loop(void)
 				/* handle different commands */
 				if (strncasecmp("shutdown", tcpbuf, 8) == 0)
 					cleanup(EXIT_SUCCESS);
+					
+				if (strncasecmp("loglevel", tcpbuf, 8) == 0) {
+					strncpy(loglevel, tcpbuf, strlen(tcpbuf));
+					log_level(loglevel);
+					continue;
+				}
+				
 
 				if (tcpbuflen > 0)
 					/* search ebus command */
-					ret = eb_search_cmd(tcpbuf, data);
+					ret = eb_cmd_search_com(tcpbuf, data);
 				else
 					ret = -1;
 

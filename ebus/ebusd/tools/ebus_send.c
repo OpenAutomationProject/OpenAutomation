@@ -32,6 +32,7 @@
 #include <sys/time.h>
 #include <ctype.h>
 
+#include "ebus-decode.h"
 #include "ebus-bus.h"
 
 

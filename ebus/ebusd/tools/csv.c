@@ -27,6 +27,7 @@
 #include <ctype.h>
 
 #include "log.h"
+#include "ebus-cmd.h"
 #include "ebus-bus.h"
 
 /* global variables */
@@ -170,11 +171,26 @@ main(int argc, char *argv[])
 
 	//~ const unsigned char tmp[] = {'\x10','\x03','\x05','\x07','\x09','\xbb','\x06','\x1b','\x02','\x00',
 				     //~ '\x80','\xff','\x6e','\xff','\xf2','\x00'};				     
+
+
+	//~ const unsigned char tmp[] = {'\x10','\xfe','\xb5','\x16','\x08','\x00','\x02','\x23','\x16','\x28','\x02','\x04','\x13','\x92'};
+//~ 
 	//~ 
 	//~ const int tmplen = sizeof(tmp) / sizeof(unsigned char);
-//~ 
+ //~ 
 	//~ eb_raw_print_hex(tmp, tmplen);
 	//~ eb_cyc_data_process(tmp, tmplen);
+	//~ 
+	//~ char data[CMD_DATA_SIZE], tcpbuf[CMD_DATA_SIZE];
+	//~ memset(data, '\0', sizeof(data));
+	//~ memset(tcpbuf, '\0', sizeof(tcpbuf));
+	//~ int id, tcpbuflen;
+//~ 
+	//~ char cmd[] = "cyc broad date_time";
+	//~ id = eb_cmd_search_com(cmd, data);
+	//~ eb_execute(id, data, tcpbuf, &tcpbuflen);
+//~ 
+	//~ fprintf(stdout, "tcpbuf: %s tcpbuflen: %d\n", tcpbuf, tcpbuflen);
 
 	eb_cmd_dir_free();
 

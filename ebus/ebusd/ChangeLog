@@ -1,6 +1,11 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-02-28:
+* Added loglevel as telnet command to change logging level at runtime.
+* Moved eb_cmd* functions from ebus-bus file to new ebus-cmd file.
+* Added many explicit casts to remove compiler warnings.
+
 2013-02-27:
 * Fix memory leak in eb_raw_print_hex twice.
 * Added new config parameter print_size to adjust number of bytes at output stream.

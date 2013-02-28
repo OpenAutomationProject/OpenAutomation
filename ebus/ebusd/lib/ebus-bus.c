@@ -42,13 +42,11 @@
 #include <dirent.h>
 
 #include "log.h"
+#include "ebus-decode.h"
+#include "ebus-cmd.h"
 #include "ebus-bus.h"
 
-static struct cycbuf *cyc = NULL;
-static int cyclen = 0;
 
-static struct commands *com = NULL;
-static int comlen = 0;
 
 static struct send_data send_data;
 
@@ -144,757 +142,6 @@ eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
 
 
 int
-eb_search_cyc(const unsigned char *hex, int hexlen)
-{
-	unsigned char hlp[(CMD_SIZE_S_MSG * 2) + 1];
-	int i, hlplen;
-
-	memset(hlp, '\0', sizeof(hlp));
-	for (i = 0; i < hexlen; i++)
-		sprintf(&hlp[2 * i], "%02X", hex[i]);
-
-	hlplen = hexlen * 2;
-
-	for (i = 0; i < cyclen; i++) {
-		if (memcmp(hlp, cyc[i].msg, strlen(cyc[i].msg)) == 0) {
-			log_print(L_NOT, " found: %s type: %d ==> id: %d",
-				cyc[i].msg, com[cyc[i].id].s_type, cyc[i].id);
-					
-			return cyc[i].id;
-		}
-	}
-	
-	return -1;
-}
-
-int
-eb_search_cmd_id(const char *type, const char *class, const char *cmd)
-{
-	int i;
-
-	for (i = 0; i < comlen; i++) {
-		if ((strncasecmp(type, com[i].type, strlen(com[i].type)) == 0)
-		   && (strncasecmp(class, com[i].class, strlen(com[i].class)) == 0)
-		   && (strncasecmp(cmd, com[i].cmd, strlen(com[i].cmd)) == 0)			   
-		   && strlen(cmd) == strlen(com[i].cmd)) {
-
-			log_print(L_NOT, " found: %s%s%02X%s type: %d ==> id: %d",
-				com[i].s_zz, com[i].s_cmd, com[i].s_len,
-				com[i].s_msg, com[i].s_type, i);
-			return i;
-		}
-	
-	}
-	
-	return -1;
-}
-
-int
-eb_search_cmd(char *buf, char *data)
-{
-	char *type, *class, *cmd, *tok;
-	char tmp[CMD_DATA_SIZE];
-	int ret;
-
-	type = strtok(buf, " ");
-	class = strtok(NULL, " .");
-	cmd = strtok(NULL, " .\n\r\t");
-	
-	if (class != NULL && cmd != NULL) {
-	
-		if (strncasecmp(type, "get", 3) == 0 ||
-		    strncasecmp(type, "set", 3) == 0 ||
-		    strncasecmp(type, "cyc", 3) == 0) {
-			log_print(L_NOT, "search: %s %s.%s", type, class, cmd);
-			
-			ret = eb_search_cmd_id(type, class, cmd);
-			if (ret < 0)
-				return -1;
-			
-			tok = strtok(NULL, "\n\r");
-			
-			if (tok == NULL)
-				strncpy(data, "-", 1);
-			else
-				strncpy(data, tok, strlen(tok));			
-			
-			log_print(L_NOT, "  data: %s", data);
-			return ret;
-
-		}
-	}	
-	
-	return -1;
-}
-
-
-
-int
-eb_cmd_encode_value(int id, int elem, char *data, unsigned char *msg, char *buf)
-{
-	char *c1, *c2, *c3;
-	char d_pos[CMD_SIZE_D_POS + 1];
-	unsigned char bcd, d1b, d1c, d2b[2], d2c[2];
-	int ret, i, p1, p2, p3;
-	float f;
-
-	memset(d_pos, '\0', sizeof(d_pos));
-	strncpy(d_pos, com[id].elem[elem].d_pos, strlen(com[id].elem[elem].d_pos));
-
-	c1 = strtok(d_pos, " ,\n");
-	c2 = strtok(NULL, " ,\n");
-	c3 = strtok(NULL, " ,\n");
-	
-	p1 = c1 ? atoi(c1) : 0;
-	p2 = c2 ? atoi(c2) : 0;
-	p3 = c3 ? atoi(c3) : 0;
-	
-	log_print(L_DBG, "id: %d elem: %d p1: %d p2: %d p3: %d data: %s",
-						id, elem, p1, p2, p3, data);
-					
-	if (strncasecmp(com[id].elem[elem].d_type, "asc", 3) == 0) {
-		for (i = 0; i < strlen(data); i++)
-			sprintf(&msg[i * 2], "%02x", data[i]);
-
-	} else if (strncasecmp(com[id].elem[elem].d_type, "bcd", 3) == 0) {
-		if (p1 > 0) {
-			i = (int) (atof(data) / com[id].elem[elem].d_fac);
-
-			ret = eb_int_to_bcd(i, &bcd);
-			sprintf(msg, "%02x", bcd);
-			
-		} else {
-			goto on_error;
-		}
-				
-	} else if (strncasecmp(com[id].elem[elem].d_type, "d1b", 3) == 0) {
-		if (p1 > 0) {
-			i = (int) (atof(data) / com[id].elem[elem].d_fac);
-			
-			ret = eb_int_to_d1b(i, &d1b);
-			sprintf(msg, "%02x", d1b);
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "d1c", 3) == 0) {
-		if (p1 > 0) {
-			f = (atof(data) / com[id].elem[elem].d_fac);
-			
-			ret = eb_float_to_d1c(f, &d1c);
-			sprintf(msg, "%02x", d1c);
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "d2b", 3) == 0) {
-		if (p1 > 0 && p2 > 0) {
-			f = (atof(data) / com[id].elem[elem].d_fac);
-			
-			if (p1 > p2)
-				ret = eb_float_to_d2b(f, &d2b[1], &d2b[0]);
-			else
-				ret = eb_float_to_d2b(f, &d2b[0], &d2b[1]);
-				
-			sprintf(msg, "%02x%02x", d2b[0], d2b[1]);	
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "d2c", 3) == 0) {
-		if (p1 > 0 && p2 > 0) {
-			f = (atof(data) / com[id].elem[elem].d_fac);
-			
-			if (p1 > p2)
-				ret = eb_float_to_d2c(f, &d2c[1], &d2c[0]);
-			else
-				ret = eb_float_to_d2c(f, &d2c[0], &d2c[1]);
-				
-			sprintf(msg, "%02x%02x", d2c[0], d2c[1]);
-		} else {
-			goto on_error;
-		}
-					
-	} else if (strncasecmp(com[id].elem[elem].d_type, "hda", 3) == 0) {
-		if (p1 > 0 && p2 > 0 && p3 > 0) {
-			int dd, mm, yy;
-
-			dd = atoi(strtok(data, " .\n"));
-			mm = atoi(strtok(NULL, " .\n"));
-			yy = atoi(strtok(NULL, " .\n"));
-					
-			ret = eb_str_to_dat(dd, mm, yy, msg);
-			if (ret < 0)
-				sprintf(buf, " error ==> %d.%d.%d ", dd, mm, yy);
-			
-		} else {
-			goto on_error;
-		}
-			
-	} else if (strncasecmp(com[id].elem[elem].d_type, "hti", 3) == 0) {
-		if (p1 > 0 && p2 > 0 && p3 > 0) {
-			int hh, mm, ss;
-
-			hh = atoi(strtok(data, " :\n"));
-			mm = atoi(strtok(NULL, " :\n"));
-			ss = atoi(strtok(NULL, " :\n"));
-					
-			ret = eb_str_to_tim(hh, mm, ss, msg);
-			if (ret < 0)
-				sprintf(buf, " error ==> %d:%d:%d ", hh, mm, ss);
-
-		} else {
-			goto on_error;
-		}
-
-	} else if (strncasecmp(com[id].elem[elem].d_type, "hdy", 3) == 0) {
-		if (p1 > 0) {
-			int day;
-
-			day = atoi(data);
-			sprintf(msg, "%02x", day);
-
-		} else {
-			goto on_error;
-		}
-
-	}
-		
-	return 0;
-
-on_error:
-	strcpy(buf, "error encode");
-	return -1;
-	
-}
-
-int
-eb_cmd_encode(int id, char *data, unsigned char *msg, char *buf)
-{
-	char *tok, *toksave;
-	unsigned char hlp[CMD_SIZE_S_MSG + 1];
-	int ret, i;
-		
-	tok = strtok_r(data, " \n\r\t", &toksave);
-	
-	for (i = 0; i < com[id].d_elem; i++) {
-		if (tok != NULL) {					
-			memset(hlp, '\0', sizeof(hlp));		
-			ret = eb_cmd_encode_value(id, i, tok, hlp, buf);
-			if (ret < 0) {
-				strncat(buf, "\n", 1);
-				return -1;
-			}
-
-			strncat(msg, hlp, strlen(hlp));
-	
-		} else {
-			return -1;
-		}
-		
-		tok = strtok_r(NULL, " \n\r\t", &toksave);	
-	}
-
-	if (strlen(buf) > 0)
-		strncat(buf, "\n", 1);
-		
-	return 0;
-}
-
-int
-eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
-{
-	char *c1, *c2, *c3, byte;
-	char d_pos[CMD_SIZE_D_POS + 1];
-	int ret, i, p1, p2, p3;
-	float f;	
-
-	memset(d_pos, '\0', sizeof(d_pos));
-	strncpy(d_pos, com[id].elem[elem].d_pos, strlen(com[id].elem[elem].d_pos));
-
-	c1 = strtok(d_pos, " ,\n");
-	c2 = strtok(NULL, " ,\n");
-	c3 = strtok(NULL, " ,\n");
-
-	p1 = c1 ? atoi(c1) : 0;
-	p2 = c2 ? atoi(c2) : 0;
-	p3 = c3 ? atoi(c3) : 0;
-
-	log_print(L_DBG, "id: %d elem: %d p1: %d p2: %d p3: %d",
-							id, elem, p1, p2, p3);	
-
-
-	if (strncasecmp(com[id].elem[elem].d_type, "asc", 3) == 0) {
-		sprintf(buf, "%s ", &msg[1]);
-
-	} else if (strncasecmp(com[id].elem[elem].d_type, "bcd", 3) == 0) {
-		if (p1 > 0) {
-			ret = eb_bcd_to_int(msg[p1], &i);
-
-			i *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%3d ", i);
-		} else {
-			goto on_error;
-		}
-				
-	} else if (strncasecmp(com[id].elem[elem].d_type, "d1b", 3) == 0) {
-		if (p1 > 0) {
-			ret = eb_d1b_to_int(msg[p1], &i);
-
-			f = i * com[id].elem[elem].d_fac;
-			sprintf(buf, "%6.2f ", f);
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "d1c", 3) == 0) {
-		if (p1 > 0) {
-			ret = eb_d1c_to_float(msg[p1], &f);
-
-			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%6.2f ", f);			
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "d2b", 3) == 0) {
-		if (p1 > 0 && p2 > 0) {
-			if (p1 > p2)
-				ret = eb_d2b_to_float(msg[p2], msg[p1], &f);
-			else
-				ret = eb_d2b_to_float(msg[p1], msg[p2], &f);
-				
-			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%8.3f ", f);		
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "d2c", 3) == 0) {
-		if (p1 > 0 && p2 > 0) {
-			if (p1 > p2)
-				ret = eb_d2c_to_float(msg[p2], msg[p1], &f);
-			else	
-				ret = eb_d2c_to_float(msg[p1], msg[p2], &f);
-			
-			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%10.4f ", f);
-		} else {
-			goto on_error;
-		}
-					
-	} else if (strncasecmp(com[id].elem[elem].d_type, "bda", 3) == 0) {
-		if (p1 > 0 && p2 > 0 && p3 > 0) {
-			int dd, mm, yy;
-			ret = eb_bcd_to_int(msg[p1], &dd);
-			ret = eb_bcd_to_int(msg[p2], &mm);
-			ret = eb_bcd_to_int(msg[p3], &yy);
-			
-			ret = eb_dat_to_str(dd, mm, yy, buf);
-			if (ret < 0)
-				sprintf(buf, " error %s ==> %02x %02x %02x ",
-				com[id].elem[elem].d_sub, msg[p1], msg[p2], msg[p3]);
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "hda", 3) == 0) {
-		if (p1 > 0 && p2 > 0 && p3 > 0) {
-			ret = eb_dat_to_str(msg[p1], msg[p2], msg[p3], buf);
-			if (ret < 0)
-				sprintf(buf, " error %s ==> %02x %02x %02x ",
-				com[id].elem[elem].d_sub, msg[p1], msg[p2], msg[p3]);
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "bti", 3) == 0) {
-		if (p1 > 0 && p2 > 0 && p3 > 0) {
-			int hh, mm, ss;
-
-			ret = eb_bcd_to_int(msg[p1], &hh);
-			ret = eb_bcd_to_int(msg[p2], &mm);
-			ret = eb_bcd_to_int(msg[p3], &ss);
-			
-			ret = eb_tim_to_str(hh, mm, ss, buf);
-			if (ret < 0)
-				sprintf(buf, " error %s ==> %02x %02x %02x ",
-				com[id].elem[elem].d_sub, msg[p1], msg[p2], msg[p3]);
-		} else {
-			goto on_error;
-		}
-					
-	} else if (strncasecmp(com[id].elem[elem].d_type, "hti", 3) == 0) {
-		if (p1 > 0 && p2 > 0 && p3 > 0) {
-			ret = eb_tim_to_str(msg[p1], msg[p2], msg[p3], buf);
-			if (ret < 0)
-				sprintf(buf, " error %s ==> %02x %02x %02x ",
-				com[id].elem[elem].d_sub, msg[p1], msg[p2], msg[p3]);
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "bdy", 3) == 0) {
-		if (p1 > 0)
-			ret = eb_day_to_str(msg[p1], buf);
-		else
-			goto on_error;
-			
-	} else if (strncasecmp(com[id].elem[elem].d_type, "hdy", 3) == 0) {
-		if (p1 > 0) {
-			msg[p1] = msg[p1] - 0x01;
-			ret = eb_day_to_str(msg[p1], buf);
-		} else {
-			goto on_error;
-		}
-		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "hex", 3) == 0) {
-		for (i = 0; i < msg[0]; i++)
-			sprintf(&buf[3 * i], "%02x ", msg[i + 1]);
-
-	//~ } else if (strncasecmp(com[id].elem[elem].d_type, "mmt", 3) == 0) {
-		//~ if (p1 > 0) {
-			//~ if (msg[p1] == 0x00) {
-				//~ strcpy(buf, "ACK ");
-			//~ } else {
-				//~ strcpy(buf, "NAK ");
-			//~ }
-		//~ }
-
-	}
-		
-	return 0;
-
-on_error:
-	strcpy(buf, "error decode");
-	return -1;
-
-}
-
-int
-eb_cmd_decode(int id, char *data, unsigned char *msg, char *buf)
-{
-	char *tok;
-	char tmp[CMD_DATA_SIZE], hlp[CMD_DATA_SIZE];
-	int ret, i, found;
-
-	for (i = 0; i < com[id].d_elem; i++) {
-		memset(tmp, '\0', sizeof(tmp));
-		strncpy(tmp, data, strlen(data));
-
-		tok = strtok(tmp, " \n\r\t");
-		if (strncasecmp(tok, "-", 1) == 0)
-			found = YES;
-		else
-			found = NO;
-		
-		while (tok != NULL && found == NO) {		
-			if (strncasecmp(com[id].elem[i].d_sub, tok,
-					strlen(com[id].elem[i].d_sub)) == 0) {
-				found = YES;
-				break;
-			}
-				
-			tok = strtok(NULL, " \n\r\t");
-		}
-
-		if (found == YES) {
-			memset(hlp, '\0', sizeof(hlp));
-			ret = eb_cmd_decode_value(id, i, msg, hlp);
-			if (ret < 0) {
-				strncat(buf, "\n", 1);
-				return -1;
-			}
-			
-			strncat(buf, hlp, strlen(hlp));
-		}				
-	}
-		
-	return 0;
-}
-
-void
-eb_cmd_print(const char *type, int all, int detail)
-{
-	int i, j;
-
-	for (i = 0; i < comlen; i++) {
-
-		if (strncasecmp(com[i].type, type, 1) == 0 || all) {
-
-			log_print(L_INF, "[%03d] %s : %5s.%-32s\t(type: %d)" \
-					 " %s%s%-10s (len: %d) [%d] ==> %s",
-				com[i].id,
-				com[i].type,
-				com[i].class,
-				com[i].cmd,
-				com[i].s_type,
-				com[i].s_zz,
-				com[i].s_cmd,
-				com[i].s_msg,
-				com[i].s_len,
-				com[i].d_elem,		
-				com[i].com			
-				);
-
-			if (detail) {
-				for (j = 0; j < com[i].d_elem; j++) {
-					log_print(L_INF, "\t\t  %-20s pos: " \
-						"%-10s\t%s [%5.2f] [%s] \t%s\t%s",
-						com[i].elem[j].d_sub,
-						com[i].elem[j].d_pos,
-						com[i].elem[j].d_type,
-						com[i].elem[j].d_fac,
-						com[i].elem[j].d_unit,
-						com[i].elem[j].d_valid,
-						com[i].elem[j].d_com
-				
-						);
-				}
-				log_print(L_INF, "");
-			}
-
-			
-		}
-	}
-}
-
-int
-eb_cmd_fill(const char *tok)
-{
-	int i;
-	
-	com = (struct commands *) realloc(com, (comlen + 1) * sizeof(struct commands));
-	err_ret_if(com == NULL, -1);
-
-	memset(com + comlen, '\0', sizeof(struct commands));
-	
-	/* id */
-	com[comlen].id = comlen;
-
-	/* type */
-	strncpy(com[comlen].type, tok, strlen(tok));
-	
-	/* class */
-	tok = strtok(NULL, ";");
-	strncpy(com[comlen].class, tok, strlen(tok));
-
-	
-	/* cmd */
-	tok = strtok(NULL, ";");
-	strncpy(com[comlen].cmd, tok, strlen(tok));
-
-	/* com */
-	tok = strtok(NULL, ";");
-	strncpy(com[comlen].com, tok, strlen(tok));
-	
-	/* s_type */
-	tok = strtok(NULL, ";");
-	com[comlen].s_type = atoi(tok);	
-	
-	/* s_zz */
-	tok = strtok(NULL, ";");
-	strncpy(com[comlen].s_zz, tok, strlen(tok));
-	
-	/* s_cmd */
-	tok = strtok(NULL, ";");
-		strncpy(com[comlen].s_cmd, tok, strlen(tok));
-	
-	/* s_len */
-	tok = strtok(NULL, ";");
-	com[comlen].s_len = atoi(tok);
-
-	/* s_msg */
-	tok = strtok(NULL, ";");
-	if (strncasecmp(tok, "-", 1) != 0)
-		strncpy(com[comlen].s_msg, tok, strlen(tok));
-	
-	/* d_elem */
-	tok = strtok(NULL, ";");
-	com[comlen].d_elem = atoi(tok);
-	
-	com[comlen].elem = (struct element *) malloc(com[comlen].d_elem * sizeof(struct element));
-	err_ret_if(com[comlen].elem == NULL, -1);
-
-	memset(com[comlen].elem, '\0', com[comlen].d_elem * sizeof(struct element));	
-
-	for (i = 0; i < com[comlen].d_elem; i++) {
-		
-		/* d_sub */
-		tok = strtok(NULL, ";");
-		if (strncasecmp(tok, "-", 1) != 0)
-			strncpy(com[comlen].elem[i].d_sub, tok, strlen(tok));
-		
-		/* d_pos */
-		tok = strtok(NULL, ";");	
-		strncpy(com[comlen].elem[i].d_pos, tok, strlen(tok));
-		
-		/* d_type */
-		tok = strtok(NULL, ";");
-		strncpy(com[comlen].elem[i].d_type, tok, strlen(tok));				
-		
-		/* d_fac */
-		tok = strtok(NULL, ";");	
-		com[comlen].elem[i].d_fac = atof(tok);
-		
-		/* d_unit */
-		tok = strtok(NULL, ";");	
-		strncpy(com[comlen].elem[i].d_unit, tok, strlen(tok));
-
-		/* d_valid */
-		tok = strtok(NULL, ";");	
-		strncpy(com[comlen].elem[i].d_valid, tok, strlen(tok));
-
-		/* d_com */
-		tok = strtok(NULL, ";");
-		strncpy(com[comlen].elem[i].d_com, tok, strlen(tok));
-		com[comlen].elem[i].d_com[strcspn(com[comlen].elem[i].d_com, "\n")] = '\0';
-		
-	}
-	
-	if (strncasecmp(com[comlen].type, "cyc", 3) == 0) {
-
-		cyc = (struct cycbuf *) realloc(cyc, (cyclen + 1) * sizeof(struct cycbuf));
-		err_ret_if(cyc == NULL, -1);
-
-		memset(cyc + cyclen, '\0', sizeof(struct cycbuf));		
-
-		/* id */
-		cyc[cyclen].id = com[comlen].id;
-
-		/* msg */
-		sprintf(cyc[cyclen].msg, "%s%s%02X%s",
-					com[comlen].s_zz, com[comlen].s_cmd,
-					com[comlen].s_len, com[comlen].s_msg);
-			
-		cyclen++;
-
-	}
-
-	comlen++;
-
-	return 0;	
-}
-
-int
-eb_cmd_num_c(const char *str, const char c)
-{
-	const char *p = str;
-	int i = 0;
-
-	do {
-		if (*p == c)
-			i++;
-	} while (*(p++));
-
-	return i;
-}
-
-int
-eb_cmd_file_read(const char *file)
-{
-	int ret;
-	char line[CMD_LINELEN];
-	char *tok;
-	FILE *fp = NULL;
-
-	log_print(L_NOT, "%s", file);
-
-	/* open config file */
-	fp = fopen(file, "r");
-	err_ret_if(fp == NULL, -1);			
-
-	/* read each line and fill cmd array */
-	while (fgets(line, CMD_LINELEN, fp) != NULL) {
-		tok = strtok(line, ";\n");
-			
-		if (tok != NULL && tok[0] != '#' ) {
-
-			ret = eb_cmd_fill(tok);
-			if (ret < 0)
-				return -2;
-				
-		}
-
-	}
-	
-	/* close config file */
-	ret = fclose(fp);
-	err_ret_if(ret == EOF, -1);
-
-	log_print(L_NOT, "%s success", file);
-
-	return 0;
-}
-
-int
-eb_cmd_dir_read(const char *cfgdir, const char *extension)
-{
-	struct dirent **dir;
-	int ret, i, j, files;
-	char file[CMD_FILELEN];
-	char *ext;
-
-	files = scandir(cfgdir, &dir, 0, alphasort);
-	if (files < 0) {
-		log_print(L_WAR, "configuration directory %s not found.", cfgdir);
-		return 1;
-	}
-	
-	i = 0;
-	j = 0;
-	while (i < files) {
-		ext = strrchr(dir[i]->d_name, '.');
-			if (ext != NULL) {
-				if (strlen(ext) == 4
-				    && dir[i]->d_type == DT_REG
-				    && strncasecmp(ext, extension, 4) == 0 ) {
-					memset(file, '\0', sizeof(file));
-					sprintf(file, "%s/%s", cfgdir,
-								dir[i]->d_name);
-									
-					ret = eb_cmd_file_read(file);
-					if (ret < 0)
-						return -1;
-
-					j++;
-				}
-			}
-			
-		free(dir[i]);
-		i++;
-	}
-	
-	free(dir);
-
-	if (j == 0) {
-		log_print(L_WAR, "no command files found ==> decode disabled.");
-		return 2;
-	}
-	
-	return 0;
-}
-
-void
-eb_cmd_dir_free(void)
-{
-	int i;
-
-	if (comlen > 0) {
-		for (i = 0; i < comlen; i++)
-			free(&com[i].elem[0]);
-	
-		free(com);
-	}
-
-	if (cyclen > 0)
-		free(cyc);
-	
-}
-
-
-
-int
 eb_raw_file_open(const char *file)
 {
 	rawfp = fopen(file, "w");
@@ -953,11 +200,12 @@ eb_raw_print_hex(const unsigned char *buf, int buflen)
 		}
 	}
 
-	if (j > 0)
+	if (j > 0) {
 		if (k > 1)
 			log_print(L_EBH, "%d%s", k, msg);
 		else
 			log_print(L_EBH, " %s", msg);
+	}
 }
 
 
@@ -1082,7 +330,7 @@ eb_print_result(void)
 void
 eb_recv_data_get(unsigned char *buf, int *buflen)
 {
-	strncpy(buf, recv_data.msg, recv_data.len);	
+	strncpy((char *) buf, (char *) recv_data.msg, recv_data.len);	
 	*buflen = recv_data.len;
 }
 
@@ -1402,7 +650,6 @@ eb_free_bus(void)
 
 
 
-
 void
 eb_send_data_prepare(const unsigned char *buf, int buflen)
 {
@@ -1453,9 +700,8 @@ int
 eb_send_data(const unsigned char *buf, int buflen, int type)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
-	int tmplen, ret, val, i;
+	int tmplen, ret, val;
 	ret = 0;
-	i = 0;
 
 	eb_send_data_prepare(buf, buflen);
 	
@@ -1595,71 +841,26 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 
 
 void
-eb_execute_prepare(int id, char *data, char *msg, int *msglen, int *msgtype, char *buf)
-{
-	unsigned char tmp[CMD_SIZE_S_MSG + 1];
-	char str[CMD_SIZE_S_ZZ + CMD_SIZE_S_CMD + 2 + CMD_SIZE_S_MSG + 1];
-	char byte;
-	int ret, i, j, k;
-	int in[SERIAL_BUFSIZE];	
-
-	*msgtype = com[id].s_type;
-
-	/* encode msg */
-	memset(tmp, '\0', sizeof(tmp));
-	if (strncasecmp(com[id].type, "set", 3) == 0)
-		eb_cmd_encode(id, data, tmp, buf);
-
-	memset(str, '\0', sizeof(str));
-	sprintf(str, "%s%s%02X%s%s",
-		com[id].s_zz, com[id].s_cmd, com[id].s_len, com[id].s_msg, tmp);
-
-	memset(in, '\0', sizeof(in));
-	i = 0;
-	j = 0;
-	
-	while (str[j] != '\0') {
-		byte = str[j];
-		if (i < sizeof(in)) {
-
-			ret = eb_htoi(&byte);
-			if (ret != -1) {
-				in[i] = ret;
-				i++;
-			}
-		}
-		j++;
-	}
-
-	memset(msg, '\0', sizeof(msg));
-	for (j = 0, k = 0; j < i; j += 2, k++)
-		msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
-
-	*msglen = k;
-	
-}
-
-void
 eb_execute(int id, char *data, char *buf, int *buflen)
 {
-	unsigned char msg[SERIAL_BUFSIZE];
-	int msglen, msgtype, ret, retry, cycdata, i;
+	unsigned char msg[SERIAL_BUFSIZE], hlp[CMD_DATA_SIZE];
+	int ret, msglen, msgtype, hlplen, retry, cycdata;
 
 	memset(msg, '\0', sizeof(msg));
 	msglen = sizeof(msg);
-	msgtype = UNSET;
+	msgtype = eb_cmd_get_s_type(id);
 				
 	cycdata = NO;
 	ret = -1;
 	retry = 0;
-	
-	if (strncasecmp(com[id].type, "cyc", 3) != 0) {
-		/* prepare command - if prepare failed buflen > 0 */
-		eb_execute_prepare(id, data, msg, &msglen, &msgtype, buf);
-		eb_raw_print_hex(msg, msglen);
+
+	if (eb_cmd_check_type(id, "cyc") == YES) {
+		cycdata = YES;		
 	} else {
-		cycdata = YES;
-	}
+		/* prepare command - if prepare failed buflen > 0 */
+		eb_cmd_prepare(id, data, msg, &msglen, buf);
+		eb_raw_print_hex(msg, msglen);
+	}		
 
 	if (cycdata == NO && strlen(buf) == 0) {
 		/* send data to bus */
@@ -1694,7 +895,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 				eb_raw_print_hex(msg, msglen);
 
 				/* decode */
-				if (strncasecmp(com[id].type, "set", 3) == 0) {
+				if (eb_cmd_check_type(id, "set") == YES) {
 					strcpy(buf, " ACK\n");
 				} else {
 					eb_cmd_decode(id, data, msg, buf);
@@ -1708,11 +909,11 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 		}
 
 	} else if (cycdata == YES) {
-		for (i = 0; i < cyclen; i++)
-			if (cyc[i].id == com[id].id)
-				break;
-			
-		eb_cmd_decode(id, data, cyc[i].buf, buf);
+		memset(hlp, '\0', sizeof(hlp));
+		
+		eb_cmd_get_cyc_buf(id, hlp, &hlplen);
+eb_raw_print_hex(hlp, hlplen);			
+		eb_cmd_decode(id, data, hlp, buf);
 		if (strlen(buf) > 0)
 			strncat(buf, "\n", 1);
 		else
@@ -1734,17 +935,19 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 	unsigned char msg[CMD_DATA_SIZE], hlp[CMD_DATA_SIZE];
 	unsigned char crc_recv, crc_calc;
 	char tmp[CMD_DATA_SIZE];
-	int ret, crc, len, msglen, hlplen;
+	int ret, crc, len, msgtype, msglen, hlplen;
 
 	memset(msg, '\0', sizeof(msg));
 	memset(hlp, '\0', sizeof(hlp));
 	memset(tmp, '\0', sizeof(tmp));
 
 	/* decode and save data */
-	ret = eb_search_cyc(&buf[1], buflen - 1);
+	ret = eb_cmd_search_com_cyc(&buf[1], buflen - 1);
 	if (ret >= 0) {
+
+		msgtype = eb_cmd_get_s_type(ret);
 		
-		if (com[ret].s_type == EBUS_MSG_BROADCAST) {
+		if (msgtype == EBUS_MSG_BROADCAST) {
 			/* calculate CRC */
 			if (buf[buflen - 2] == EBUS_SYN_ESC_A9) {
 				crc_calc = eb_calc_crc(buf, buflen - 2);
@@ -1770,9 +973,9 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 				eb_unesc(msg, &msglen);
 
 				/* save data */
-				memcpy(cyc[ret].buf, &msg[4], msglen - 4);
+				eb_cmd_set_cyc_buf(ret, &msg[4], msglen - 4);
 					
-				/* decode and save */
+				/* decode */
 				eb_cmd_decode(ret, "-", &msg[4], tmp);	
 			} else {
 				strcpy(tmp, "error CRC");
@@ -1780,15 +983,19 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 
 			
 			
-		} else if (com[ret].s_type == EBUS_MSG_MASTER_MASTER) {
+		} else if (msgtype == EBUS_MSG_MASTER_MASTER) {
 			/* set NN to 0x01 for MM */
 			msg[0] = 0x01;
 			memcpy(&msg[1], &buf[buflen - 1], 1);
+			msglen = 2;
+
+			/* save data */
+			eb_cmd_set_cyc_buf(ret, msg, msglen);
 			
-			/* decode and save */
+			/* decode */
 			eb_cmd_decode(ret, "-", &msg[0], tmp);
 								
-		} else if (com[ret].s_type == EBUS_MSG_MASTER_SLAVE) {
+		} else if (msgtype == EBUS_MSG_MASTER_SLAVE) {
 			memcpy(msg, buf, buflen);
 			msglen = buflen;
 			
@@ -1829,9 +1036,9 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 				eb_unesc(msg, &msglen);
 
 				/* save data */
-				memcpy(cyc[ret].buf, msg, msglen);
+				eb_cmd_set_cyc_buf(ret, msg, msglen);
 					
-				/* decode and save */
+				/* decode */
 				eb_cmd_decode(ret, "-", msg, tmp);	
 			} else {
 				strcpy(tmp, "error CRC");
@@ -1842,9 +1049,6 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 		if (strlen(tmp) > 0)
 			log_print(L_EBS, "%s", tmp);
 	}
-
-	
-
 }
 
 int

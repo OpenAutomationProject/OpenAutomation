@@ -5,4 +5,4 @@ cyc;broad;date_time;Datum, Uhrzeit;1;FE;B516;8;00;3;day;7;hdy;-;-;-;Wochentag;da
 cyc;broad;temp;Aussentemperatur;1;FE;B516;3;01;1;temp;2,3;d2b;1.0;°C;-;Temperatur;;;;;;;;;;;;;;;;;;;;;
 cyc;broad;test1;Test 1;3;08;B509;3;290100;1;stat;1,2,3,4,5;hex;-;-;-;Test 1;;;;;;;;;;;;;;;;;;;;;
 cyc;broad;test2;Test 2;3;08;B509;3;290700;1;stat;1,2,3,4,5;hex;-;-;-;Test 2;;;;;;;;;;;;;;;;;;;;;
-cyc;broad;test3;Test 3;3;08;B509;3;290f00;1;stat;1,2,3,4,5;hex;-;-;-;Test 3;;;;;;;;;;;;;;;;;;;;;
+#cyc;broad;test3;Test 3;3;08;B509;3;290f00;1;stat;1,2,3,4,5;hex;-;-;-;Test 3;;;;;;;;;;;;;;;;;;;;;

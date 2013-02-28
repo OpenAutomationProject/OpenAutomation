@@ -32,6 +32,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "ebus-decode.h"
 
@@ -142,10 +143,10 @@ eb_unesc(unsigned char *buf, int *buflen)
 int
 eb_day_to_str(unsigned char day, char *tgt)
 {
-	int ret, dd;
+	int dd;
 	
 	if (dd >= 0x00 && dd <= 0x06) {
-		ret = eb_bcd_to_int(day, &dd);
+		eb_bcd_to_int(day, &dd);
 		sprintf(tgt, "%s ", days[day]);
 	} else {
 		return -1;
@@ -178,7 +179,7 @@ eb_str_to_dat(int dd, int mm, int yy, unsigned char *tgt)
 	if (dd >= 0 && dd <= 31 &&
 	    mm >= 0 && mm <= 12 &&
 	    yy >= 0 && yy <= 99 )
-		sprintf(tgt, "%02x%02x%02x", dd, mm, yy);
+		sprintf((char *) tgt, "%02x%02x%02x", dd, mm, yy);
 
 	else
 		return -1;
@@ -208,7 +209,7 @@ eb_str_to_tim(int hh, int mm, int ss, unsigned char *tgt)
 	if (hh >= 0 && hh <= 23 &&
 	    mm >= 0 && mm <= 59 &&
 	    ss >= 0 && ss <= 59 )
-		sprintf(tgt, "%02x%02x%02x", hh, mm, ss);
+		sprintf((char *) tgt, "%02x%02x%02x", hh, mm, ss);
 
 	else
 		return -1;

@@ -56,6 +56,8 @@
 #define SERIAL_BAUDRATE         B2400
 #define SERIAL_BUFSIZE          100
 
+#define CMD_DATA_SIZE           256
+
 enum enum_bool {UNSET = -1, NO, YES};
 
 

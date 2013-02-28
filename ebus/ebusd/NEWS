@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-02-28:
+* Added loglevel as telnet command to change logging level at runtime.
+
 2013-02-27:
 * Added new config parameter print_size to adjust number of bytes at output stream.
 
