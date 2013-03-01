@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-03-01:
+* Added new directory doc with some usefull documentation.
+* Added an example command csv file into contrib directory.
+
 2013-02-28:
 * Added loglevel as telnet command to change logging level at runtime.
 * Moved eb_cmd* functions from ebus-bus file to new ebus-cmd file.

@@ -61,7 +61,6 @@ static long max_wait = EBUS_MAX_WAIT;
 static int send_retry = EBUS_SEND_RETRY;
 static int print_size = EBUS_PRINT_SIZE;
 
-
 static unsigned char qq = EBUS_QQ;
 
 static unsigned char ack = EBUS_ACK;
@@ -912,7 +911,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 		memset(hlp, '\0', sizeof(hlp));
 		
 		eb_cmd_get_cyc_buf(id, hlp, &hlplen);
-eb_raw_print_hex(hlp, hlplen);			
+			
 		eb_cmd_decode(id, data, hlp, buf);
 		if (strlen(buf) > 0)
 			strncat(buf, "\n", 1);

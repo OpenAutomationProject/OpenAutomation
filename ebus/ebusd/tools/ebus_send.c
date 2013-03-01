@@ -200,8 +200,6 @@ main(int argc, char *argv[])
 				for (j = 0, k = 0; j < i; j += 2, k++)
 					msg[k] = (unsigned char)
 							(in[j]*16 + in[j+1]);
-
-				//print_msg(" in:", msg, k, "");
 		
 				ret = eb_serial_open(device, &serialfd);
 				if (ret < 0)
@@ -233,7 +231,6 @@ main(int argc, char *argv[])
 		for (k = argc; k < max_argc; k++) {
 			j = 0;
 			while (argv[k][j] != '\0') {
-				//fprintf(stdout, "%c", argv[k][j]);
 				byte = argv[k][j];
 				if (i < sizeof(in)) {
 
@@ -250,8 +247,6 @@ main(int argc, char *argv[])
 		memset(msg, '\0', sizeof(msg));
 		for (j = 0, k = 0; j < i; j += 2, k++)
 			msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
-
-		//print_msg(" in:", msg, k, "");
 
 		if (k > 0) {
 

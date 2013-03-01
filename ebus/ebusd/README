@@ -8,23 +8,6 @@ incoming telnet connections. On the other hand it sends and receive ebus message
 via ebus-usb adapter to or from the ebus.
 
 
-
-Build:
-======
-
-$ ./autogen.sh
-
-This script execute the following commands in this order.
-
-$ aclocal
-$ autoconf
-$ autoheader
-$ automake
-$ ./configure
-$ make
-
-
-
 Features:
 =========
 
@@ -45,7 +28,21 @@ Features:
    - loglevel   change loglevel at runtime
    - quit       disconnect from daemon
    - shutdown   stop daemon
+   
 
+Build:
+======
+
+$ ./autogen.sh
+
+This script execute the following commands in this order.
+
+$ aclocal
+$ autoconf
+$ autoheader
+$ automake
+$ ./configure
+$ make
 
 
 Daemon Configuration:
