@@ -229,23 +229,12 @@ int eb_recv_data(unsigned char *buf, int *buflen);
 
 
 
- /**
- * @brief receive ACK byte from serial device
- * @param [out] *buf pointer to a byte array of received bytes
- * @param [out] buflen length of received bytes
- * @return 0 ok | 1 negative ACK | -1 error | -2 send and recv msg are different 
- * | -3 syn received (no answer from slave) | -4 we should never reach this
- */  
-int eb_get_ack(unsigned char *buf, int *buflen);
-
-
-
 /**
  * @brief receive bytes from serial device until SYN byte was received
  * @param [in] *skip number skipped SYN bytes
  * @return 0 ok | -1 error
  */ 
-int eb_wait_bus_syn(int *skip);
+int eb_bus_wait_syn(int *skip);
 
 /**
  * @brief try to get bus for sending
@@ -253,15 +242,24 @@ int eb_wait_bus_syn(int *skip);
  * \li read at least one byte and compare it with sent byte.
  * @return 0 ok | -1 error | 1 max retry was reached
  */  
-int eb_wait_bus(void);
+int eb_bus_wait(void);
 
 /**
  * @brief free bus after syn was sent
  * @return 0 ok | -1 error
  */  
-int eb_free_bus(void);
+int eb_bus_free(void);
 
 
+
+ /**
+ * @brief receive ACK byte from serial device
+ * @param [out] *buf pointer to a byte array of received bytes
+ * @param [out] buflen length of received bytes
+ * @return 0 ok | 1 negative ACK | -1 error | -2 send and recv msg are different 
+ * | -3 syn received (no answer from slave) | -4 we should never reach this
+ */  
+int eb_send_data_get_ack(unsigned char *buf, int *buflen);
 
 /**
  * @brief prepare send data

@@ -40,7 +40,7 @@
 #define CMD_FILELEN        1024
 
 #define CMD_SIZE_TYPE      3
-#define CMD_SIZE_CLASS     5
+#define CMD_SIZE_CLASS     20
 #define CMD_SIZE_CMD       30
 #define CMD_SIZE_COM       256
 #define CMD_SIZE_S_ZZ      2

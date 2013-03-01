@@ -476,7 +476,116 @@ eb_recv_data(unsigned char *buf, int *buflen)
 
 
 int
-eb_get_ack(unsigned char *buf, int *buflen)
+eb_bus_wait_syn(int *skip)
+{
+	unsigned char buf[SERIAL_BUFSIZE];
+	int buflen, ret, i, found;
+	
+	found = 99;
+
+	/* do until SYN read*/
+	do {
+		memset(buf, '\0', sizeof(buf));
+		buflen = sizeof(buf);
+
+		ret = eb_serial_recv(buf, &buflen);
+		if (ret < 0)
+			return -1;		
+
+		if (buflen > 0) {
+			
+			i = 0;
+			while (i < buflen) {
+				/* break if byte = SYN and it is last byte */
+				if (buf[i] == EBUS_SYN && (i + 1) == buflen) {
+					found = 1;
+					break;
+				}
+				i++;
+			}
+
+			if (*skip > 0)
+				*skip -= 1;
+		}
+	} while (found == 99);
+	
+	return 0;
+}
+
+int
+eb_bus_wait(void)
+{
+	unsigned char buf[SERIAL_BUFSIZE];
+	int buflen, ret, skip, retry;
+	struct timeval tact, tlast, tdiff;
+
+	skip = 0;
+	retry = 0;
+	
+	do {
+		ret = eb_bus_wait_syn(&skip);
+		if (ret < 0)
+			return -1;	
+
+		/* remember start time */
+		gettimeofday(&tlast, NULL);
+
+		/* send QQ */
+		ret = eb_serial_send(&qq, 1);
+		if (ret < 0)
+			return -1;
+
+		gettimeofday(&tact, NULL);
+		eb_diff_time(&tact, &tlast, &tdiff);
+
+		/* wait ~4200 usec */
+		usleep(max_wait - tdiff.tv_usec);
+
+		gettimeofday(&tact, NULL);
+		eb_diff_time(&tact, &tlast, &tdiff);
+
+		/* receive 1 byte - must be QQ */
+		memset(buf, '\0', sizeof(buf));
+		buflen = sizeof(buf);
+		ret = eb_serial_recv(buf, &buflen);
+		if (ret < 0)
+			return -1;		
+
+		/* is sent and read qq byte is equal */
+		if (buf[0] == qq && buflen == 1)
+			return 0;
+
+		retry++;
+		skip = skip_ack + retry;
+	
+	} while (retry < get_retry);
+
+	/* reached max retry */
+	return 1;
+}
+
+int
+eb_bus_free(void)
+{
+	int ret, skip;
+	ret = 0;
+	skip = 0;
+
+	ret = eb_serial_send(&syn, 1);
+	if (ret < 0)
+		return -1;
+		
+	ret = eb_bus_wait_syn(&skip);
+	if (ret < 0)
+		return -1;			
+
+	return 0;
+}
+
+
+
+int
+eb_send_data_get_ack(unsigned char *buf, int *buflen)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, ret, i, j, found;
@@ -538,117 +647,6 @@ eb_get_ack(unsigned char *buf, int *buflen)
 	return found;
 }
 
-
-
-int
-eb_wait_bus_syn(int *skip)
-{
-	unsigned char buf[SERIAL_BUFSIZE];
-	int buflen, ret, i, found;
-	
-	found = 99;
-
-	/* do until SYN read*/
-	do {
-		memset(buf, '\0', sizeof(buf));
-		buflen = sizeof(buf);
-
-		ret = eb_serial_recv(buf, &buflen);
-		if (ret < 0)
-			return -1;		
-
-		if (buflen > 0) {
-			
-			i = 0;
-			while (i < buflen) {
-				/* break if byte = SYN and it is last byte */
-				if (buf[i] == EBUS_SYN && (i + 1) == buflen) {
-					found = 1;
-					break;
-				}
-				i++;
-			}
-
-			if (*skip > 0)
-				*skip -= 1;
-		}
-	} while (found == 99);
-	
-	return 0;
-}
-
-int
-eb_wait_bus(void)
-{
-	unsigned char buf[SERIAL_BUFSIZE];
-	int buflen, ret, skip, retry;
-	struct timeval tact, tlast, tdiff;
-
-	skip = 0;
-	retry = 0;
-	
-	do {
-		ret = eb_wait_bus_syn(&skip);
-		if (ret < 0)
-			return -1;	
-
-		/* remember start time */
-		gettimeofday(&tlast, NULL);
-
-		/* send QQ */
-		ret = eb_serial_send(&qq, 1);
-		if (ret < 0)
-			return -1;
-
-		gettimeofday(&tact, NULL);
-		eb_diff_time(&tact, &tlast, &tdiff);
-
-		/* wait ~4200 usec */
-		usleep(max_wait - tdiff.tv_usec);
-
-		gettimeofday(&tact, NULL);
-		eb_diff_time(&tact, &tlast, &tdiff);
-
-		/* receive 1 byte - must be QQ */
-		memset(buf, '\0', sizeof(buf));
-		buflen = sizeof(buf);
-		ret = eb_serial_recv(buf, &buflen);
-		if (ret < 0)
-			return -1;		
-
-		/* is sent and read qq byte is equal */
-		if (buf[0] == qq && buflen == 1)
-			return 0;
-
-		retry++;
-		skip = skip_ack + retry;
-	
-	} while (retry < get_retry);
-
-	/* reached max retry */
-	return 1;
-}
-
-int
-eb_free_bus(void)
-{
-	int ret, skip;
-	ret = 0;
-	skip = 0;
-
-	ret = eb_serial_send(&syn, 1);
-	if (ret < 0)
-		return -1;
-		
-	ret = eb_wait_bus_syn(&skip);
-	if (ret < 0)
-		return -1;			
-
-	return 0;
-}
-
-
-
 void
 eb_send_data_prepare(const unsigned char *buf, int buflen)
 {
@@ -705,7 +703,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	eb_send_data_prepare(buf, buflen);
 	
 	/* fetch AA and send QQ */
-	ret = eb_wait_bus();
+	ret = eb_bus_wait();
 	if (ret != 0)
 		return -1;
 	
@@ -716,7 +714,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 
 	if (type == EBUS_MSG_BROADCAST) {
 		/* free bus */
-		ret = eb_free_bus();
+		ret = eb_bus_free();
 		if (ret < 0)
 			return -1;		
 		
@@ -728,11 +726,11 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	memcpy(tmp, &send_data.msg_esc[1], send_data.len_esc - 1);
 	tmplen = send_data.len_esc - 1;
 
-	ret = eb_get_ack(tmp, &tmplen);
+	ret = eb_send_data_get_ack(tmp, &tmplen);
 
 	if (ret < 0 || ret > 1) {
 		/* free bus */
-		ret = eb_free_bus();
+		ret = eb_bus_free();
 		if (ret < 0)
 			return -1;		
 	
@@ -752,11 +750,11 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		memcpy(tmp, &send_data.msg_esc[0], send_data.len_esc);
 		tmplen = send_data.len_esc;
 
-		ret = eb_get_ack(tmp, &tmplen);		
+		ret = eb_send_data_get_ack(tmp, &tmplen);		
 	
 		if (ret == 1) {
 			/* free bus */
-			ret = eb_free_bus();
+			ret = eb_bus_free();
 			if (ret < 0)
 				return -1;
 	
@@ -769,7 +767,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		val = ret;
 	
 		/* free bus */
-		ret = eb_free_bus();
+		ret = eb_bus_free();
 		if (ret < 0)
 			return -1;		
 
@@ -794,12 +792,12 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		memset(tmp, '\0', sizeof(tmp));
 		tmplen = 0;
 
-		ret = eb_get_ack(tmp, &tmplen);		
+		ret = eb_send_data_get_ack(tmp, &tmplen);		
 
 		/* we compare against nak ! */
 		if (ret != 1) {
 			/* free bus */
-			ret = eb_free_bus();
+			ret = eb_bus_free();
 			if (ret < 0)
 				return -1;			
 		
@@ -830,7 +828,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	}
 
 	/* free bus */
-	ret = eb_free_bus();
+	ret = eb_bus_free();
 	if (ret < 0)
 		return -1;	
 			
