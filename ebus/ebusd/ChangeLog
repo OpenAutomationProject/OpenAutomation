@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-03-03:
+* Added debian init script ebusd.init to contrib.
+* Fixed autogen.sh that it worked properly with bourne shell.
+
 2013-03-01:
 * Added new directory doc with some usefull documentation.
 * Added an example command csv file into contrib directory.

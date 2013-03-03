@@ -102,6 +102,11 @@ eb_cmd_search_com_cyc(const unsigned char *hex, int hexlen)
 	unsigned char hlp[(CMD_SIZE_S_MSG * 2) + 1];
 	int i;
 
+	if (hexlen > (CMD_SIZE_S_MSG * 2)) {
+		log_print(L_ERR, "hexlen: %d > hlp: %d ", hexlen, (CMD_SIZE_S_MSG * 2));
+		return -2;
+	}
+
 	memset(hlp, '\0', sizeof(hlp));
 	for (i = 0; i < hexlen; i++)
 		sprintf((char *) &hlp[2 * i], "%02X", hex[i]);

@@ -20,11 +20,11 @@
 
 exists()
 {
-        if command -v $1 &>/dev/null
+        if command $1 &>/dev/null
         then
                 return 1
         else
-		echo " command not found"
+		printf " command not found\n";
 		exit
         fi
 }
@@ -32,34 +32,34 @@ exists()
 run()
 {
 	$1
-	if [ $? == "0" ]
+	if [ $? -eq 0 ]
 	then
-		echo " done"
+		printf " done\n";
 	else
-		echo " command failed"
+		printf " command failed\n";
 		exit
 	fi
 }
 
-echo -n ">>> aclocal"
+printf ">>> aclocal";
 exists aclocal
 run aclocal
 
-echo -n ">>> autoconf";
+printf ">>> autoconf";
 exists autoconf;
 run autoconf
 
-echo -n ">>> autoheader"
+printf ">>> autoheader";
 exists autoheader
 run autoheader
 
-echo -n ">>> automake"
+printf ">>> automake";
 exists automake
 run automake
 
-echo ">>> configure"
+printf ">>> configure\n";
 ./configure
 
-echo ">>> make"
+printf ">>> make";
 exists make
 run make

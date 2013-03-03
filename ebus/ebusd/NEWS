@@ -1,50 +1,53 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-03-03:
+* Added debian init script ebusd.init to contrib.
+
 2013-03-01:
-* Add documentation and an example command csv file.
+* Added documentation and an example command csv file.
 
 2013-02-28:
-* Add loglevel as telnet command to change logging level at runtime.
+* Added loglevel as telnet command to change logging level at runtime.
 
 2013-02-27:
-* Add new config parameter print_size to adjust number of bytes at output stream.
+* Added new config parameter print_size to adjust number of bytes at output stream.
 
 2013-02-22:
 * Changed client answer code so normal telnet client can handle it
 
 2013-02-21:
-* Improve decoding of cyc commands to all ebus message types.
+* Improved decoding of cyc commands to all ebus message types.
 
 2013-02-19:
-* Add some usefull description of ebusd to README
+* Added some usefull description of ebusd to README
 
 2013-02-17:
-* Add csv tool to print command configuration.
-* Add deconding of cyc commands.
+* Added csv tool to print command configuration.
+* Added deconding of cyc commands.
 
 2013-02-16:
 * Structure for commands improved so only one structure for GET/SET/CYC is needed
 * Possible formats for GET / SET (asc, bcd, d1b, d1c, d2b, d2c, dat, tim)
 
 2013-02-06:
-* Fix some malfunctions of command decode function
-* Add parameter send_retry so the daemon can try x times to send command
+* Fixed some malfunctions of command decode function
+* Added parameter send_retry so the daemon can try x times to send command
 
 2013-02-04:
-* Add the ability to send commands via telnet to daemon
+* Added the ability to send commands via telnet to daemon
   (This ist just added for GET and a few ebus commands for response)
 
 2013-02-01:
-* Add functions to read ebus command files
+* Added functions to read ebus command files
 
 2013-01-25:
-* Add autogen.sh script in main dir
+* Added autogen.sh script in main dir
 * Logging functions changed from level to class system
 
 2013-01-24:
-* Add example daemon configuration file
-* Add functions for parsing daemon configuration file
+* Added example daemon configuration file
+* Added functions for parsing daemon configuration file
 
 2013-01-17:
 * Prepare Source to compile with GNU Autotools

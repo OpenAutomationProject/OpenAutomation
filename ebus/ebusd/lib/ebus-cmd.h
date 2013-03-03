@@ -142,7 +142,8 @@ void eb_cmd_get_cyc_buf(int id, unsigned char *msg, int *msglen);
 /**
  * @brief search given strings in cycbuf array
  * @param [in] *hex pointer to hex string
- * @return 0-x id of found ebus command in array | -1 command not found
+ * @return 0-x id of found ebus command in array
+ *         -1 command not found | -2 hexlen too long
  */
 int eb_cmd_search_com_cyc(const unsigned char *hex, int hexlen);
 
