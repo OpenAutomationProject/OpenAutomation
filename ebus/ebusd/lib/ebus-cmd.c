@@ -833,9 +833,15 @@ int
 eb_cmd_dir_read(const char *cfgdir, const char *extension)
 {
 	struct dirent **dir;
-	int ret, i, j, files;
-	char file[CMD_FILELEN];
+	int ret, i, j, files, extlen;
+	char file[CMD_FILELEN], extprep[11];
 	char *ext;
+
+	extlen = strlen(extension) + 1;
+
+	memset(extprep, '\0', sizeof(extprep));
+	extprep[0] = '.';
+	strncpy(&extprep[1], extension, strlen(extension));
 
 	files = scandir(cfgdir, &dir, 0, alphasort);
 	if (files < 0) {
@@ -848,9 +854,9 @@ eb_cmd_dir_read(const char *cfgdir, const char *extension)
 	while (i < files) {
 		ext = strrchr(dir[i]->d_name, '.');
 			if (ext != NULL) {
-				if (strlen(ext) == 4
+				if (strlen(ext) == extlen
 				    && dir[i]->d_type == DT_REG
-				    && strncasecmp(ext, extension, 4) == 0 ) {
+				    && strncasecmp(ext, extprep, extlen) == 0 ) {
 					memset(file, '\0', sizeof(file));
 					sprintf(file, "%s/%s", cfgdir,
 								dir[i]->d_name);

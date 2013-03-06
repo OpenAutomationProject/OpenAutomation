@@ -64,21 +64,6 @@ struct cycbuf {
 	unsigned char buf[CMD_SIZE_S_MSG + 1]; /**< NN + Data */
 };
 
-
-
-/**
- * @brief element structure
- */
-struct element {
-	char d_sub[CMD_SIZE_D_SUB + 1]; /**< pin1 */
-	char d_pos[CMD_SIZE_D_POS + 1]; /**< data position at bytes */
-	char d_type[CMD_SIZE_D_TYPE + 1]; /**< data type */
-	float d_fac; /**< facter */
-	char d_unit[CMD_SIZE_D_UNIT + 1]; /**< unit of data like °C,...) */
-	char d_valid[CMD_SIZE_D_VALID + 1]; /**< valid data */
-	char d_com[CMD_SIZE_D_COM + 1]; /**< just a comment */
-};
-
 /**
  * @brief commands structure
  */
@@ -95,6 +80,19 @@ struct commands {
 	char s_msg[CMD_SIZE_S_MSG + 1]; /**< max 15 data bytes */
 	int d_elem; /**< number of elements */
 	struct element *elem; /**< pointer of array with elements */
+};
+
+/**
+ * @brief element structure
+ */
+struct element {
+	char d_sub[CMD_SIZE_D_SUB + 1]; /**< pin1 */
+	char d_pos[CMD_SIZE_D_POS + 1]; /**< data position at bytes */
+	char d_type[CMD_SIZE_D_TYPE + 1]; /**< data type */
+	float d_fac; /**< facter */
+	char d_unit[CMD_SIZE_D_UNIT + 1]; /**< unit of data like °C,...) */
+	char d_valid[CMD_SIZE_D_VALID + 1]; /**< valid data */
+	char d_com[CMD_SIZE_D_COM + 1]; /**< just a comment */
 };
 
 

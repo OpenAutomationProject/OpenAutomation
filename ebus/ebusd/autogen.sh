@@ -61,5 +61,4 @@ printf ">>> configure\n";
 ./configure
 
 printf ">>> make";
-exists make
-run make
+make

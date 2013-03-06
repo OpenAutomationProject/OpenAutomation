@@ -52,11 +52,11 @@ static int serialfd = UNSET; /* serial file descriptor */
 static int socketfd = UNSET; /* socket file descriptor */
 
 
-static char address[2];
+static char address[3];
 static char cfgdir[CFG_LINELEN];
 static char cfgfile[CFG_LINELEN];
 static char device[CFG_LINELEN];
-static char extension[5];
+static char extension[10];
 static int foreground = UNSET;
 static char loglevel[CFG_LINELEN];
 static char logfile[CFG_LINELEN];
@@ -176,12 +176,7 @@ cmdline(int *argc, char ***argv)
 			strncpy(device, optarg, strlen(optarg));
 			break;
 		case 'e':
-			if (strlen(optarg) > 3) {
-				usage();
-				exit(EXIT_FAILURE);
-			}
-			extension[0] = '.';
-			strncpy(&extension[1], optarg, strlen(optarg));
+			strncpy(extension, optarg, strlen(optarg));
 			break;						
 		case 'f':
 			foreground = YES;
@@ -238,8 +233,7 @@ set_unset(void)
 		strncpy(device , SERIAL_DEVICE, strlen(SERIAL_DEVICE));
 
 	if (*extension == '\0') {
-		extension[0] = '.';
-		strncpy(&extension[1] , DAEMON_EXTENSION, strlen(DAEMON_EXTENSION));
+		strncpy(extension , DAEMON_EXTENSION, strlen(DAEMON_EXTENSION));
 	}
 
 	if (foreground == UNSET)
