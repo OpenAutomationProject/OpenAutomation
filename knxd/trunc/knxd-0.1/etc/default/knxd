@@ -1,0 +1,10 @@
+# Defaults for knxd initscript
+# sourced by /etc/init.d/knxd
+# installed at /etc/default/knxd by the maintainer scripts
+
+#
+# This is a POSIX shell fragment
+#
+
+# Additional options that are passed to the daemon(s).
+DAEMON_ARGS="-p $PIDFILE"

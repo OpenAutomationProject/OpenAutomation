@@ -1,0 +1,4 @@
+#GA;DPT;RRD_TYPE;RRD_STEP;TYPE;CMD;COMMENT
+8/6/22;12;c;0.5;get;mv yield_sum;Energieertrag 
+8/6/42;9;g;;get;mv brine_in temp;Quellentemperatur 
+8/6/41;9;g;;get;mv brine_out temp;Austrittstemperatur

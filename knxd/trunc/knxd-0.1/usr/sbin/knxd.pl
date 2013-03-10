@@ -105,7 +105,7 @@ my $rra1_row = $daemon_config{''}{'rra_1_interval_rows'};
 my $rra5_row = $daemon_config{''}{'rra_5_interval_rows'};
 my $rra15_row = $daemon_config{''}{'rra_15_interval_rows'};
 my $rra180_row= $daemon_config{''}{'rra_180_interval_rows'};
-my $eib_logging  = $daemon_config{''}{'eib_logging'};
+my $eib_logging = $daemon_config{''}{'eib_logging'};
 my $eib = $daemon_config{''}{'eib'};
 
 my $mem_max = $daemon_config{''}{'mem_max'};
@@ -474,7 +474,8 @@ sub check_global_rrd_update { # here eib_traffic and daemon-stats - also: CHECK 
    if ($rrd_lastupdate + $rrd_interval < time()) {
        # check/create rrd
        if (!-d $rrd_dir) { mkdir($rrd_dir); }
-       if (!-e $rrd_dir.'eib_traffic.rrd') {
+       
+       if (!-e $rrd_dir.'eib_traffic.rrd' && $eib_logging == 1) {
           # Create RRD
           my $heartbeat = $rrd_interval * 3;
           RRDs::create($rrd_dir.'eib_traffic.rrd',
@@ -489,8 +490,11 @@ sub check_global_rrd_update { # here eib_traffic and daemon-stats - also: CHECK 
               LOGGER('INFO',"Created RRD eib-traffic");
            }
        }
+       
        #Now do the updates
+       if ($eib_logging == 1){
        RRDs::update($rrd_dir.'eib_traffic.rrd','N:'.$telegram_count.':'.$telegram_bytes);
+       }
        if (RRDs::error) {
           LOGGER('INFO',"Update of RRDs eib-traffic failed:".RRDs::error." -> deleted");
           unlink($rrd_dir.'eib_traffic.rrd');

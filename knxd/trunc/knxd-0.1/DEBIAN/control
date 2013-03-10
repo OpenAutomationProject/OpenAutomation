@@ -1,0 +1,8 @@
+Package: knxd
+Version: 0.1
+Section: net
+Priority: required
+Architecture: all
+Maintainer: Mirko Hirsch
+Depends: liblog-log4perl-perl, libproc-pid-file-perl (>= 1.25), libfile-touch-perl, librrds-perl, libmath-round-perl, libmath-round-perl, libconfig-std-perl, libproc-daemon-perl
+Description: Daemon for EIB/KNX/eBus

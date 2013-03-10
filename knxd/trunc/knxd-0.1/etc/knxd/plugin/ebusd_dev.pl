@@ -5,17 +5,15 @@ use Net::Telnet ();
 
 
 #use Devel::Leak;
-####TRY MEMORY
-#my $handle; # apparently this doesn't need to be anything at all
-#my $leaveCount = 0;
-#my $enterCount = Devel::Leak::NoteSV($handle);
-##print STDERR "ENTER: $enterCount SVs\n";
-#plugin_log($plugname,"ENTER: $enterCount SVs");
-#$leaveCount = Devel::Leak::CheckSV($handle);
-##print STDERR "\nLEAVE: $leaveCount SVs\n";
-#plugin_log($plugname,"LEAVE: $leaveCount SVs");
-
-
+# ###TRY MEMORY
+# my $handle; # apparently this doesn't need to be anything at all
+# my $leaveCount = 0;
+# my $enterCount = Devel::Leak::NoteSV($handle);
+# #print STDERR "ENTER: $enterCount SVs\n";
+# plugin_log($plugname,"ENTER: $enterCount SVs");
+# $leaveCount = Devel::Leak::CheckSV($handle);
+# #print STDERR "\nLEAVE: $leaveCount SVs\n";
+# plugin_log($plugname,"LEAVE: $leaveCount SVs");
 
 
 ### READ PLUGIN-CONF
@@ -43,13 +41,13 @@ chomp $_;
 my @array = split (/;/,$_);
 my ($ga,$dpt,$rrd_type,$rrd_step,$type,$short,$comment) = @array;
 
-#possible this prevents a memleak
-@array = ();
-undef @array;
-#maybe !?
+# #possible this prevents a memleak
+# @array = ();
+# undef @array;
+# #maybe !?
 
 ###define @gets### includes cyclic
-if ($type ne "set" && ($ga or $rrd_type)){
+if ($type ne "set" && ($ga or $dpt or $rrd_type)){
     $id++;
     push @gets,{ga => $ga, dpt => $dpt, rrd_type => $rrd_type, rrd_step => $rrd_step, type => $type, short => $short, comment => $comment, id => $id};
 }
@@ -156,20 +154,20 @@ sub send_ebusd{
     my @answer = $t->cmd($cmd);
     $answer = $answer[0];
     $t->close;
-		####possible this prevents a memleak
-		@answer = (); 
-		undef @answer;
-		####maybe !?
-    return $answer;
+		# ####possible this prevents a memleak
+		# @answer = (); 
+		# undef @answer;
+		# ####maybe !?
     eval { close $t; };undef $t;
+return $answer;
 }
 
-####possible this prevents a memleak
-@sets = (); 
-@gets = ();
-undef @gets;
-undef @sets;
-####maybe !?
+# ####possible this prevents a memleak
+# @sets = (); 
+# @gets = ();
+# undef @gets;
+# undef @sets;
+# ####maybe !?
 
 
 return sprintf("%.2f",$plugin_info{$plugname.'_meminc'})." mb lost";
@@ -193,8 +191,8 @@ sub readConf
    plugin_log($plugname, "--> $_") foreach (@parts);
   }
  }
-####possible this prevents a memleak
-@lines = (); 
-undef @lines;
-####maybe !?
+# ####possible this prevents a memleak
+# @lines = (); 
+# undef @lines;
+# ####maybe !?
 }

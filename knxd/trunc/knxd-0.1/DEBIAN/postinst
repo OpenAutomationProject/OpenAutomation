@@ -1,0 +1,4 @@
+#! /bin/sh -e
+
+update-rc.d knxd defaults
+/etc/init.d/knxd restart
