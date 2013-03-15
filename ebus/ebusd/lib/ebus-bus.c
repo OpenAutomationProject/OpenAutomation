@@ -1,6 +1,5 @@
 /*
  * Copyright (C) Roland Jax 2012-2013 <roland.jax@liwest.at>
- * crc calculations from http://www.mikrocontroller.net/topic/75698
  *
  * This file is part of ebusd.
  *
@@ -179,34 +178,6 @@ eb_raw_file_write(const unsigned char *buf, int buflen)
 	return 0;
 }
 
-void
-eb_raw_print_hex(const unsigned char *buf, int buflen)
-{
-	int i, j, k;
-	char msg[3 * print_size];	
-
-	memset(msg, '\0', sizeof(msg));
-	k = 1;
-
-	for (i = 0, j = 0; i < buflen; i++, j++) {			
-		sprintf(&msg[3 * j], " %02x", buf[i]);
-		
-		if (j + 1 == print_size) {
-			log_print(L_EBH, "%d%s", k, msg);
-			memset(msg, '\0', sizeof(msg));		
-			j = -1;
-			k++;
-		}
-	}
-
-	if (j > 0) {
-		if (k > 1)
-			log_print(L_EBH, "%d%s", k, msg);
-		else
-			log_print(L_EBH, " %s", msg);
-	}
-}
-
 
 
 int
@@ -300,7 +271,7 @@ eb_serial_recv(unsigned char *buf, int *buflen)
 
 	/* print bus */
 	if (showraw == YES)
-		eb_raw_print_hex(buf, *buflen);
+		eb_print_hex(buf, *buflen);
 
 	/* dump raw data*/
 	if (rawdump == YES) {
@@ -322,6 +293,34 @@ eb_print_result(void)
 	for (i = 0; i < recv_data.len; i++)
 		fprintf(stdout, " %02x", recv_data.msg[i]);
 	fprintf(stdout, "\n");
+}
+
+void
+eb_print_hex(const unsigned char *buf, int buflen)
+{
+	int i, j, k;
+	char msg[3 * print_size];	
+
+	memset(msg, '\0', sizeof(msg));
+	k = 1;
+
+	for (i = 0, j = 0; i < buflen; i++, j++) {			
+		sprintf(&msg[3 * j], " %02x", buf[i]);
+		
+		if (j + 1 == print_size) {
+			log_print(L_EBH, "%d%s", k, msg);
+			memset(msg, '\0', sizeof(msg));		
+			j = -1;
+			k++;
+		}
+	}
+
+	if (j > 0) {
+		if (k > 1)
+			log_print(L_EBH, "%d%s", k, msg);
+		else
+			log_print(L_EBH, " %s", msg);
+	}
 }
 
 
@@ -841,7 +840,8 @@ void
 eb_execute(int id, char *data, char *buf, int *buflen)
 {
 	unsigned char msg[SERIAL_BUFSIZE], hlp[CMD_DATA_SIZE];
-	int ret, msglen, msgtype, hlplen, retry, cycdata;
+	char tmp[TMP_BUFSIZE];
+	int ret, msglen, msgtype, retry, cycdata, pos, len, hlplen;
 
 	memset(msg, '\0', sizeof(msg));
 	msglen = sizeof(msg);
@@ -856,7 +856,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 	} else {
 		/* prepare command - if prepare failed buflen > 0 */
 		eb_cmd_prepare(id, data, msg, &msglen, buf);
-		eb_raw_print_hex(msg, msglen);
+		eb_print_hex(msg, msglen);
 	}		
 
 	if (cycdata == NO && strlen(buf) == 0) {
@@ -889,13 +889,14 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 				memset(msg, '\0', sizeof(msg));
 				msglen = sizeof(msg);
 				eb_recv_data_get(msg, &msglen);
-				eb_raw_print_hex(msg, msglen);
+				eb_print_hex(msg, msglen);
 
 				/* decode */
 				if (eb_cmd_check_type(id, "set") == YES) {
 					strcpy(buf, " ACK\n");
 				} else {
-					eb_cmd_decode(id, data, msg, buf);
+					eb_cmd_decode(id, CMD_PART_SD,
+								data, msg, buf);
 					if (strlen(buf) > 0)
 						strncat(buf, "\n", 1);
 				}
@@ -906,11 +907,58 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 		}
 
 	} else if (cycdata == YES) {
+		memset(tmp, '\0', sizeof(tmp));
 		memset(hlp, '\0', sizeof(hlp));
 		
-		eb_cmd_get_cyc_buf(id, hlp, &hlplen);
+		eb_cmd_get_cyc_buf(id, msg, &msglen);
+
+		/* CMD_PART_MD */
+		pos = 4;
+		len = 1 + (int) msg[4];
+		memcpy(hlp, &msg[pos], len);
+
+
+		eb_cmd_decode(id, CMD_PART_MD, data, hlp, tmp);
+		strncpy(buf, tmp, strlen(tmp));
+
+		if (msgtype != EBUS_MSG_BROADCAST) {
+			/* CMD_PART_SA */
+			memset(tmp, '\0', sizeof(tmp));
+			memset(hlp, '\0', sizeof(hlp));
 			
-		eb_cmd_decode(id, data, hlp, buf);
+			pos =  5 + (int) msg[4] + 1;
+			len = 2;
+			hlp[0] = 0x01;
+			memcpy(&hlp[1], &msg[pos], 1);		
+			
+			eb_cmd_decode(id, CMD_PART_SA, data, hlp, tmp);
+			strncat(buf, tmp, strlen(tmp));			
+		}
+
+		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
+			/* CMD_PART_SD */
+			memset(tmp, '\0', sizeof(tmp));
+			memset(hlp, '\0', sizeof(hlp));
+			
+			pos =  5 + (int) msg[4] + 2;
+			len = 1 + (int) msg[pos];
+			memcpy(hlp, &msg[pos], len);		
+			
+			eb_cmd_decode(id, CMD_PART_SD, data, hlp, tmp);
+			strncat(buf, tmp, strlen(tmp));
+			memset(tmp, '\0', sizeof(tmp));
+			memset(hlp, '\0', sizeof(hlp));
+
+			/* CMD_PART_MA */
+			pos =  5 + (int) msg[4] + 2 +(int) msg[pos] + 2;
+			len = 2;
+			hlp[0] = 0x01;
+			memcpy(&hlp[1], &msg[pos], 1);		
+			
+			eb_cmd_decode(id, CMD_PART_MA, data, hlp, tmp);
+			strncat(buf, tmp, strlen(tmp));			
+		}
+		
 		if (strlen(buf) > 0)
 			strncat(buf, "\n", 1);
 		else
@@ -926,126 +974,93 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 
 
 
-void
+int
 eb_cyc_data_process(const unsigned char *buf, int buflen)
 {
-	unsigned char msg[CMD_DATA_SIZE], hlp[CMD_DATA_SIZE];
-	unsigned char crc_recv, crc_calc;
-	char tmp[CMD_DATA_SIZE];
-	int ret, crc, len, msgtype, msglen, hlplen;
+	unsigned char msg[CMD_DATA_SIZE];
+	unsigned char crcm_recv, crcm_calc, acks, crcs_recv, crcs_calc, ackm;
+	int ret, msgtype, msglen, mlen, slen, len;
 
 	memset(msg, '\0', sizeof(msg));
-	memset(hlp, '\0', sizeof(hlp));
-	memset(tmp, '\0', sizeof(tmp));
 
-	/* decode and save data */
+	/* search command definition */
 	ret = eb_cmd_search_com_cyc(&buf[1], buflen - 1);
 	if (ret >= 0) {
 
 		msgtype = eb_cmd_get_s_type(ret);
+
+		/* unescape */
+		memcpy(msg, buf, buflen);
+		msglen = buflen;
+
+		eb_unesc(msg, &msglen);
 		
-		if (msgtype == EBUS_MSG_BROADCAST) {
-			/* calculate CRC */
-			if (buf[buflen - 2] == EBUS_SYN_ESC_A9) {
-				crc_calc = eb_calc_crc(buf, buflen - 2);
-				if (buf[buflen - 1] == EBUS_SYN_ESC_01)
-					crc_recv = EBUS_SYN;
-				else
-					crc_recv = EBUS_SYN_ESC_A9;
+		/* calc crc vom master */
+		mlen = 5 + (int) msg[4];
+		crcm_calc = eb_calc_crc(msg, mlen);
+		crcm_recv = msg[mlen];
 
-				crc = 2;
-
-			} else {
-				crc_calc = eb_calc_crc(buf, buflen - 1);
-				crc_recv = buf[buflen - 1];
-
-				crc = 1;
-			}
-
-			if (crc_calc == crc_recv) {			
-				/* unescape */
-				memcpy(msg, buf, buflen - crc);
-				msglen = buflen - crc;
-
-				eb_unesc(msg, &msglen);
-
-				/* save data */
-				eb_cmd_set_cyc_buf(ret, &msg[4], msglen - 4);
-					
-				/* decode */
-				eb_cmd_decode(ret, "-", &msg[4], tmp);	
-			} else {
-				strcpy(tmp, "error CRC");
-			}
-
-			
-			
-		} else if (msgtype == EBUS_MSG_MASTER_MASTER) {
-			/* set NN to 0x01 for MM */
-			msg[0] = 0x01;
-			memcpy(&msg[1], &buf[buflen - 1], 1);
-			msglen = 2;
-
-			/* save data */
-			eb_cmd_set_cyc_buf(ret, msg, msglen);
-			
-			/* decode */
-			eb_cmd_decode(ret, "-", &msg[0], tmp);
-								
-		} else if (msgtype == EBUS_MSG_MASTER_SLAVE) {
-			memcpy(msg, buf, buflen);
-			msglen = buflen;
-			
-			/* unescape first, we need only the answer */
-			eb_unesc(msg, &msglen);
-
-			/* get only answer NN Dx CRC */
-			len = 4 + msg[4] + 1 + 2;			
-			memcpy(hlp, &msg[len], msglen - len - 1);
-			hlplen = msglen - len - 1;
-
-			/* escape copied hlp buffer again */
-			eb_esc(hlp, &hlplen);
-				
-			/* calculate CRC */
-			if (hlp[hlplen - 2] == EBUS_SYN_ESC_A9) {
-				crc_calc = eb_calc_crc(hlp, hlplen - 2);
-				if (hlp[hlplen - 1] == EBUS_SYN_ESC_01)
-					crc_recv = EBUS_SYN;
-				else
-					crc_recv = EBUS_SYN_ESC_A9;
-
-				crc = 2;
-
-			} else {
-				crc_calc = eb_calc_crc(hlp, hlplen - 1);
-				crc_recv = hlp[hlplen - 1];
-
-				crc = 1;
-			}
-
-			if (crc_calc == crc_recv) {			
-				/* unescape */
-				memset(msg, '\0', sizeof(msg));
-				memcpy(msg, hlp, hlplen - crc);
-				msglen = hlplen - crc;
-
-				eb_unesc(msg, &msglen);
-
-				/* save data */
-				eb_cmd_set_cyc_buf(ret, msg, msglen);
-					
-				/* decode */
-				eb_cmd_decode(ret, "-", msg, tmp);	
-			} else {
-				strcpy(tmp, "error CRC");
-			}
-					
+		if (crcm_calc != crcm_recv) {
+			log_print(L_WAR, "%s", "Master CRC Error");
+			return -2;
 		}
 
-		if (strlen(tmp) > 0)
-			log_print(L_EBS, "%s", tmp);
+		/* set len */
+		len = mlen + 1;
+		
+
+		if (msgtype != EBUS_MSG_BROADCAST) {
+
+			/* get ack from slave */
+			acks = msg[mlen + 1];
+
+			if (acks == EBUS_NAK) {
+				log_print(L_WAR, "%s", "Slave ACK Error");
+				//~ return -2;
+			}
+
+			/* set len */
+			len = mlen + 2;			
+		}
+
+		
+		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
+
+			/* calc crc vom slave */
+			slen = 1 + (int) msg[mlen + 2];
+			crcs_calc = eb_calc_crc(&msg[mlen + 2], slen);
+			crcs_recv = msg[mlen + 2 + slen];
+
+			if (crcs_calc != crcs_recv) {
+				log_print(L_WAR, "%s", "Slave CRC Error");
+				return -2;
+			}
+
+			/* get ack from master */
+			ackm = msg[mlen + 2 + slen + 1];
+
+			if (ackm == EBUS_NAK) {
+				log_print(L_WAR, "%s", "Master ACK Error");
+				//~ return -2;
+			}
+
+			/* set len */
+			len = mlen + 2 + slen + 2;
+		}
+
+		/* check len */			
+		if (msglen > len) {
+			log_print(L_WAR, "%s", "LEN Error");
+			return -2;
+						
+		}
+		
+		/* save data */
+		eb_cmd_set_cyc_buf(ret, msg, msglen);
+			
 	}
+
+	return ret;
 }
 
 int
@@ -1056,6 +1071,9 @@ eb_cyc_data_recv()
 	
 	unsigned char buf[SERIAL_BUFSIZE];
 	int ret, i, buflen;
+
+	char tmp[TMP_BUFSIZE];
+	int tmplen;
 
 	memset(buf, '\0', sizeof(buf));
 	buflen = sizeof(buf);
@@ -1078,10 +1096,17 @@ eb_cyc_data_recv()
 
 		/* ebus syn sign is reached - decode ebus message */
 		if (buf[i] == EBUS_SYN && msglen > 0) {
-			eb_raw_print_hex(msg, msglen);
+			eb_print_hex(msg, msglen);
 			
-			eb_cyc_data_process(msg, msglen);
+			ret = eb_cyc_data_process(msg, msglen);
 
+			if (ret > 0) {
+				memset(tmp, '\0', sizeof(tmp));
+				eb_execute(ret, "-", tmp, &tmplen);
+				tmp[strcspn(tmp,"\n")] = '\0';
+				log_print(L_EBS, "%s", tmp);
+			}
+				
 			memset(msg, '\0', sizeof(msg));		
 			msglen = 0;
 		}

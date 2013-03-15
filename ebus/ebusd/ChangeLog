@@ -1,6 +1,11 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-03-15:
+* Improved cyc commands data handling so all parts from message could be decoded.
+* Added new parameter d_part to element configuration part.
+* Updated documantation.
+
 2013-03-06:
 * Fixed extension for command files in configuration. A point is not necessary.
 
@@ -82,7 +87,7 @@ ebus Daemon (ebusd) - ChangeLog
   If the cycle buffer is free, only one command is sent.
 
 2013-02-01:
-* Added functions to read ebus command get files and load them into nested
+* Added functions to read ebus command files and load them into nested
   structure. This will be used to send and decode ebus messages. 
 * Try to read daemon configuration file at daemon directory too.
 * ebus files splitted into ebus-decode and ebus-bus part.

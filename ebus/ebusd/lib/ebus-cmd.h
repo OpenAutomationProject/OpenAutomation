@@ -1,6 +1,5 @@
 /*
  * Copyright (C) Roland Jax 2012-2013 <roland.jax@liwest.at>
- * crc calculations from http://www.mikrocontroller.net/topic/75698
  *
  * This file is part of ebusd.
  *
@@ -19,8 +18,8 @@
  */
 
 /**
- * @file ebus-bus.h
- * @brief ebus communication functions
+ * @file ebus-cmd.h
+ * @brief ebus command file functions
  * @author roland.jax@liwest.at
  * @version 0.1
  */
@@ -46,12 +45,19 @@
 #define CMD_SIZE_S_ZZ      2
 #define CMD_SIZE_S_CMD     4
 #define CMD_SIZE_S_MSG     32
+
 #define CMD_SIZE_D_SUB     20
+#define CMD_SIZE_D_PART    2
 #define CMD_SIZE_D_POS     10
 #define CMD_SIZE_D_TYPE    3
 #define CMD_SIZE_D_UNIT    6
 #define CMD_SIZE_D_VALID   30
 #define CMD_SIZE_D_COM     256
+
+#define CMD_PART_MD        "MD"
+#define CMD_PART_SA        "SA"
+#define CMD_PART_SD        "SD"
+#define CMD_PART_MA        "MA"
 
 
 
@@ -61,7 +67,8 @@
 struct cycbuf {
 	int id; /**< command id from command buffer */
 	unsigned char msg[CMD_SIZE_S_MSG + 1]; /**< zz + cmd + len + msg */
-	unsigned char buf[CMD_SIZE_S_MSG + 1]; /**< NN + Data */
+	unsigned char buf[CMD_DATA_SIZE + 1]; /**< whole message - unescaped */
+	int buflen; /**< len of saved message */	
 };
 
 /**
@@ -87,6 +94,7 @@ struct commands {
  */
 struct element {
 	char d_sub[CMD_SIZE_D_SUB + 1]; /**< pin1 */
+	char d_part[CMD_SIZE_D_PART + 1]; /**< part of message */
 	char d_pos[CMD_SIZE_D_POS + 1]; /**< data position at bytes */
 	char d_type[CMD_SIZE_D_TYPE + 1]; /**< data type */
 	float d_fac; /**< facter */
@@ -177,12 +185,13 @@ int eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf);
 /**
  * @brief decode msg
  * @param [in] id is index in command array
+ * @param [in] *part point to part type for decode
  * @param [in] *data pointer to data bytes for decode
  * @param [out] *msg pointer to message array
  * @param [out] *buf pointer to decoded answer
  * @return 0 ok | -1 error at decode
  */
-int eb_cmd_decode(int id, char *data, unsigned char *msg, char *buf);
+int eb_cmd_decode(int id, char *part, char *data, unsigned char *msg, char *buf);
 
 /**
  * @brief decode given element

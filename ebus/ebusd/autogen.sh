@@ -20,7 +20,7 @@
 
 exists()
 {
-        if command $1 &>/dev/null
+        if command $1 
         then
                 return 1
         else
@@ -60,5 +60,5 @@ run automake
 printf ">>> configure\n";
 ./configure
 
-printf ">>> make";
-make
+printf ">>> make\n";
+run make

@@ -1,6 +1,5 @@
 /*
  * Copyright (C) Roland Jax 2012-2013 <roland.jax@liwest.at>
- * crc calculations from http://www.mikrocontroller.net/topic/75698
  *
  * This file is part of ebusd.
  *
@@ -19,8 +18,8 @@
  */
 
 /**
- * @file ebus-bus.c
- * @brief ebus communication functions
+ * @file ebus-cmd.c
+ * @brief ebus command file functions
  * @author roland.jax@liwest.at
  * @version 0.1
  */
@@ -77,8 +76,10 @@ eb_cmd_set_cyc_buf(int id, const unsigned char *msg, int msglen)
 	for (i = 0; i < cyclen; i++)
 		if (cyc[i].id == com[id].id)
 			break;	
-	
+
 	memcpy(cyc[i].buf, msg, msglen);
+	cyc[i].buflen = msglen;
+		
 }
 
 void
@@ -90,7 +91,7 @@ eb_cmd_get_cyc_buf(int id, unsigned char *msg, int *msglen)
 		if (cyc[i].id == com[id].id)
 			break;
 
-	*msglen = (int) (cyc[i].buf[0] + 0x01);
+	*msglen = cyc[i].buflen;
 	memcpy(msg, cyc[i].buf, *msglen);
 }
 
@@ -355,41 +356,47 @@ on_error:
 }
 
 int
-eb_cmd_decode(int id, char *data, unsigned char *msg, char *buf)
+eb_cmd_decode(int id, char *part, char *data, unsigned char *msg, char *buf)
 {
 	char *tok;
 	char tmp[CMD_DATA_SIZE], hlp[CMD_DATA_SIZE];
 	int ret, i, found;
 
+	/* walk through all elements */
 	for (i = 0; i < com[id].d_elem; i++) {
 		memset(tmp, '\0', sizeof(tmp));
 		strncpy(tmp, data, strlen(data));
 
+		/* "-" indicate no sub command, so we print all */
 		tok = strtok(tmp, " \n\r\t");
 		if (strncasecmp(tok, "-", 1) == 0)
 			found = YES;
 		else
 			found = NO;
-		
-		while (tok != NULL && found == NO) {		
+
+		/* search sub command */
+		while (tok != NULL && found == NO) {
 			if (strncasecmp(com[id].elem[i].d_sub, tok,
-					strlen(com[id].elem[i].d_sub)) == 0) {
+					strlen(com[id].elem[i].d_sub)) == 0 &&
+			    strncasecmp(com[id].elem[i].d_part, part, 2) == 0) {
+				
 				found = YES;
 				break;
-			}
-				
+			}			
 			tok = strtok(NULL, " \n\r\t");
 		}
 
-		if (found == YES) {
+		if (strncasecmp(com[id].elem[i].d_part, part, 2) == 0 &&
+		    found == YES) {			
 			memset(hlp, '\0', sizeof(hlp));
+			
 			ret = eb_cmd_decode_value(id, i, msg, hlp);
 			if (ret < 0) {
 				strncat(buf, "\n", 1);
 				return -1;
 			}
 			
-			strncat(buf, hlp, strlen(hlp));
+			strncat(buf, hlp, strlen(hlp));			
 		}				
 	}
 		
@@ -543,7 +550,8 @@ eb_cmd_encode(int id, char *data, unsigned char *msg, char *buf)
 	int ret, i;
 		
 	tok = strtok_r(data, " \n\r\t", &toksave);
-	
+
+	/* walk through all elements */
 	for (i = 0; i < com[id].d_elem; i++) {
 		if (tok != NULL) {					
 			memset(hlp, '\0', sizeof(hlp));		
@@ -639,9 +647,10 @@ eb_cmd_print(const char *type, int all, int detail)
 
 			if (detail) {
 				for (j = 0; j < com[i].d_elem; j++) {
-					log_print(L_INF, "\t\t  %-20s pos: " \
-						"%-10s\t%s [%5.2f] [%s] \t%s\t%s",
+					log_print(L_INF, "\t\t  %-20s %-2s " \
+					"pos: %-10s\t%s [%5.2f] [%s] \t%s\t%s",
 						com[i].elem[j].d_sub,
+						com[i].elem[j].d_part,
 						com[i].elem[j].d_pos,
 						com[i].elem[j].d_type,
 						com[i].elem[j].d_fac,
@@ -726,6 +735,10 @@ eb_cmd_fill(const char *tok)
 		tok = strtok(NULL, ";");
 		if (strncasecmp(tok, "-", 1) != 0)
 			strncpy(com[comlen].elem[i].d_sub, tok, strlen(tok));
+
+		/* d_part */
+		tok = strtok(NULL, ";");	
+		strncpy(com[comlen].elem[i].d_part, tok, strlen(tok));
 		
 		/* d_pos */
 		tok = strtok(NULL, ";");	

@@ -1,6 +1,5 @@
 /*
  * Copyright (C) Roland Jax 2012-2013 <roland.jax@liwest.at>
- * crc calculations from http://www.mikrocontroller.net/topic/75698
  *
  * This file is part of ebusd.
  *
@@ -33,6 +32,10 @@
 #include <sys/time.h>
 
 #include "ebus-common.h"
+
+
+
+#define TMP_BUFSIZE      1024
 
 
 
@@ -152,14 +155,6 @@ int eb_raw_file_close(void);
  */
 int eb_raw_file_write(const unsigned char *buf,  int buflen);
 
-/**
- * @brief print received data with hex format
- * @param [in] *buf pointer to a byte array of received bytes
- * @param [in] buflen length of received bytes
- * @return none
- */
-void eb_raw_print_hex(const unsigned char *buf, int buflen);
-
 
 
 /**
@@ -199,6 +194,14 @@ int eb_serial_recv(unsigned char *buf, int *buflen);
  * @return none
  */
 void eb_print_result(void);
+
+/**
+ * @brief print received data with hex format
+ * @param [in] *buf pointer to a byte array of received bytes
+ * @param [in] buflen length of received bytes
+ * @return none
+ */
+void eb_print_hex(const unsigned char *buf, int buflen);
 
 
 
@@ -299,10 +302,10 @@ void eb_execute(int id, char *data, char *buf, int *buflen);
 /**
  * @brief handle one collected message
  * @param [in] *buf pointer to a byte array
- * @param [in] *buflen length of byte array
- * @return 0-x length of collected msg | -1 error
+ * @param [in] buflen length of byte array
+ * @return 0-x msg number of collected msg | -1 msg not found | -2 error
  */
-void eb_cyc_data_process(const unsigned char *buf, int buflen);
+int eb_cyc_data_process(const unsigned char *buf, int buflen);
 
 /**
  * @brief handle reading cycle ebus data

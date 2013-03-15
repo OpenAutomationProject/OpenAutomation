@@ -20,7 +20,7 @@
 
 /**
  * @file ebus-decode.h
- * @brief ebus communication functions
+ * @brief ebus decode functions
  * @author roland.jax@liwest.at
  * @version 0.1
  */

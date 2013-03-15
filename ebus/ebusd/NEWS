@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-03-15:
+* Improved cyc commands data handling so all parts from message could be decoded.
+
 2013-03-03:
 * Added debian init script ebusd.init to contrib.
 

@@ -1,6 +1,5 @@
 /*
  * Copyright (C) Roland Jax 2012-2013 <roland.jax@liwest.at>
- * crc calculations from http://www.mikrocontroller.net/topic/75698
  *
  * This file is part of ebusd.
  *
@@ -125,7 +124,7 @@ main(int argc, char *argv[])
 	log_open("", 1);
 
 	if (cfgdir)
-		eb_cmd_dir_read(cfgdir, ".csv");
+		eb_cmd_dir_read(cfgdir, "csv");
 	else
 		usage();
 
@@ -138,55 +137,46 @@ main(int argc, char *argv[])
 	if (set)
 		eb_cmd_print("set", all, detail);		
 
-	
 
-	/* test */
-	//~ const unsigned char tmp[] = {'\x10','\xfe','\xb5','\x05','\x03','\x4a','\x01','\x00','\xf4'};
-	//~ const unsigned char tmp[] = {'\x10','\xfe','\xb5','\x05','\x03','\x4a','\x01','\xa9','\x01','\xb8'};
-	
-	//~ const unsigned char tmp[] = {'\x10','\x23','\xb5','\x04','\x01','\x31','\xf6','\x00'};
-	//~ const unsigned char tmp[] = {'\x10','\x23','\xb5','\x04','\x01','\x31','\xf6','\xff'};
 
-	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x09','\x03','\x29','\x01','\x00','\x23',
-	                             //~ '\x00','\x05','\x01','\x00','\x1d','\x02','\x00','\x60','\x00'};
-
-	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x09','\x03','\x29','\x01','\x00','\x23',
-	                             //~ '\x00','\x05','\x01','\xa9','\x01','\x1d','\x02','\x00','\xec','\x00'};
-
+	//~ Master Slave
 	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x10','\x09','\x00','\x02','\x40','\x00',
 				     //~ '\x00','\x00','\x00','\x00','\x02','\x15','\x00','\x00','\x00','\x00'};
+				     //~ '\x00','\x00','\x00','\x00','\x02','\x15','\xff','\x00','\x00','\x00'};	
+				     //~ '\x00','\x00','\x00','\x00','\x02','\x15','\x00','\x01','\x02','\x99','\x00'};
+				     //~ '\x00','\x00','\x00','\x00','\x02','\x15','\x00','\x02','\xe2','\x67','\x41','\x00'};
+	//~ char cmd[] = "cyc ms test ma";
+	//~ char cmd[] = "cyc ms test sd";
+	//~ char cmd[] = "cyc ms test sa";
+	//~ char cmd[] = "cyc ms test md";
+	//~ char cmd[] = "cyc ms test";
 
-	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x11','\x02','\x03','\x00','\x00','\x27','\x02','\x07',
-				     //~ '\x04','\x2c','\x00','\x10','\xb5','\x01','\x02','\x00','\x00','\x00','\x00',
-				     //~ '\xc8','\xca','\x00'};
-
-
-	//~ const unsigned char tmp[] = {'\x01','\x02','\x03','\x04','\x04','\x05','\x06','\x07','\x08','\x09',
-				     //~ '\x11','\x12','\x13','\x14','\x14','\x15','\x16','\x17','\x18','\x19',
-				     //~ '\x21','\x22','\x23','\x24','\x24','\x25','\x26','\x27','\x28','\x29',
-				     //~ '\x31','\x32','\x33','\x34','\x34','\x35','\x36','\x37','\x38','\x39',
-				     //~ '\x41','\x42','\x43','\x44','\x44','\x45','\x46','\x47','\x48','\x49',
-				     //~ '\x51','\x52','\x53','\x54','\x54','\x55','\x56','\x57','\x58','\x59',
-				     //~ '\x61','\x62','\x63','\x64','\x64','\x65','\x66','\x67','\x68','\x69'};
-
+	//~ Master Master
+	//~ 10 03 05 07 09 bb 06 2e 02 00 80 ff 6e ff 8f 00
 	//~ const unsigned char tmp[] = {'\x10','\x03','\x05','\x07','\x09','\xbb','\x06','\x1b','\x02','\x00',
-				     //~ '\x80','\xff','\x6e','\xff','\xf2','\x00'};				     
+				     //~ '\x80','\xff','\x6e','\xff','\xf2','\x00'};
+				     				     
+	//~ const unsigned char tmp[] = {'\x10','\x23','\xb5','\x04','\x01','\x31','\xf6','\x00'};
+	//~ const unsigned char tmp[] = {'\x10','\x23','\xb5','\x04','\x01','\x31','\xf6','\xff'};
+	//~ char cmd[] = "cyc mm test test";
+	//~ char cmd[] = "cyc mm test stat";
+	//~ char cmd[] = "cyc mm test";
 
-
+	//~ Broadcast
 	//~ const unsigned char tmp[] = {'\x10','\xfe','\xb5','\x16','\x08','\x00','\x02','\x23','\x16','\x28','\x02','\x04','\x13','\x92'};
-//~ 
-	//~ 
+	//~ char cmd[] = "cyc broad date_time day";
+	//~ char cmd[] = "cyc broad date_time";
+
+	
 	//~ const int tmplen = sizeof(tmp) / sizeof(unsigned char);
- //~ 
-	//~ eb_raw_print_hex(tmp, tmplen);
-	//~ eb_cyc_data_process(tmp, tmplen);
-	//~ 
-	//~ char data[CMD_DATA_SIZE], tcpbuf[CMD_DATA_SIZE];
+ 	//~ char data[CMD_DATA_SIZE], tcpbuf[CMD_DATA_SIZE];
 	//~ memset(data, '\0', sizeof(data));
 	//~ memset(tcpbuf, '\0', sizeof(tcpbuf));
 	//~ int id, tcpbuflen;
-//~ 
-	//~ char cmd[] = "cyc broad date_time";
+	//~ 
+	//~ eb_print_hex(tmp, tmplen);
+	//~ eb_cyc_data_process(tmp, tmplen);
+	//~ 
 	//~ id = eb_cmd_search_com(cmd, data);
 	//~ eb_execute(id, data, tcpbuf, &tcpbuflen);
 //~ 

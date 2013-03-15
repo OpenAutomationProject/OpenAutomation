@@ -73,6 +73,7 @@ In short some description to the neccassarry structure of the csv files.
 For each different data type must defined the follow struture
 
  * [   20] d_sub    - subcommand (pin1, ...)
+ * [    2] d_part   - part of message for data bytes (MD, SA, SD, MA)
  * [   10] d_pos    - position at data bytes (1, 2, 3, ...)
  * [    3] d_type   - data type (asc, bcd, ...))
  * [float] d_fac    - facter to scale data (1.0, 0.02, ...)
