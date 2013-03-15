@@ -47,7 +47,9 @@ namespace knxdmxd
         }
       buffer_.Blackout();
     }
-    ;
+
+    virtual ~Universe() {}
+
     void
     Set(const unsigned channel, const unsigned char value, const float fade_in =
         1.e-4, const float fade_out = 1.e-4)
@@ -87,6 +89,12 @@ namespace knxdmxd
   public:
     DMX()
     {
+    }
+
+    virtual
+    ~DMX()
+    {
+
     }
 
     static void
@@ -131,10 +139,14 @@ namespace knxdmxd
   public:
     DMXSender()
     {
-      sender_running_ = false;
+      //sender_running_ = false;
     }
 
-    ~DMXSender();
+    virtual
+    ~DMXSender()
+    {
+
+    }
 
     bool
     Init();
@@ -145,16 +157,17 @@ namespace knxdmxd
 
     void
     Terminate();
+
     bool
     Running()
-    {
-      return sender_running_;
+    {  return false;
+      //return sender_running_;
     }
 
     void
     PatchComplete(const std::string &error)
     {
-      std::clog << kLogDebug << "DMX: patch completed : " << error << std::endl;
+      std::clog << kLogDebug << "DMX: patch completed " << error << std::endl;
       (void) error;
     }
 
@@ -170,7 +183,6 @@ namespace knxdmxd
         }
 
     }
-    ;
 
   };
 
@@ -183,6 +195,8 @@ namespace knxdmxd
   public:
     Dimmer()
     {
+      ga_ = 0;
+      ga_fading_ = 0;
     }
     ;
     Dimmer(const std::string name, eibaddr_t ga, dmx_addr_t dmx)

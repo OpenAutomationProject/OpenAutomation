@@ -42,19 +42,19 @@ namespace knxdmxd
     {
       return _knx;
     }
-    ;
+
     const unsigned
     GetValue() const
     {
       return _val;
     }
-    ;
+
     const int
     GetType() const
     {
       return _type;
     }
-    ;
+
 
     friend std::ostream&
     operator<<(std::ostream &stream, const Trigger& t);
@@ -69,37 +69,40 @@ namespace knxdmxd
     Go()
     {
     }
-    ;
+
     virtual void
     Halt()
     {
     }
-    ;
+
     virtual void
     Refresh()
     {
     }
-    ;
+
     virtual void
     Direct(const int val)
     {
     }
-    ;
+
     virtual void
     Release()
     {
     }
-    ;
+
     virtual void
     Process(const Trigger& trigger)
     {
     }
-    ;
+
     virtual
     ~TriggerHandler()
     {
     }
-    ;
+
+    const std::string GetName() {
+      return _name;
+    }
 
     friend std::ostream&
     operator<<(std::ostream &stream, const TriggerHandler& handler);
@@ -115,12 +118,27 @@ namespace knxdmxd
     TriggerList()
     {
     }
-    ;
 
+    ~TriggerList()
+    {
+
+    }
     void
     Add(Trigger& trigger, pTriggerHandler handler);
     void
     Process();
+    void
+    Clean()
+    {
+      std::set<pTriggerHandler> s( _handlers.begin(), _handlers.end() );
+
+      std::set<pTriggerHandler>::iterator itr;
+      for (itr = s.begin(); itr != s.end(); ++itr)
+        {
+          delete (*itr);
+        }
+    }
+
   };
 
 }

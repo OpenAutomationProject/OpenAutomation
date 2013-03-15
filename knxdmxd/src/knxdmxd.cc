@@ -31,6 +31,10 @@
 
 #include <ola/Logging.h>
 #include <ola/StringUtils.h>
+#include <ola/network/IPV4Address.h>
+#include <ola/network/SocketAddress.h>
+#include <ola/network/TCPSocket.h>
+#include <ola/network/NetworkUtils.h>
 
 #include <eibclient.h>
 
@@ -56,6 +60,10 @@
 #define BUFLEN 1024
 #define POLLING_INTERVAL 10
 
+knxdmxd::KNXHandler *knxhandler;
+knxdmxd::KNXSender *knxsender;
+knxdmxd::OLAThread *olasender;
+
 template<class T>
   std::string
   t_to_string(T i)
@@ -72,7 +80,7 @@ std::string conf_file = "knxdmxd.conf";
 int pidFilehandle;
 std::string pidfilename = "/var/run/knxdmxd.pid";
 knxdmxd::TriggerList triggerList;
-knxdmxd::DMXSender sender;
+knxdmxd::DMXSender *sender;
 
 namespace knxdmxd
 {
@@ -130,7 +138,7 @@ namespace knxdmxd
     EIBConnection *con;
     unsigned char buf[255];
     knxdmxd::eib_message_t message;
-    while (1)
+    while (!exit_)
       {
         ola::thread::MutexLocker locker(&KNXSender::mutex_toKNX);
 
@@ -194,15 +202,15 @@ namespace knxdmxd
             EIBClose(con);
 
           }
-        else
+        else if (!exit_)
           {
             std::clog << kLogDebug << "KNX sender waiting for message"
                 << std::endl;
             KNXSender::condition_toKNX.Wait(&KNXSender::mutex_toKNX);
             std::clog << kLogDebug << "KNX sender resumed" << std::endl;
-
           }
       }
+    handler_exit_ = true;
   }
 
   void
@@ -215,7 +223,8 @@ namespace knxdmxd
     eibaddr_t src;
     unsigned char buf[255], val;
 
-    while (1)
+
+    while (!exit_)
       { //retry infinite
         con = EIBSocketURL((char *) eibd_url_.c_str());
         if (!con)
@@ -234,10 +243,12 @@ namespace knxdmxd
             continue;
           }
 
-        while (1)
+        while (!exit_)
           {
             triggerList.Process();
             len = EIBGetGroup_Src(con, sizeof(buf), buf, &src, &dest);
+            if (exit_)
+              break;
             if (len == -1)
               {
                 std::clog << kLogWarning << "KNXHandler: Read failed"
@@ -289,10 +300,19 @@ namespace knxdmxd
               }
           }
 
-        std::clog << kLogWarning << "eibd: Closed connection" << std::endl; //break in read-loop
+        std::clog << kLogWarning << "KNXHandler: eibd: Closed connection"
+            << std::endl; //break in read-loop
         EIBClose(con);
       }
 
+    handler_exit_ = true;
+  }
+
+  void
+  OLAThread::Stop()
+  {
+    exit_ = true;
+    sender->Terminate();
   }
 
   void
@@ -300,26 +320,23 @@ namespace knxdmxd
   { // thread for OLA connection
     std::clog << kLogDebug << "OLA thread started" << std::endl;
 
-    ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
+    //ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
 
-    while (1)
+    while (!exit_)
       { // retry forever
-        if (!sender.Init())
+        if (!sender->Init())
           {
             std::clog << kLogWarning << "OLA: Client setup failed" << std::endl;
             sleep(RETRY_TIME);
             continue;
           }
 
-        sender.Start(); // Start the sender
-
-        while (1)
-          { // loop forever, should be used for monitoring the client
-            if (!sender.Running())
-              break;
-            usleep(20000);
-          }
+        sender->Start(); // Start the sender
+        while (!exit) {
+            usleep(10000);
+        }
       }
+    handler_exit_ = true;
   }
 }
 
@@ -328,10 +345,48 @@ daemonShutdown()
 {
   //FIXME: clean exit pthread_exit(NULL); pthread_cancel(..);
   std::clog << kLogInfo << DAEMON_NAME << " daemon exiting" << std::endl;
-  fprintf(stderr, "%s daemon exiting", DAEMON_NAME);
-  sender.Terminate();
+  //fprintf(stderr, "%s daemon exiting", DAEMON_NAME);
+
+  knxhandler->Stop();
+  while (!knxhandler->stopped())
+    {
+      usleep(10000);
+    }
+
+  std::clog << kLogDebug << "Stopped knxhandler " << std::endl;
+
+  olasender->Stop();
+  while (!olasender->stopped())
+    {
+      usleep(10000);
+    }
+
+  std::clog << kLogDebug << "Stopped olasender " << std::endl;
+
+  knxsender->Stop();
+  knxdmxd::KNXSender::condition_toKNX.Signal();
+
+  while (!knxsender->stopped())
+    {
+      usleep(10000);
+    }
+
+
+  std::clog << kLogDebug << "Stopped knxsender " << std::endl;
+
+  delete olasender;
+  delete knxhandler;
+  delete knxsender;
+
+  delete sender;
+
+  triggerList.Clean();
+
   close(pidFilehandle);
   unlink((char *) pidfilename.c_str());
+
+  //delete std::clog.rdbuf();
+
   exit(EXIT_SUCCESS);
 }
 
@@ -380,6 +435,7 @@ json_get_trigger(struct json_object *trigger, const int type)
   int val = (trigger_value) ? json_object_get_int(trigger_value) : 256;
 
   knxdmxd::KNXHandler::listenGA.insert(knx);
+
   return new knxdmxd::Trigger(type, knx, val);
 }
 
@@ -441,6 +497,7 @@ json_get_cue(struct json_object *cue, const int cuenum, const int type)
 
       // add
       new_cue->AddChannel(channeldata);
+
     }
 
   // fading
@@ -504,6 +561,7 @@ json_get_cue(struct json_object *cue, const int cuenum, const int type)
       if (go_trigger)
         {
           triggerList.Add(*go_trigger, new_cue);
+          delete go_trigger;
         }
     }
 
@@ -541,24 +599,33 @@ load_config()
 
   struct json_object *in_data = json_object_object_get(config, "patch");
   int in_length = (in_data) ? json_object_array_length(in_data) : 0;
-  if (in_length>0) {
-    std::clog << "Trying to import " << in_length << " patche(s)" << std::endl;
-  } else {
-    std::clog << kLogInfo << "No patches defined, manual output patch needed" << std::endl;
-  }
-  for (int i = 0; i < in_length; i++)
-      { // read all
-        struct json_object *element = json_object_array_get_idx(in_data, i);
-        struct json_object *d = json_object_object_get(element, "device");
-        struct json_object *p = json_object_object_get(element, "port");
-        struct json_object *u = json_object_object_get(element, "universe");
+  if (in_length > 0)
+    {
+      std::clog << "Trying to import " << in_length << " patche(s)"
+          << std::endl;
+      for (int i = 0; i < in_length; i++)
+        { // read all
+          struct json_object *element = json_object_array_get_idx(in_data, i);
+          struct json_object *d = json_object_object_get(element, "device");
+          struct json_object *p = json_object_object_get(element, "port");
+          struct json_object *u = json_object_object_get(element, "universe");
 
-        if ((!d) || (!p) || (!u)) { std::clog << kLogInfo << "Skipping errorneous patch " << i+1 << std::endl;
-          continue;
+          if ((!d) || (!p) || (!u))
+            {
+              std::clog << kLogInfo << "Skipping errorneous patch " << i + 1
+                  << std::endl;
+              continue;
+            }
+
+          knxdmxd::DMX::Patch(json_object_get_int(d), json_object_get_int(p),
+              json_object_get_int(u));
         }
-
-        knxdmxd::DMX::Patch(json_object_get_int(d), json_object_get_int(p), json_object_get_int(u));
-      }
+    }
+  else
+    {
+      std::clog << kLogInfo << "No patches defined, manual output patch needed"
+          << std::endl;
+    }
 
   /*
    * channel definitions
@@ -586,7 +653,7 @@ load_config()
       std::string s = json_object_get_string(dmx);
 
       knxdmxd::dmx_addr_t dmx_addr(knxdmxd::DMX::Address(s));
-      sender.AddUniverse((char) (dmx_addr / 512));
+      sender->AddUniverse((char) (dmx_addr / 512));
       knxdmxd::channel_names.insert(
           std::pair<std::string, knxdmxd::dmx_addr_t>(name_str, dmx_addr));
       std::clog << kLogDebug << "Named DMX " << dmx_addr << " as " << name_str;
@@ -658,6 +725,8 @@ load_config()
           ga_, 256);
       triggerList.Add(*trigger, d);
 
+      delete trigger;
+
       // get fading
       struct json_object *fading = json_object_object_get(element, "fading");
       if (fading)
@@ -706,17 +775,21 @@ load_config()
           (name) ? json_object_get_string(name) : "_c_" + t_to_string(i);
       knxdmxd::Cuelist *c = new knxdmxd::Cuelist(cname);
 
-      struct json_object *roh = json_object_object_get(cuelist, "release_on_halt");
-      if (roh) {
+      struct json_object *roh = json_object_object_get(cuelist,
+          "release_on_halt");
+      if (roh)
+        {
           bool rohval = json_object_get_boolean(roh);
           c->SetReleaseOnHalt(rohval);
-      }
+        }
 
-      struct json_object *pog = json_object_object_get(cuelist, "proceed_on_go");
-            if (pog) {
-                bool pogval = json_object_get_boolean(roh);
-                c->SetProceedOnGo(pogval);
-            }
+      struct json_object *pog = json_object_object_get(cuelist,
+          "proceed_on_go");
+      if (pog)
+        {
+          bool pogval = json_object_get_boolean(roh);
+          c->SetProceedOnGo(pogval);
+        }
 
       // get cues
       struct json_object *cues = json_object_object_get(cuelist, "cues");
@@ -725,6 +798,7 @@ load_config()
           knxdmxd::Cue* cue = json_get_cue(json_object_array_get_idx(cues, i),
               i, knxdmxd::kCue);
           c->AddCue(*cue);
+          delete cue;
         }
 
       // trigger is required
@@ -744,6 +818,7 @@ load_config()
       if (trigger)
         {
           triggerList.Add(*trigger, c);
+          delete trigger;
         }
 
       trigger = json_get_trigger(json_object_object_get(triggers, "halt"),
@@ -751,6 +826,7 @@ load_config()
       if (trigger)
         {
           triggerList.Add(*trigger, c);
+          delete trigger;
         }
 
       trigger = json_get_trigger(json_object_object_get(triggers, "direct"),
@@ -758,6 +834,7 @@ load_config()
       if (trigger)
         {
           triggerList.Add(*trigger, c);
+          delete trigger;
         }
 
       trigger = json_get_trigger(json_object_object_get(triggers, "release"),
@@ -765,10 +842,36 @@ load_config()
       if (trigger)
         {
           triggerList.Add(*trigger, c);
+          delete trigger;
         }
     }
 
+  json_object_put(config);
   return;
+}
+
+bool
+check_ola_running()
+{
+  ola::network::TCPSocket *m_socket = ola::network::TCPSocket::Connect(
+      ola::network::IPV4SocketAddress(
+          ola::network::IPV4Address(ola::network::HostToNetwork(0x7f000001)),
+          OLA_DEFAULT_PORT));
+
+  if (!m_socket)
+    {
+      delete m_socket;
+      std::clog << kLogWarning << "OLA not running, startup delayed for 30s"
+          << std::endl;
+      return false;
+    }
+  else
+    {
+      delete m_socket;
+      std::clog << kLogDebug << "OLA running" << std::endl;
+      return true;
+    }
+
 }
 
 int
@@ -779,10 +882,9 @@ main(int argc, char **argv)
   int c;
   char pidstr[255];
 
-  knxdmxd::KNXHandler knxhandler;
-  knxdmxd::KNXSender knxsender;
-
-  knxdmxd::OLAThread ola;
+  knxhandler = new knxdmxd::KNXHandler();
+  knxsender = new knxdmxd::KNXSender();
+  olasender = new knxdmxd::OLAThread();
 
   while ((c = getopt(argc, argv, "dp:u:c:")) != -1)
     switch (c)
@@ -794,8 +896,8 @@ main(int argc, char **argv)
       pidfilename.assign(optarg);
       break;
     case 'u':
-      knxsender.SetEIBDURL(optarg);
-      knxhandler.SetEIBDURL(optarg);
+      knxsender->SetEIBDURL(optarg);
+      knxhandler->SetEIBDURL(optarg);
       break;
     case 'c':
       conf_file.assign(optarg);
@@ -823,7 +925,7 @@ main(int argc, char **argv)
           new Log(DAEMON_NAME, LOG_CONS | LOG_NDELAY | LOG_PERROR | LOG_PID,
               LOG_USER));
       std::clog << kLogDebug << "startup with debug; pidfile: " << pidfilename
-          << ", eibd: " << knxhandler.GetEIBDURL() << std::endl;
+          << ", eibd: " << knxhandler->GetEIBDURL() << std::endl;
     }
   else
     {
@@ -886,18 +988,22 @@ main(int argc, char **argv)
   sprintf(pidstr, "%d\n", getpid());
   c = write(pidFilehandle, pidstr, strlen(pidstr));
 
+  while (!check_ola_running())
+    {
+      sleep(30);
+    }
+
   load_config();
 
-  knxhandler.Start();
-  knxsender.Start();
-  ola.Start();
+  knxhandler->Start();
+  knxsender->Start();
+  olasender->Start();
 
   while (1)
     {
-//		std::clog << DAEMON_NAME << " daemon running" << std::endl;
       sleep(POLLING_INTERVAL * 1000);
     }
-  std::clog << kLogInfo << DAEMON_NAME << " daemon exiting" << std::endl;
+
   // TODO: Free any allocated resources before exiting - we never get here though -> signal handler
   exit(EXIT_SUCCESS);
 }

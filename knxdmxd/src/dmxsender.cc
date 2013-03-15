@@ -55,15 +55,6 @@ namespace knxdmxd
     return true;
   }
 
-  int
-  DMXSender::Start()
-  {
-    SendDMX();
-    m_client.GetSelectServer()->Run();
-    sender_running_ = true;
-    return 0;
-  }
-
   void
   Universe::Crossfade()
   {
@@ -113,6 +104,15 @@ namespace knxdmxd
       }
   }
 
+  int
+  DMXSender::Start()
+  {
+    SendDMX();
+    m_client.GetSelectServer()->Run();
+    //sender_running_ = true;
+    return 0;
+  }
+
   void
   DMXSender::SendDMX()
   {
@@ -136,17 +136,21 @@ namespace knxdmxd
         ola::NewSingleCallback(this, &DMXSender::SendDMX));
   }
 
-  DMXSender::~DMXSender()
-  {
-    if (sender_running_)
-      m_client.GetSelectServer()->Terminate();
-  }
-
   void
   DMXSender::Terminate()
   {
-    sender_running_ = false;
+
     m_client.GetSelectServer()->Terminate();
+    std::map<char, pUniverse>::iterator itr;
+
+    while (!output.empty()) {
+      itr = output.begin();
+      std::clog << " DMXSender deleted universe" << (int) itr->first  << std::endl;
+        delete (itr->second);
+        output.erase(itr->first);
+      }
+    //sender_running_ = false;
+
   }
 
 }

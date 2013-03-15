@@ -36,7 +36,14 @@ namespace knxdmxd
     Cue()
     {
     }
-    ;
+
+    virtual ~Cue() {
+      while (!_channel_data.empty()) {
+        _channel_data.pop_back();
+      }
+
+    }
+
     Cue(const std::string name, const bool isLink = false);
 
     void
@@ -48,32 +55,26 @@ namespace knxdmxd
     {
       waittime_ = waittime;
     }
-    ;
+
     void
     SetDelay(const float delay)
     {
       delay_ = delay;
     }
-    ;
-    //     void SetLock(const fixture_lock_t lock) { lock_ = lock; };
 
     void
     Go();
     void
-    Release()
-    {
-      /*for(std::list<cue_channel_t>::iterator it = _channel_data.begin(); it != _channel_data.end(); ++it) {
-       it->fixture->Release(lock_);
-       }*/
-    }
-    ;
+    Release() {}
+
+
 
     const std::string
     GetName()
     {
       return _name;
     }
-    ;
+
     const float
     GetWaitTime()
     {
@@ -111,8 +112,14 @@ namespace knxdmxd
     Cuelist()
     {
     }
-    ;
+
     Cuelist(const std::string name);
+
+    virtual ~Cuelist() {
+      while (!cue_data_.empty()) {
+        cue_data_.pop_back();
+      }
+    }
 
     void
     SetReleaseOnHalt(const bool release_on_halt)

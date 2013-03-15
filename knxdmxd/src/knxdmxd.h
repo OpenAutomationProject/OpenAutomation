@@ -21,7 +21,6 @@
 #include <sys/time.h>
 
 #define DMX_INTERVAL 50 // in ms
-
 namespace knxdmxd
 {
   const int kFixture = 1;
@@ -67,7 +66,10 @@ namespace knxdmxd
         Thread(), m_mutex()
     {
       eibd_url_ = "local:/tmp/eib";
+      exit_ = false;
+      handler_exit_ = false;
     }
+    virtual
     ~KNXHandler()
     {
     }
@@ -100,56 +102,83 @@ namespace knxdmxd
       knxhandler();
       return NULL;
     }
+    void
+    Stop()
+    {
+      exit_ = true;
+    }
+    bool
+    stopped()
+    {
+      return handler_exit_;
+    }
+  private:
+    ola::thread::Mutex m_mutex;
+    std::string eibd_url_;
+    std::map<eibaddr_t, unsigned long> lastmsg;
+    bool exit_;
+    bool handler_exit_;
+  };
+
+  class KNXSender : public ola::thread::Thread
+  {
+  public:
+    KNXSender() :
+        Thread(), m_mutex()
+    {
+      eibd_url_ = "local:/tmp/eib";
+      exit_ = false;
+      handler_exit_ = false;
+    }
+
+    virtual
+    ~KNXSender()
+    {
+    }
+
+    static std::queue<eib_message_t> toKNX;
+    static ola::thread::Mutex mutex_toKNX;
+    static ola::thread::ConditionVariable condition_toKNX;
+
+    static eibaddr_t
+    Address(const std::string addr);
+    void
+    knxsender();
+    void
+    SetEIBDURL(std::string EIBD_URL)
+    {
+      eibd_url_ = EIBD_URL;
+    }
+    const std::string&
+    GetEIBDURL()
+    {
+      return eibd_url_;
+    }
+    void *
+    Run()
+    {
+      ola::thread::MutexLocker locker(&m_mutex);
+      knxsender();
+      return NULL;
+    }
+    void
+    Stop()
+    {
+      exit_ = true;
+    }
+    bool
+    stopped()
+    {
+      return handler_exit_;
+    }
 
   private:
     ola::thread::Mutex m_mutex;
     std::string eibd_url_;
     std::map<eibaddr_t, unsigned long> lastmsg;
+    bool exit_;
+    bool handler_exit_;
   };
-
-  class KNXSender : public ola::thread::Thread
-    {
-    public:
-      KNXSender() :
-          Thread(), m_mutex()
-      {
-        eibd_url_ = "local:/tmp/eib";
-      }
-      ~KNXSender()
-      {
-      }
-
-      static std::queue<eib_message_t> toKNX;
-      static ola::thread::Mutex mutex_toKNX;
-      static ola::thread::ConditionVariable condition_toKNX;
-
-      static eibaddr_t
-      Address(const std::string addr);
-      void
-      knxsender();
-      void
-      SetEIBDURL(std::string EIBD_URL)
-      {
-        eibd_url_ = EIBD_URL;
-      }
-      const std::string&
-      GetEIBDURL()
-      {
-        return eibd_url_;
-      }
-      void *
-      Run()
-      {
-        ola::thread::MutexLocker locker(&m_mutex);
-        knxsender();
-        return NULL;
-      }
-
-    private:
-      ola::thread::Mutex m_mutex;
-      std::string eibd_url_;
-      std::map<eibaddr_t, unsigned long> lastmsg;
-    };
 
   class OLAThread : public ola::thread::Thread
   {
@@ -157,6 +186,8 @@ namespace knxdmxd
     OLAThread() :
         Thread(), m_mutex()
     {
+      exit_ = false;
+      handler_exit_ = false;
     }
     ~OLAThread()
     {
@@ -173,8 +204,19 @@ namespace knxdmxd
       return NULL;
     }
 
+    void
+    Stop();
+
+    bool
+    stopped()
+    {
+      return handler_exit_;
+    }
+
   private:
     ola::thread::Mutex m_mutex;
+    bool exit_;
+    bool handler_exit_;
   };
 
   extern std::map<std::string, knxdmxd::dmx_addr_t> channel_names;
