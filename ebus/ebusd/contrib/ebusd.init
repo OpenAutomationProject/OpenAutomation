@@ -21,7 +21,7 @@ test -x $DAEMON || exit 5
 case $1 in
 	start)
 		log_daemon_msg "Starting EBUS server" "ebusd"
-  		start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --startas $DAEMON -- -p $PIDFILE $NTPD_OPTS
+  		start-stop-daemon --start --quiet --oknodo --pidfile $PIDFILE --startas $DAEMON -- -P $PIDFILE
 		status=$?
 		log_end_msg $status
   		;;

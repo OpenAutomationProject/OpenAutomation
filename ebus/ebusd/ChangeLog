@@ -5,6 +5,7 @@ ebus Daemon (ebusd) - ChangeLog
 * Improved cyc commands data handling so all parts from message could be decoded.
 * Added new parameter d_part to element configuration part.
 * Updated documantation.
+* ebusd.init script (debian) slightly modified.
 
 2013-03-06:
 * Fixed extension for command files in configuration. A point is not necessary.
