@@ -1,3 +1,16 @@
+knxdmxd (0.1-14) unstable; urgency=low
+
+  * New SVN-rev 1586.
+  * Rebuild against latest ola 0.8.27
+
+ -- Michael Markstaller / Elaborated Networks GmbH for WireGate <devel@wiregate.de>  Fri, 15 Mar 2013 21:02:53 +0100
+
+knxdmxd (0.1-13) unstable; urgency=low
+
+  * New SVN-rev 1149, rebuild
+
+ -- Michael Markstaller / Elaborated Networks GmbH for WireGate <devel@wiregate.de>  Wed, 14 Nov 2012 20:54:10 +0100
+
 knxdmxd (0.1-12) unstable; urgency=low
 
   * New SVN-rev 1079, rebuild
