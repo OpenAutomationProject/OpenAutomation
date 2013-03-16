@@ -151,6 +151,10 @@ main(int argc, char *argv[])
 	//~ char cmd[] = "cyc ms test md";
 	//~ char cmd[] = "cyc ms test";
 
+	//~ const unsigned char tmp[] = {'\x10','\x08','\xb5','\x09','\x03','\x29','\x0f','\x00','\x56','\x00',
+	                             //~ '\x05','\x0f','\x00','\xa9','\x01','\x00','\x00','\x86','\x00'};
+	//~ char cmd[] = "cyc mv brine_in";
+
 	//~ Master Master
 	//~ 10 03 05 07 09 bb 06 2e 02 00 80 ff 6e ff 8f 00
 	//~ const unsigned char tmp[] = {'\x10','\x03','\x05','\x07','\x09','\xbb','\x06','\x1b','\x02','\x00',

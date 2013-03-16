@@ -977,9 +977,9 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 int
 eb_cyc_data_process(const unsigned char *buf, int buflen)
 {
-	unsigned char msg[CMD_DATA_SIZE];
+	unsigned char msg[CMD_DATA_SIZE], hlp[CMD_DATA_SIZE];
 	unsigned char crcm_recv, crcm_calc, acks, crcs_recv, crcs_calc, ackm;
-	int ret, msgtype, msglen, mlen, slen, len;
+	int ret, msgtype, msglen, hlplen, mlen, slen, len;
 
 	memset(msg, '\0', sizeof(msg));
 
@@ -997,7 +997,14 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 		
 		/* calc crc vom master */
 		mlen = 5 + (int) msg[4];
-		crcm_calc = eb_calc_crc(msg, mlen);
+		
+		memset(hlp, '\0', sizeof(hlp));
+		memcpy(hlp, msg, mlen);
+		hlplen = mlen;
+		
+		eb_esc(hlp, &hlplen);
+		
+		crcm_calc = eb_calc_crc(hlp, hlplen);
 		crcm_recv = msg[mlen];
 
 		if (crcm_calc != crcm_recv) {
@@ -1028,7 +1035,14 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 
 			/* calc crc vom slave */
 			slen = 1 + (int) msg[mlen + 2];
-			crcs_calc = eb_calc_crc(&msg[mlen + 2], slen);
+
+			memset(hlp, '\0', sizeof(hlp));
+			memcpy(hlp, &msg[mlen + 2], slen);
+			hlplen = slen;
+
+			eb_esc(hlp, &hlplen);
+
+			crcs_calc = eb_calc_crc(hlp, hlplen);
 			crcs_recv = msg[mlen + 2 + slen];
 
 			if (crcs_calc != crcs_recv) {

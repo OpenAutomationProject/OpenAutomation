@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-03-16:
+* Fixed slave message CRC check for cyc messages.
+
 2013-03-15:
 * Improved cyc commands data handling so all parts from message could be decoded.
 * Added new parameter d_part to element configuration part.
