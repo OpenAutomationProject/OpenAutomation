@@ -1,0 +1,81 @@
+Format: 1.8
+Date: Sat, 16 Mar 2013 09:30:51 +0100
+Source: rrdtool
+Binary: rrdtool rrdcached rrdtool-dbg librrd4 librrd-dev librrds-perl librrdp-perl rrdtool-tcl python-rrdtool librrd-ruby librrd-ruby1.8 librrd-ruby1.9.1 liblua5.1-rrd0 liblua5.1-rrd-dev
+Architecture: source armel all
+Version: 1.4.7-2+rpi1+nmu1
+Distribution: UNRELEASED
+Urgency: low
+Maintainer: Debian RRDtool Team <rrdtool@ml.snow-crash.org>
+Changed-By: Mirko Hirsch <mail@mirkohirsch.de>
+Description: 
+ liblua5.1-rrd-dev - time-series data storage and display system (Lua 5.1 development)
+ liblua5.1-rrd0 - time-series data storage and display system (Lua 5.1 interface)
+ librrd-dev - time-series data storage and display system (development)
+ librrd-ruby - time-series data storage and display system (Ruby interface)
+ librrd-ruby1.8 - time-series data storage and display system (Ruby 1.8 interface)
+ librrd-ruby1.9.1 - time-series data storage and display system (Ruby 1.9.1 interface
+ librrd4    - time-series data storage and display system (runtime library)
+ librrdp-perl - time-series data storage and display system (Perl interface, pipe
+ librrds-perl - time-series data storage and display system (Perl interface, shar
+ python-rrdtool - time-series data storage and display system (Python interface)
+ rrdcached  - data caching daemon for RRDtool
+ rrdtool    - time-series data storage and display system (programs)
+ rrdtool-dbg - time-series data storage and display system (debugging symbols)
+ rrdtool-tcl - time-series data storage and display system (Tcl interface)
+Changes: 
+ rrdtool (1.4.7-2+rpi1+nmu1) UNRELEASED; urgency=low
+ .
+   * Non-maintainer upload.
+   * Added fetchj option
+Checksums-Sha1: 
+ 158683f6564df0ce30300dd263c96c722589d68d 1815 rrdtool_1.4.7-2+rpi1+nmu1.dsc
+ 43ef8985b5c62c8fc933f2b50ac4b7c99ab5ad2a 956967 rrdtool_1.4.7-2+rpi1+nmu1.tar.gz
+ 8ceba63b0dd1770e90febe65168f31a8eb00f749 464414 rrdtool_1.4.7-2+rpi1+nmu1_armel.deb
+ ce85bcbced187d0206ccc672d32be60ca355d0fc 150700 rrdcached_1.4.7-2+rpi1+nmu1_armel.deb
+ 741d7356dbe27ad8f5ed1d8af8dc0154aa12dfc5 498044 rrdtool-dbg_1.4.7-2+rpi1+nmu1_armel.deb
+ d2bf62f1e7d976262290ce71cfe76df97721c2fa 325666 librrd4_1.4.7-2+rpi1+nmu1_armel.deb
+ 941cddff49daed3d7c49cc8e75420560c8f982ca 378694 librrd-dev_1.4.7-2+rpi1+nmu1_armel.deb
+ 3577935ca0c5718705ac4ee4ff87af6e5c565e18 114066 librrds-perl_1.4.7-2+rpi1+nmu1_armel.deb
+ fabbfcd0ae371c4e378487f2971b68c37d2e39e1 106434 rrdtool-tcl_1.4.7-2+rpi1+nmu1_armel.deb
+ 81647308b69cfa8a9f05170847a6ac5152945d8b 107740 python-rrdtool_1.4.7-2+rpi1+nmu1_armel.deb
+ c662ebf224f18158f64725234461509522cb4dda 105136 librrd-ruby1.8_1.4.7-2+rpi1+nmu1_armel.deb
+ 273a4db6910155bd7ef07477dd7d06d98d888d00 105276 librrd-ruby1.9.1_1.4.7-2+rpi1+nmu1_armel.deb
+ a67ef778c920df861d10cce4086ebdf1d58edc1d 104890 liblua5.1-rrd0_1.4.7-2+rpi1+nmu1_armel.deb
+ a0324f44fd89b8cdef8b2a28fb83fc70dd7a81ef 106840 liblua5.1-rrd-dev_1.4.7-2+rpi1+nmu1_armel.deb
+ 46d2451586aab7dc99712b0b9499a3f1dae40ac5 105902 librrdp-perl_1.4.7-2+rpi1+nmu1_all.deb
+ 92a1b27bf0b438fe7299ed7c82baf61c406abac3 1014 librrd-ruby_1.4.7-2+rpi1+nmu1_all.deb
+Checksums-Sha256: 
+ ad7e8d7e21fe8d889134da44be9905df8aa05e77567e226122b8505c3790667b 1815 rrdtool_1.4.7-2+rpi1+nmu1.dsc
+ 99159af85785e8feea5d652237131d89c21302428f12583f5786cfd0d2850e1c 956967 rrdtool_1.4.7-2+rpi1+nmu1.tar.gz
+ eaf885fe633f8a854c0a1538a612bed63d5f01d875fbea160bfa902eb00b366f 464414 rrdtool_1.4.7-2+rpi1+nmu1_armel.deb
+ b515326965fb3311ce9342fa816c27fce7e08d622a7fc82508282fbdb8d6d531 150700 rrdcached_1.4.7-2+rpi1+nmu1_armel.deb
+ e5813ef37b110c511f1d1238be26be5b338d2480ab37bec233b12b172bb85839 498044 rrdtool-dbg_1.4.7-2+rpi1+nmu1_armel.deb
+ 13afa8653f489b736d58a6ee926ac4fbaf238b6040475b4479f3414e8a597ab2 325666 librrd4_1.4.7-2+rpi1+nmu1_armel.deb
+ 9fc90c76f05efb51406e06b006702cba27140e456626ca3a77b5f5fe4c2736b3 378694 librrd-dev_1.4.7-2+rpi1+nmu1_armel.deb
+ 2f8c11aba22dea415d49228c21cc720d63645608a8a54081cfcb1f265b2d2753 114066 librrds-perl_1.4.7-2+rpi1+nmu1_armel.deb
+ 01bb9cf6325f46f214d2e153eab5314f78034fbd6fcce30de47d925035facbf3 106434 rrdtool-tcl_1.4.7-2+rpi1+nmu1_armel.deb
+ 1df1315a38f0a75c0c1456a32fe11eacf990b68972e6775504c457f80ed2f091 107740 python-rrdtool_1.4.7-2+rpi1+nmu1_armel.deb
+ e8a04ffa4bdea828cc726eb9ec9ae07d2c69e0d0aa8f2ff1af0283e7b07d3ac2 105136 librrd-ruby1.8_1.4.7-2+rpi1+nmu1_armel.deb
+ 5840e050da6e5f81482cf4a8e5b9961de11e81b862cbd666c7ceb437299425d2 105276 librrd-ruby1.9.1_1.4.7-2+rpi1+nmu1_armel.deb
+ e3e57aabcbaa5152cb1b63185210a32c5aa5e74a71a68685887118e69b05336c 104890 liblua5.1-rrd0_1.4.7-2+rpi1+nmu1_armel.deb
+ 83d4851ff1c0f1e760319853b4e78d55d0d6cabb197b3acb6832e765fb210e22 106840 liblua5.1-rrd-dev_1.4.7-2+rpi1+nmu1_armel.deb
+ e8cba587d5ec476d8c7b4da27ddcf8091407209a9d9d2de8852105d11df5e156 105902 librrdp-perl_1.4.7-2+rpi1+nmu1_all.deb
+ 3f49ca8bb089c1544f69973d98d204efe54372cc6a56f9178c1a43e8d8a8f502 1014 librrd-ruby_1.4.7-2+rpi1+nmu1_all.deb
+Files: 
+ 84f84786bc22662a2e097a52511c7409 1815 utils optional rrdtool_1.4.7-2+rpi1+nmu1.dsc
+ 6234f283d4b8df5f828fced11575ac2f 956967 utils optional rrdtool_1.4.7-2+rpi1+nmu1.tar.gz
+ 9f0ff69185183d85ba0cdf557233c923 464414 utils optional rrdtool_1.4.7-2+rpi1+nmu1_armel.deb
+ 8f8d06066b07776229d2171979fa9bef 150700 utils optional rrdcached_1.4.7-2+rpi1+nmu1_armel.deb
+ 6f83df16cd9df9034c3c6c3c1772f42d 498044 debug extra rrdtool-dbg_1.4.7-2+rpi1+nmu1_armel.deb
+ 5c3d60ad929a86889a183d3711b6ba00 325666 libs optional librrd4_1.4.7-2+rpi1+nmu1_armel.deb
+ 778ba03d07a6d02b117bc2e15d353044 378694 libdevel optional librrd-dev_1.4.7-2+rpi1+nmu1_armel.deb
+ 19fa419cb563657e19efc8cc374d2c9f 114066 perl optional librrds-perl_1.4.7-2+rpi1+nmu1_armel.deb
+ 3813b9b4a1ade3989432f45156af6eaf 106434 utils optional rrdtool-tcl_1.4.7-2+rpi1+nmu1_armel.deb
+ 0d7482a47b7d76246a99893c404cfd83 107740 python optional python-rrdtool_1.4.7-2+rpi1+nmu1_armel.deb
+ c802be2a36aac4a7e04459a29c587d17 105136 ruby optional librrd-ruby1.8_1.4.7-2+rpi1+nmu1_armel.deb
+ 0e042a24892b97aa20488d293dea386a 105276 ruby optional librrd-ruby1.9.1_1.4.7-2+rpi1+nmu1_armel.deb
+ 18ab63a00f250e900eed2ee6fe322b47 104890 interpreters optional liblua5.1-rrd0_1.4.7-2+rpi1+nmu1_armel.deb
+ 23e38cb2b0311c2706f91e445dd0a671 106840 libdevel optional liblua5.1-rrd-dev_1.4.7-2+rpi1+nmu1_armel.deb
+ 9201a2cd727f7cb0e44e164a7684eced 105902 perl optional librrdp-perl_1.4.7-2+rpi1+nmu1_all.deb
+ ce696261f67d9dc98fde0b9845ee0bc9 1014 ruby optional librrd-ruby_1.4.7-2+rpi1+nmu1_all.deb
