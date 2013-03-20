@@ -1,0 +1,66 @@
+# Defaults for eibd (bcusdk) initscript
+# sourced by /etc/init.d/eibd
+# installed at /etc/default/eibd by the maintainer scripts
+
+# This is a POSIX shell fragment
+# Additional options that are passed to the daemon(s).
+# local unix socket /tmp/eib is always enabled
+
+#####################
+### Start Config ####
+#####################
+
+# Enable IP-access (Server, Discovery, IP)
+EIBD_I = y
+
+# Enable KNXnet/IP Routing 
+#EIBD_R=y
+
+# Enable KNXnet/IP Tunneling
+EIBD_T = y
+
+# Enable caching of group communication network state
+EIBD_C = y
+
+### CONFIGURE KNX-DEVICE MANUALLY
+#EIBD_BACKEND_ADDR = 0.0.0
+#EIBD_BACKEND = ipt
+#EIBD_PORT_IPT = 192.168.2.220
+
+# additional private Daemon args
+#EIBD_ADDTL_ARGS = "-c"
+
+###################
+### End Config ####
+###################
+
+#####################################################
+### start examples for KNX-communication-devices ####
+#####################################################
+
+### USB ###
+#EIBD_BACKEND=usb
+
+###  FT.12 on "Com1" ###
+#EIBD_BACKEND=ft12
+#EIBD_PORT=/dev/ttyS0
+
+###  BCU1 on "Com2" ###
+#EIBD_BACKEND=bcu1
+#EIBD_PORT=/dev/eib1
+
+###  TPUART on "Com1" ###
+#EIBD_BACKEND=tpuarts
+#EIBD_PORT=/dev/ttyS0
+
+###  KNXnet/IP Tunneling ###
+#EIBD_BACKEND=ipt
+#EIBD_PORT=192.168.1.2
+
+### TP UART ###
+#EIBD_BACKEND:/dev/tul
+#EIBD_PORT_SERIAL = /dev/usbserial-2-3.1
+
+###################################################
+### end examples for KNX-communication-devices ####
+###################################################
