@@ -146,7 +146,7 @@ get;cal;comp_out;Kalibrierung - Kompressor Austritt;3;08;B509;3;0DC700;1;-;sd;1,
 get;cal;buffer_in;Kalibrierung – Puffer RL;3;08;B509;3;0D3400;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;cal;buffer_out;Kalibrierung – Puffer VL;3;08;B509;3;0D3301;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 #WW-Kreis;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-get;hw;mode;WW – Betriebsmodus;3;25;B509;3;0D3B00;1;-;sd;1;bcd;1.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
+get;hw;mode;WW – Betriebsmodus;3;25;B509;3;0D2B00;1;-;sd;1;bcd;1.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;hw;temp;WW – Solltemperatur;3;25;B509;3;0D8200;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;hw;min_temp;WW – Min. Temperatur;3;25;B509;3;0D8300;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;hw;legionella_protect;WW – Legionellenschutz;3;25;B509;3;0D4000;1;-;sd;1;bcd;1.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
