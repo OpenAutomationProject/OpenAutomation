@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-03-28:
+* Fixed daemon crash if some spaces was found behind command (without subcommands.)
+
 2013-03-16:
 * Fixed slave message CRC check for cyc messages.
 

@@ -20,7 +20,7 @@
 
 /**
  * @file ebus-common.h
- * @brief ebus communication functions
+ * @brief ebus common defines
  * @author roland.jax@liwest.at
  * @version 0.1
  */

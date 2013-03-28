@@ -99,8 +99,7 @@ static struct option opts[] = {
 static struct config cfg[] = {
 
 {"address",    STR, &address, "\tbus address (" NUMSTR(EBUS_QQ) ")"},
-{"cfgdir",     STR, &cfgdir, "\tconfiguration directory of command files " \
-							"(" DAEMON_CFGDIR ")"},
+{"cfgdir",     STR, &cfgdir, "\tconfiguration directory of command files (" DAEMON_CFGDIR ")"},
 {"cfgfile",    STR, &cfgfile, "\tdaemon configuration file (" DAEMON_CFGFILE ")"},
 {"device",     STR, &device, "\tserial device (" SERIAL_DEVICE ")"},
 {"extension",  STR, &extension, "extension of command files (" DAEMON_EXTENSION ")"},
@@ -531,7 +530,7 @@ main_loop(void)
 				ret = sock_client_read(readfd, tcpbuf, &tcpbuflen);
 
 				/* remove dead TCP client */
-				if (ret == -1) {
+				if (ret < 0) {
 					FD_CLR(readfd, &listenfds);
 					continue;
 				} 
@@ -546,9 +545,8 @@ main_loop(void)
 					continue;
 				}
 				
-
+				/* search ebus command */
 				if (tcpbuflen > 0)
-					/* search ebus command */
 					ret = eb_cmd_search_com(tcpbuf, data);
 				else
 					ret = -1;

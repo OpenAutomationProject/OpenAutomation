@@ -129,8 +129,7 @@ void eb_set_print_size(int size);
  * @param [out] *tdiff calculated time difference
  * @return 0 positive | -1 negative ??? lol
  */
-int eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
-							struct timeval *tdiff);
+int eb_diff_time(const struct timeval *tact, const struct timeval *tlast, struct timeval *tdiff);
 
 
 

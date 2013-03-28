@@ -123,8 +123,7 @@ eb_set_print_size(int size)
 
 
 int
-eb_diff_time(const struct timeval *tact, const struct timeval *tlast,
-							struct timeval *tdiff)
+eb_diff_time(const struct timeval *tact, const struct timeval *tlast, struct timeval *tdiff)
 {
     long diff;
 
@@ -894,9 +893,8 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 				/* decode */
 				if (eb_cmd_check_type(id, "set") == YES) {
 					strcpy(buf, " ACK\n");
-				} else {
-					eb_cmd_decode(id, CMD_PART_SD,
-								data, msg, buf);
+				} else {					
+					eb_cmd_decode(id, CMD_PART_SD, data, msg, buf);
 					if (strlen(buf) > 0)
 						strncat(buf, "\n", 1);
 				}

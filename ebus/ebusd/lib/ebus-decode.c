@@ -334,8 +334,7 @@ eb_float_to_d2b(float src, unsigned char *tgt_lsb, unsigned char *tgt_msb)
 		*tgt_lsb = (unsigned char) (0x00);
 		return 0;
 	} else {
-		*tgt_lsb = (unsigned char)
-					((src - ((unsigned char) src)) * 256.0);
+		*tgt_lsb = (unsigned char) ((src - ((unsigned char) src)) * 256.0);
 
 		if (src < 0.0 && *tgt_lsb != 0x00)
 			*tgt_msb = (unsigned char) (src - 1);

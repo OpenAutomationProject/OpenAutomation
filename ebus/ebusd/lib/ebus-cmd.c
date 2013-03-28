@@ -204,9 +204,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 	p2 = c2 ? atoi(c2) : 0;
 	p3 = c3 ? atoi(c3) : 0;
 
-	log_print(L_DBG, "id: %d elem: %d p1: %d p2: %d p3: %d",
-							id, elem, p1, p2, p3);	
-
+	log_print(L_DBG, "id: %d elem: %d p1: %d p2: %d p3: %d", id, elem, p1, p2, p3);	
 
 	if (strncasecmp(com[id].elem[elem].d_type, "asc", 3) == 0) {
 		sprintf(buf, "%s ", &msg[1]);
@@ -336,15 +334,6 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 		for (i = 0; i < msg[0]; i++)
 			sprintf(&buf[3 * i], "%02x ", msg[i + 1]);
 
-	//~ } else if (strncasecmp(com[id].elem[elem].d_type, "mmt", 3) == 0) {
-		//~ if (p1 > 0) {
-			//~ if (msg[p1] == 0x00) {
-				//~ strcpy(buf, "ACK ");
-			//~ } else {
-				//~ strcpy(buf, "NAK ");
-			//~ }
-		//~ }
-
 	}
 		
 	return 0;
@@ -368,8 +357,8 @@ eb_cmd_decode(int id, char *part, char *data, unsigned char *msg, char *buf)
 		strncpy(tmp, data, strlen(data));
 
 		/* "-" indicate no sub command, so we print all */
-		tok = strtok(tmp, " \n\r\t");
-		if (strncasecmp(tok, "-", 1) == 0)
+		tok = strtok(tmp, " \n\r\t");	
+		if (tok == NULL || strncasecmp(tok, "-", 1) == 0)
 			found = YES;
 		else
 			found = NO;
@@ -871,8 +860,7 @@ eb_cmd_dir_read(const char *cfgdir, const char *extension)
 				    && dir[i]->d_type == DT_REG
 				    && strncasecmp(ext, extprep, extlen) == 0 ) {
 					memset(file, '\0', sizeof(file));
-					sprintf(file, "%s/%s", cfgdir,
-								dir[i]->d_name);
+					sprintf(file, "%s/%s", cfgdir, dir[i]->d_name);
 									
 					ret = eb_cmd_file_read(file);
 					if (ret < 0)
