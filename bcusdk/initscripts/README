@@ -5,6 +5,6 @@ or en-/disable Routing, Tunneling, Cache, Server ...
 By default Routing is disabled.
 
 use "eibd.init" as "/etc/init.d/eibd"
-use "eibd.default" as "/etc/init.d/default"
+use "eibd.default" as "/etc/default/eibd"
 
 This is just a clean backup of a user friendly eibd-initscript from knxuf to make it easier to start eibd.
