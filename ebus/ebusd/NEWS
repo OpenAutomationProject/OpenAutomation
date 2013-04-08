@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-04-08:
+* Logging functions changed so it fits together with the behavior of logrotate.
+
 2013-03-15:
 * Improved cyc commands data handling so all parts from message could be decoded.
 

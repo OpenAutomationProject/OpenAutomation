@@ -132,6 +132,7 @@ eb_cmd_search_com_id(const char *type, const char *class, const char *cmd)
 	for (i = 0; i < comlen; i++) {
 		if ((strncasecmp(type, com[i].type, strlen(com[i].type)) == 0)
 		   && (strncasecmp(class, com[i].class, strlen(com[i].class)) == 0)
+		   && strlen(class) == strlen(com[i].class)
 		   && (strncasecmp(cmd, com[i].cmd, strlen(com[i].cmd)) == 0)			   
 		   && strlen(cmd) == strlen(com[i].cmd)) {
 

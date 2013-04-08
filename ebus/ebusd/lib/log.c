@@ -25,6 +25,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <syslog.h>
 
@@ -34,9 +35,11 @@ static unsigned char loglvl = L_NUL;
 static int logtxtlen = sizeof(logtxt) / sizeof(char*);
 
 static FILE *logfp = NULL;
+static char logfile[LOG_LINELEN];
+static int logforeground = -1;
 
-char * log_time(char *time);
-char * log_txt(unsigned char lvl);
+char *log_time(char *time);
+char *log_txt(unsigned char lvl);
 
 void
 log_file(FILE *fp)
@@ -90,8 +93,11 @@ log_open(const char *file, int foreground)
 			}
 
 			log_file(fp);
+			strncpy(logfile, file, strlen(file));
 		}
 	}
+	
+	logforeground = foreground;
 
 	openlog(NULL, LOG_CONS|LOG_NDELAY|LOG_PID, LOG_DAEMON);
 
@@ -162,6 +168,10 @@ log_print(unsigned char lvl, const char *txt, ...)
 
 	if ((loglvl & lvl) != 0x00) {
 		if (logfp) {
+
+			if (access(logfile, F_OK) < 0 && logforeground == 0)
+				log_open(logfile, logforeground);
+
 			//~ fprintf(logfp, "%s [0x%02x %s] %s\n",
 					//~ log_time(time), lvl , log_txt(lvl), buf);
 			fprintf(logfp, "%s [%s] %s\n",

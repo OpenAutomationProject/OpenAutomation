@@ -20,6 +20,8 @@
 #ifndef LOG_H_
 #define LOG_H_
 
+#define LOG_LINELEN 256
+
 #define L_NUL 0x00
 #define L_ALL 0xFF
 

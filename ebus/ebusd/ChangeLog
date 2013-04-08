@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-04-08:
+* Logging functions changed so it fits together with the behavior of logrotate.
+* Fixed function eb_cmd_search_com_id so it compares class length too.
+
 2013-03-28:
 * Fixed daemon crash if some spaces was found behind command (without subcommands.)
 
@@ -31,18 +35,18 @@ ebus Daemon (ebusd) - ChangeLog
 * Added many explicit casts to remove compiler warnings.
 
 2013-02-27:
-* Fix memory leak in eb_raw_print_hex twice.
+* Fixed memory leak in eb_raw_print_hex twice.
 * Added new config parameter print_size to adjust number of bytes at output stream.
 
 2013-02-25:
-* Fix possible memory leaks in eb_raw_print_hex and eb_search_cyc
+* Fixed possible memory leaks in eb_raw_print_hex and eb_search_cyc
 
 2013-02-22:
-* Add <cr> too each client answer (no need of special config for putty)
+* Added <cr> too each client answer (no need of special config for putty)
 * Minor print cosmetic with cyc commands on Master Slave types 
 
 2013-02-21:
-* Improve decoding of cyc commands to all ebus message types.
+* Improved decoding of cyc commands to all ebus message types.
 * Added function eb_cyc_data_process to decode all cyc ebus message types.
 * Removed hex bitmask of logging output.
 * Fixed uninitialized buffer in eb_cyc_data_recv.
