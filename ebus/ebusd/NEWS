@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-04-09:
+* Extended signal handler to fit with logrotate / logging facility.
+
 2013-04-08:
 * Logging functions changed so it fits together with the behavior of logrotate.
 

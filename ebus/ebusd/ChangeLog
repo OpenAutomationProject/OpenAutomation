@@ -1,6 +1,12 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-04-09:
+* Extended signal handler to fit with logrotate / logging facility.
+* Added ebusd.logrotate.d file too contrib.
+* Added gentoo ebusd.init.d and ebusd.conf.d scripts.
+* Reverted logging functions too old behavior.
+
 2013-04-08:
 * Logging functions changed so it fits together with the behavior of logrotate.
 * Fixed function eb_cmd_search_com_id so it compares class length too.

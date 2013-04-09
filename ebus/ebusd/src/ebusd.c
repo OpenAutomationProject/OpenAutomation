@@ -289,15 +289,22 @@ void
 signal_handler(int sig) {
 	switch(sig) {
 	case SIGHUP:
-		log_print(L_NOT, "received SIGHUP");
+		log_print(L_ALL, "SIGHUP received");
+		syslog(LOG_INFO, "SIGHUP received");
 		break;
 	case SIGINT:
+		log_print(L_ALL, "SIGINT received - logfile reopen");
+		syslog(LOG_INFO, "SIGINT received - logfile reopen");		
+		log_open(logfile, foreground);
+		break;
 	case SIGTERM:
-		log_print(L_INF, "daemon exiting");
+		log_print(L_ALL, "daemon exiting");
+		syslog(LOG_INFO, "daemon exiting");		
 		cleanup(EXIT_SUCCESS);
 		break;
 	default:
-		log_print(L_NOT, "unknown signal %s", strsignal(sig));
+		log_print(L_ALL, "unknown signal %s", strsignal(sig));
+		syslog(LOG_INFO, "unknown signal %s", strsignal(sig));		
 		break;
 	}
 }
@@ -372,7 +379,7 @@ cleanup(int state)
 	/* free msg queue */
 	if (msg_queue_on == YES) {
 		msg_queue_free();
-		log_print(L_INF, "msg queue freeed.");
+		log_print(L_INF, "msg queue freeed");
 	}
 
 	/* close listing tcp socket */
@@ -380,7 +387,7 @@ cleanup(int state)
 		if (sock_close(socketfd) == -1)
 			log_print(L_ERR, "can't close port: %d", port);
 		else
-			log_print(L_INF, "port %d closed.", port);
+			log_print(L_INF, "port %d closed", port);
 	}
 
 	/* close serial device */
@@ -388,7 +395,7 @@ cleanup(int state)
 		if (eb_serial_close() == -1)
 			log_print(L_ERR, "can't close device: %s", device);
 		else
-			log_print(L_INF, "%s closed.", device);
+			log_print(L_INF, "%s closed", device);
 	}
 
 	/* close rawfile */
@@ -396,7 +403,7 @@ cleanup(int state)
 		if (eb_raw_file_close() == -1)
 			log_print(L_ERR, "can't close rawfile: %s\n", rawfile);
 		else
-			log_print(L_INF, "%s closed.", rawfile);
+			log_print(L_INF, "%s closed", rawfile);
 	}
 			
 
@@ -408,7 +415,7 @@ cleanup(int state)
 		/* delete PID file */
 		if (pidfile_locked)
 			if (pid_file_close(pidfile, pidfd) == -1)
-				log_print(L_INF, "%s deleted.", pidfile);
+				log_print(L_INF, "%s deleted", pidfile);
 
 		/* Reset all signal handlers to default */
 		signal(SIGCHLD, SIG_DFL);
@@ -420,8 +427,8 @@ cleanup(int state)
 		signal(SIGTERM, SIG_DFL);
 
 		/* print end message */
-		log_print(L_ALL, DAEMON_NAME " " DAEMON_VERSION " stopped.");
-		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " stopped.");
+		log_print(L_ALL, DAEMON_NAME " " DAEMON_VERSION " stopped");
+		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " stopped");
 	}
 
 	/* close logging system */
@@ -463,8 +470,8 @@ main_loop(void)
 
 		/* ignore signals*/
 		if ((ret < 0) && (errno == EINTR)) {
-			log_print(L_NOT,
-				"get signal at select: %s", strerror(errno));
+			/* log_print(L_NOT,
+				"get signal at select: %s", strerror(errno)); */
 			continue;
 		} else if (ret < 0) {
 			err_if(1);
@@ -588,7 +595,7 @@ main(int argc, char *argv[])
 	/* read config file */
 	if (cfg_file_read(cfgfile, cfg, cfglen) == -1)
 		fprintf(stderr, "can't open cfgfile: %s ==> " \
-				"build in settings will be used.\n", cfgfile);	
+				"build in settings will be used\n", cfgfile);	
 
 	/* set unset configuration */
 	set_unset();
@@ -617,8 +624,8 @@ main(int argc, char *argv[])
 
 	/* to be daemon */
 	if (foreground == NO) {
-		log_print(L_ALL, DAEMON_NAME " " DAEMON_VERSION " started.");
-		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " started.");
+		log_print(L_ALL, DAEMON_NAME " " DAEMON_VERSION " started");
+		syslog(LOG_INFO, DAEMON_NAME " " DAEMON_VERSION " started");
 		daemonize();
 	}
 
@@ -632,7 +639,7 @@ main(int argc, char *argv[])
 			log_print(L_ERR, "can't open rawfile: %s", rawfile);
 			cleanup(EXIT_FAILURE);
 		} else {
-			log_print(L_INF, "%s opened.", rawfile);
+			log_print(L_INF, "%s opened", rawfile);
 		}
 
 	}
@@ -642,7 +649,7 @@ main(int argc, char *argv[])
 		log_print(L_ERR, "can't open device: %s", device);
 		cleanup(EXIT_FAILURE);
 	} else {
-		log_print(L_INF, "%s opened.", device);
+		log_print(L_INF, "%s opened", device);
 	}
 
 
@@ -651,7 +658,7 @@ main(int argc, char *argv[])
 		log_print(L_ERR, "can't open port: %d", port);
 		cleanup(EXIT_FAILURE);
 	} else {
-		log_print(L_INF, "port %d opened.", port);
+		log_print(L_INF, "port %d opened", port);
 	}
 
 	/* init msg queue */
@@ -660,7 +667,7 @@ main(int argc, char *argv[])
 		cleanup(EXIT_FAILURE);
 	} else {
 		msg_queue_on = YES;
-		log_print(L_INF, "msg queue initialized.");
+		log_print(L_INF, "msg queue initialized");
 	}
 
 	/* enter main loop */
