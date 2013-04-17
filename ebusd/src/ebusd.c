@@ -636,7 +636,7 @@ main(int argc, char *argv[])
 	/* open raw file */
 	if (rawdump == YES) {
 		if (eb_raw_file_open(rawfile) == -1) {
-			log_print(L_ERR, "can't open rawfile: %s", rawfile);
+			log_print(L_ALL, "can't open rawfile: %s", rawfile);
 			cleanup(EXIT_FAILURE);
 		} else {
 			log_print(L_INF, "%s opened", rawfile);
@@ -646,7 +646,7 @@ main(int argc, char *argv[])
 
 	/* open serial device */
 	if (eb_serial_open(device, &serialfd) == -1) {
-		log_print(L_ERR, "can't open device: %s", device);
+		log_print(L_ALL, "can't open device: %s", device);
 		cleanup(EXIT_FAILURE);
 	} else {
 		log_print(L_INF, "%s opened", device);
@@ -655,7 +655,7 @@ main(int argc, char *argv[])
 
 	/* open listing tcp socket */
 	if (sock_open(&socketfd, port) == -1) {
-		log_print(L_ERR, "can't open port: %d", port);
+		log_print(L_ALL, "can't open port: %d", port);
 		cleanup(EXIT_FAILURE);
 	} else {
 		log_print(L_INF, "port %d opened", port);
@@ -663,7 +663,7 @@ main(int argc, char *argv[])
 
 	/* init msg queue */
 	if (msg_queue_init() == -1) {
-		log_print(L_ERR, "can't initialize msg queue");
+		log_print(L_ALL, "can't initialize msg queue");
 		cleanup(EXIT_FAILURE);
 	} else {
 		msg_queue_on = YES;

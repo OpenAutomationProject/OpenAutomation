@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-04-17:
+* Changed error messages from daemon startup vom E_ERR to E_ALL.
+
 2013-04-09:
 * Extended signal handler to fit with logrotate / logging facility.
 * Added ebusd.logrotate.d file too contrib.
