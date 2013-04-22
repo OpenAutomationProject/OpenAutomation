@@ -39,35 +39,35 @@ use feature "switch";
 use File::Basename;
 use DB_File;
 
-no warnings 'uninitialized'; 
+no warnings 'uninitialized';
 
 sub LOGGER;
 
 # Options
 while ((my $key, my $value) = each %opts) {
-  print "opt $key = $value\n" if ($opts{d});
-} 
+    print "opt $key = $value\n" if ($opts{d});
+}
 
 # PID File-handling
 if ($opts{p} and Proc::PID::File->running()) {
-        LOGGER("WARN","Already running");
-        die();
-    }
+    LOGGER("WARN","Already running");
+    die();
+}
 
 # Config files
 # global
 my $config;
 if ($opts{c}) {
-        LOGGER("INFO","Config-File is: $opts{c}");
-        $config = $opts{c};
-    } else {$config = "/etc/knxd/knxd.conf" }
+    LOGGER("INFO","Config-File is: $opts{c}");
+    $config = $opts{c};
+} else {$config = "/etc/knxd/knxd.conf" }
 
 # eibga
 my $eib_config;
 if ($opts{c}) {
-        LOGGER("INFO","eibga-File is: $opts{e}");
-        $eib_config = $opts{e};
-    } else {$eib_config = "/etc/knxd/eibga.conf" }
+    LOGGER("INFO","eibga-File is: $opts{e}");
+    $eib_config = $opts{e};
+} else {$eib_config = "/etc/knxd/eibga.conf" }
 
 # Read config #
 my %daemon_config;
@@ -82,15 +82,15 @@ if ((stat($config))[9] > $lastreadtime or (stat($eib_config))[9] > $lastreadtime
         LOGGER('INFO',"*** reading global config");
         my_read_cfg ($config, \%daemon_config);
         $lastreadtime = time();
-        }
-    if (-e $eib_config) {
-	LOGGER('INFO',"*** reading eibga config");
-        my_read_cfg ($eib_config,\%eibgaconf);
-        }
-    } else {
-        #LOGDIE("unable to read config $config");
-        print "unabled to read config $config";
     }
+    if (-e $eib_config) {
+        LOGGER('INFO',"*** reading eibga config");
+        my_read_cfg ($eib_config,\%eibgaconf);
+    }
+} else {
+    #LOGDIE("unable to read config $config");
+    print "unabled to read config $config";
+}
 
 
 # Definitions
@@ -130,6 +130,8 @@ my $knxdebug = 0;
 
 my %plugin_info;
 my %plugin_subscribe;
+my %plugin_subscribe_write;
+my %plugin_subscribe_read;
 my $plugin_initflag=0;
 my %plugin_socket_subscribe;
 
@@ -180,7 +182,7 @@ my $rrd_syslastupdate = time()-($rrd_interval-+1);
 if (! -e $ramdisk.$plugin_db_name) {
     `cp $plugin_db_path$plugin_db_name $ramdisk$plugin_db_name`; }
 my $plugindb = tie %plugin_info, "DB_File", $ramdisk.$plugin_db_name, O_RDWR|O_CREAT, 0666, $DB_HASH
- or LOGGER('WARN',"Cannot open file 'plugin_info': $!");
+or LOGGER('WARN',"Cannot open file 'plugin_info': $!");
 
 
 # GO
@@ -190,197 +192,216 @@ my $plugindb = tie %plugin_info, "DB_File", $ramdisk.$plugin_db_name, O_RDWR|O_C
 #### K N O W N   S U B S #####
 #######################################
 sub eiblisten_thread { # MAIN SUB
-$SIG{TERM} = sub { 
-    # -> Doesn't work when blocked by I/O!!
-    LOGGER('DEBUG',"Thread eiblisten Caught TERM, exiting:". $thr_eiblisten_cause);
-    system ("touch $alive"); # avoid timeout for init
-    if($eib_logging) { close FILE_EIBLOG; }
-    $plugindb->sync(); # write out
-    `cp $ramdisk$plugin_db_name $plugin_db_path$plugin_db_name`;
-    exit(); 
-};
-$SIG{KILL} = sub { 
-    # ende aus finito
-    LOGGER('DEBUG',"Thread eiblisten Caught KILL, exiting:" .$thr_eiblisten_cause);
-    system ("touch $alive"); # avoid timeout for init
-    if($eib_logging) { close FILE_EIBLOG; }
-    $plugindb->sync(); # write out
-    `cp $ramdisk$plugin_db_name $plugin_db_path$plugin_db_name`;
-    exit(); 
-};
-
-#FIXME: add plugin-timeout again with SIGALRM, currently we rely on monit (1 minute)
-
-if($eib_logging) { 
-    open FILE_EIBLOG, ">>$eiblogfile";
-    print "Muss jetzt eibloggen";
-}
-
-# make it hot & define local vars - prevents Highload for eib = 0
-my $retryinfo;
-my $lastplugintime;
-my $select = IO::Select->new();
-$socksel = IO::Select->new();
-my $eibpoll;
-my $eibsrc;
-my $eibdst;
-my $eibbuf2;
-
-if ($eib == 1){
-select((select(FILE_EIBLOG), $|=1)[0]);
-$select = IO::Select->new();
-$socksel = IO::Select->new();
-$eibpoll = 1;
-$eibsrc=EIBConnection::EIBAddr();
-$eibdst=EIBConnection::EIBAddr();
-$eibbuf2=EIBConnection::EIBBuffer();
-}
-
-while ($running) {
-    my $eibcon2;
+    $SIG{TERM} = sub {
+        # -> Doesn't work when blocked by I/O!!
+        LOGGER('DEBUG',"Thread eiblisten Caught TERM, exiting:". $thr_eiblisten_cause);
+        system ("touch $alive"); # avoid timeout for init
+        if($eib_logging) { close FILE_EIBLOG; }
+        $plugindb->sync(); # write out
+        `cp $ramdisk$plugin_db_name $plugin_db_path$plugin_db_name`;
+        exit();
+    };
+    $SIG{KILL} = sub {
+        # ende aus finito
+        LOGGER('DEBUG',"Thread eiblisten Caught KILL, exiting:" .$thr_eiblisten_cause);
+        system ("touch $alive"); # avoid timeout for init
+        if($eib_logging) { close FILE_EIBLOG; }
+        $plugindb->sync(); # write out
+        `cp $ramdisk$plugin_db_name $plugin_db_path$plugin_db_name`;
+        exit();
+    };
+    
+    #FIXME: add plugin-timeout again with SIGALRM, currently we rely on monit (1 minute)
+    
+    if($eib_logging) {
+        open FILE_EIBLOG, ">>$eiblogfile";
+        print "Muss jetzt eibloggen";
+    }
+    
+    # make it hot & define local vars - prevents Highload for eib = 0
+    my $retryinfo;
+    my $lastplugintime;
+    my $select = IO::Select->new();
+    $socksel = IO::Select->new();
+    my $eibpoll;
+    my $eibsrc;
+    my $eibdst;
+    my $eibbuf2;
+    
     if ($eib == 1){
-        $eibcon2 = EIBConnection->EIBSocketURL($eib_url);
-        if (defined($eibcon2)) {
-        $eibcon2->EIB_Cache_Enable();
-        my $busmon = $eibcon2->EIBOpenVBusmonitor_async();
-        LOGGER('INFO',"connected to eibd $eib_url");
-        } else {
-        LOGGER('INFO',"Cannot connect to eibd $eib_url") unless $retryinfo;
-        }
+        select((select(FILE_EIBLOG), $|=1)[0]);
+        $select = IO::Select->new();
+        $socksel = IO::Select->new();
+        $eibpoll = 1;
+        $eibsrc=EIBConnection::EIBAddr();
+        $eibdst=EIBConnection::EIBAddr();
+        $eibbuf2=EIBConnection::EIBBuffer();
     }
-        
-  while (($eibpoll and defined($eibcon2)) or ($eib == 0))  #try to disable eib
-  {
-    if ($eib ==1){
-    $select->add($eibcon2->EIB_Poll_FD);
-    if ($select->can_read(.5)) { # EIB Packet processing 
-    if ($eibpoll=$eibcon2->EIB_Poll_Complete) {
-      my $msglen=$eibcon2->EIBGetBusmonitorPacket($eibbuf2);
-      if ($msglen>1) { 
-         my %msg = decode_vbusmonitor($$eibbuf2);
-       $retryinfo = 0;
-         # case ReadRequest for configured owsensor-value
-         # if ($msg{'apci'} eq "A_GroupValue_Read" and $ga_to_ow{$msg{'dst'}}) {
-             # LOGGER('DEBUG',"---> Send reply for $msg{'dst'} $ga_to_ow{$msg{'dst'}}");
-             # send_sensor_response($msg{'dst'});
-         # }
-         # # case Write for PIO
-         # if ($msg{'apci'} eq "A_GroupValue_Write" and $ga_to_ow{$msg{'dst'}}) {
-             # set_sensor_value($msg{'dst'},$msg{'data'});
-         # }
     
-       # Log it
-       print FILE_EIBLOG getISODateStamp.",$msg{'apci'},$msg{'src'},$msg{'dst'},$msg{'data'},$msg{'value'}"
-        .",$eibgaconf{$msg{'dst'}}{'DPT_SubTypeName'},$eibgaconf{$msg{'dst'}}{'DPTSubId'},$msg{'repeated'}"
-        .",$msg{'class'},$msg{'rcount'},$msg{'tpdu_type'},$msg{'sequence'}\n" if($eib_logging);
-       # Check EIB-connectivity and configchange every 100 telegrams?
-         $telegram_count++;
-    
-         # Traffic on Bus in bytes (8+Nutzdaten)+ACK?
-         $telegram_bytes += 9+(length(join('',split / /,$msg{'data'}))/2);
-         #LOGGER('DEBUG',"Anz $telegram_count, Bytes $telegram_bytes");
-       
-       if ($msg{'apci'} eq "A_GroupValue_Read" and ($msg{'dst'} eq $daemon_config{''}{'sendtime_ga_time'}))  {
-             # send time response
-             eibsend_time_resp($daemon_config{''}{'sendtime_ga_time'});
-       }
-         if ($msg{'apci'} eq "A_GroupValue_Read" and ($msg{'dst'} eq $daemon_config{''}{'sendtime_ga_date'}))  {
-             # send time response
-             eibsend_date_resp($daemon_config{''}{'sendtime_ga_date'});
-       }
-       # check subscribed plugin
-       if ($plugin_subscribe{$msg{'dst'}}) {
-                   #while( my ($k, $v) = each($plugin_subscribe{$msg{'dst'}}) ) {
-                   for my $k ( keys %{$plugin_subscribe{ $msg{'dst'} }} ) {
-            LOGGER('DEBUG',"Running Plugin $k subscribed to $msg{'dst'}");
-            $thr_eiblisten_timeout = time(); # set timeout
-            check_generic_plugins($k,\%msg);
-          }
-       }
-	#possible this prevents a memleak
-	%msg = ();
-	undef %msg;
-    #maybe !?
-    } elsif ($msglen==414) {
-      # process other?
-    } 
-    }
-	}  
-	# EIB Packet processing end, back in main loop
-	
-#possible this prevents a memleak
-$select->remove($eibcon2->EIB_Poll_FD);
-#maybe !?
-  }
-	###LOG continious Memory if DEBUG
-    #if ($opts{d}) {
-    #    my @statinfo = get_stat_info($$);
-    #    LOGGER('DEBUG',"BOSS utime: " . $statinfo[0]/100 ." stime " . $statinfo[1]/100 ." rss: $statinfo[5]");
-    #}
-    #FIXME: output log-warning on memleak
-    system ("touch $alive");
-
-   # check plugins
-   if (time()-$lastplugintime > 1) { # at most every 1secs for now 
-      $thr_eiblisten_timeout = time(); # set timeout
-      &check_generic_plugins();
-      $lastplugintime = time(); 
-      # case update rrds
-      &check_global_rrd_update;
-      #Cleanup %plugin_subscribe from deleted!!!
-   }
-   if ($rrd_syslastupdate + $rrd_interval < time()) {
-        my @statinfo = get_stat_info($$);
-        update_rrd($name."_mem","",$statinfo[5]);
-        update_rrd($name."_stime","",$statinfo[0],"COUNTER");
-        update_rrd($name."_utime","",$statinfo[1],"COUNTER");
-        update_rrd($name."_cutime","",$statinfo[2],"COUNTER");
-        update_rrd($name."_cstime","",$statinfo[3],"COUNTER");
-        $rrd_syslastupdate = time();    
-
-	# save plugin_db from ramdisk	
-	$plugindb->sync(); # write out
-    `cp $ramdisk$plugin_db_name $plugin_db_path$plugin_db_name`;
-
-	# if own memory is above mem_max -> restart via init.d
-	if ($statinfo[5] >= $mem_max){
-	LOGGER('INFO',"Process should be restarted: Memory is $statinfo[5] Mb - Limit is $mem_max Mb.");
-	system ("$init_script restart");}
-
-	}
-	
-   # Check if socket-handle is in select - or do this in plugin?
-   if (my @sock_ready = $socksel->can_read(0.1)) {
-        # process sockets ready to read
-        foreach my $fh (@sock_ready) {
-            if ($plugin_socket_subscribe{$fh}) {
-                LOGGER('DEBUG',"Call plugin $plugin_socket_subscribe{$fh} subscribed for $fh");
-                $thr_eiblisten_timeout = time(); # set timeout
-                &check_generic_plugins($plugin_socket_subscribe{$fh},undef,$fh);
+    while ($running) {
+        my $eibcon2;
+        if ($eib == 1){
+            $eibcon2 = EIBConnection->EIBSocketURL($eib_url);
+            if (defined($eibcon2)) {
+                $eibcon2->EIB_Cache_Enable();
+                my $busmon = $eibcon2->EIBOpenVBusmonitor_async();
+                LOGGER('INFO',"connected to eibd $eib_url");
             } else {
-                #else if - no plugin subscribed, remove select
-                $socksel->remove($fh);
-                LOGGER('DEBUG',"Removed orphaned socksel $fh");
+                LOGGER('INFO',"Cannot connect to eibd $eib_url") unless $retryinfo;
             }
         }
-   }
-   # case cyclic time
-   if ($daemon_config{''}{'sendtime_cycle'} and $daemon_config{''}{'sendtime_ga_time'} and $daemon_config{''}{'sendtime_ga_date'} and (time() - $sendtime_last > $daemon_config{''}{'sendtime_cycle'}) ) {
-     # send time cyclic
-     eibsend_date_time($daemon_config{''}{'sendtime_ga_date'},$daemon_config{''}{'sendtime_ga_time'});
-     $sendtime_last = time();
-   }
-  }
- 
-if ($eib == 1)
-{
-LOGGER('INFO',"eibd connection lost - retrying") unless $retryinfo;
-$retryinfo = 1;
-$eibpoll = 1;
-sleep 5;
-}
-}
-if($eib_logging) { close FILE_EIBLOG , ">>$eiblogfile"; }
+        
+        while (($eibpoll and defined($eibcon2)) or ($eib == 0))  #try to disable eib
+        {
+            if ($eib ==1){
+                $select->add($eibcon2->EIB_Poll_FD);
+                if ($select->can_read(.5)) { # EIB Packet processing
+                    if ($eibpoll=$eibcon2->EIB_Poll_Complete) {
+                        my $msglen=$eibcon2->EIBGetBusmonitorPacket($eibbuf2);
+                        if ($msglen>1) {
+                            my %msg = decode_vbusmonitor($$eibbuf2);
+                            $retryinfo = 0;
+                            # case ReadRequest for configured owsensor-value
+                            # if ($msg{'apci'} eq "A_GroupValue_Read" and $ga_to_ow{$msg{'dst'}}) {
+                            # LOGGER('DEBUG',"---> Send reply for $msg{'dst'} $ga_to_ow{$msg{'dst'}}");
+                            # send_sensor_response($msg{'dst'});
+                            # }
+                            # # case Write for PIO
+                            # if ($msg{'apci'} eq "A_GroupValue_Write" and $ga_to_ow{$msg{'dst'}}) {
+                            # set_sensor_value($msg{'dst'},$msg{'data'});
+                            # }
+                            
+                            # Log it
+                            print FILE_EIBLOG getISODateStamp.",$msg{'apci'},$msg{'src'},$msg{'dst'},$msg{'data'},$msg{'value'}"
+                            .",$eibgaconf{$msg{'dst'}}{'DPT_SubTypeName'},$eibgaconf{$msg{'dst'}}{'DPTSubId'},$msg{'repeated'}"
+                            .",$msg{'class'},$msg{'rcount'},$msg{'tpdu_type'},$msg{'sequence'}\n" if($eib_logging);
+                            # Check EIB-connectivity and configchange every 100 telegrams?
+                            $telegram_count++;
+                            
+                            # Traffic on Bus in bytes (8+Nutzdaten)+ACK?
+                            $telegram_bytes += 9+(length(join('',split / /,$msg{'data'}))/2);
+                            #LOGGER('DEBUG',"Anz $telegram_count, Bytes $telegram_bytes");
+                            
+                            if ($msg{'apci'} eq "A_GroupValue_Read" and ($msg{'dst'} eq $daemon_config{''}{'sendtime_ga_time'}))  {
+                                # send time response
+                                eibsend_time_resp($daemon_config{''}{'sendtime_ga_time'});
+                            }
+                            if ($msg{'apci'} eq "A_GroupValue_Read" and ($msg{'dst'} eq $daemon_config{''}{'sendtime_ga_date'}))  {
+                                # send time response
+                                eibsend_date_resp($daemon_config{''}{'sendtime_ga_date'});
+                            }
+                            # check subscribed plugin
+                            if ($plugin_subscribe{$msg{'dst'}}) {
+                                #while( my ($k, $v) = each($plugin_subscribe{$msg{'dst'}}) ) {
+                                for my $k ( keys %{$plugin_subscribe{ $msg{'dst'} }} ) {
+                                    LOGGER('DEBUG',"Running Plugin $k subscribed to $msg{'dst'}");
+                                    $thr_eiblisten_timeout = time(); # set timeout
+                                    check_generic_plugins($k,\%msg);
+                                }
+                            }
+                            # check subscribed plugin for READ
+                            if ($plugin_subscribe_read{$msg{'dst'}} && $msg{'apci'} eq "A_GroupValue_Read") {
+                                #while( my ($k, $v) = each($plugin_subscribe{$msg{'dst'}}) ) {
+                                for my $k ( keys %{$plugin_subscribe_read{ $msg{'dst'} }} ) {
+                                    LOGGER('DEBUG',"Running Plugin $k subscribed to $msg{'dst'}");
+                                    $thr_eiblisten_timeout = time(); # set timeout
+                                    check_generic_plugins($k,\%msg);
+                                }
+                            }
+                            # check subscribed plugin for WRITE
+                            if ($plugin_subscribe_write{$msg{'dst'}} && $msg{'apci'} eq "A_GroupValue_Write") {
+                                #while( my ($k, $v) = each($plugin_subscribe{$msg{'dst'}}) ) {
+                                for my $k ( keys %{$plugin_subscribe_write{ $msg{'dst'} }} ) {
+                                    LOGGER('DEBUG',"Running Plugin $k subscribed to $msg{'dst'}");
+                                    $thr_eiblisten_timeout = time(); # set timeout
+                                    check_generic_plugins($k,\%msg);
+                                }
+                            }
+                            
+                            #possible this prevents a memleak
+                            %msg = ();
+                            undef %msg;
+                            #maybe !?
+                        } elsif ($msglen==414) {
+                            # process other?
+                        }
+                    }
+                }
+                # EIB Packet processing end, back in main loop
+                
+                #possible this prevents a memleak
+                $select->remove($eibcon2->EIB_Poll_FD);
+                #maybe !?
+            }
+            ###LOG continious Memory if DEBUG
+            #if ($opts{d}) {
+            #    my @statinfo = get_stat_info($$);
+            #    LOGGER('DEBUG',"BOSS utime: " . $statinfo[0]/100 ." stime " . $statinfo[1]/100 ." rss: $statinfo[5]");
+            #}
+            #FIXME: output log-warning on memleak
+            system ("touch $alive");
+            
+            # check plugins
+            if (time()-$lastplugintime > 1) { # at most every 1secs for now
+                $thr_eiblisten_timeout = time(); # set timeout
+                &check_generic_plugins();
+                $lastplugintime = time();
+                # case update rrds
+                &check_global_rrd_update;
+                #Cleanup %plugin_subscribe from deleted!!!
+            }
+            if ($rrd_syslastupdate + $rrd_interval < time()) {
+                my @statinfo = get_stat_info($$);
+                update_rrd($name."_mem","",$statinfo[5]);
+                update_rrd($name."_stime","",$statinfo[0],"COUNTER");
+                update_rrd($name."_utime","",$statinfo[1],"COUNTER");
+                update_rrd($name."_cutime","",$statinfo[2],"COUNTER");
+                update_rrd($name."_cstime","",$statinfo[3],"COUNTER");
+                $rrd_syslastupdate = time();
+                
+                # save plugin_db from ramdisk
+                $plugindb->sync(); # write out
+                `cp $ramdisk$plugin_db_name $plugin_db_path$plugin_db_name`;
+                
+                # if own memory is above mem_max -> restart via init.d
+                if ($statinfo[5] >= $mem_max){
+                    LOGGER('INFO',"Process should be restarted: Memory is $statinfo[5] Mb - Limit is $mem_max Mb.");
+                    system ("$init_script restart");}
+                
+            }
+            
+            # Check if socket-handle is in select - or do this in plugin?
+            if (my @sock_ready = $socksel->can_read(0.1)) {
+                # process sockets ready to read
+                foreach my $fh (@sock_ready) {
+                    if ($plugin_socket_subscribe{$fh}) {
+                        LOGGER('DEBUG',"Call plugin $plugin_socket_subscribe{$fh} subscribed for $fh");
+                        $thr_eiblisten_timeout = time(); # set timeout
+                        &check_generic_plugins($plugin_socket_subscribe{$fh},undef,$fh);
+                    } else {
+                        #else if - no plugin subscribed, remove select
+                        $socksel->remove($fh);
+                        LOGGER('DEBUG',"Removed orphaned socksel $fh");
+                    }
+                }
+            }
+            # case cyclic time
+            if ($daemon_config{''}{'sendtime_cycle'} and $daemon_config{''}{'sendtime_ga_time'} and $daemon_config{''}{'sendtime_ga_date'} and (time() - $sendtime_last > $daemon_config{''}{'sendtime_cycle'}) ) {
+                # send time cyclic
+                eibsend_date_time($daemon_config{''}{'sendtime_ga_date'},$daemon_config{''}{'sendtime_ga_time'});
+                $sendtime_last = time();
+            }
+        }
+        
+        if ($eib == 1)
+        {
+            LOGGER('INFO',"eibd connection lost - retrying") unless $retryinfo;
+            $retryinfo = 1;
+            $eibpoll = 1;
+            sleep 5;
+        }
+    }
+    if($eib_logging) { close FILE_EIBLOG , ">>$eiblogfile"; }
 }
 
 
@@ -397,67 +418,67 @@ sub check_generic_plugins {#check Plugins
     my $plugin_max_errors = 5;
     if (defined $_[1]) { %msg = %{$_[1]}; } else { %msg = (); }
     if (defined $_[2]) { $fh = $_[2]; } else { $fh = undef; }
-    #%msg =() unless defined %msg; 
+    #%msg =() unless defined %msg;
     #my %msg ;   # dummy definition - empty so plugins can determine if called by subscribed ga or cycle
     $thr_eiblisten_cause = "checking plugins";
-
+    
     my @plugins = <$plugin_path*>;
     foreach (@plugins) {
-      next if ($_ =~ /\~$/ or -d $_); # ignore backup-files and subdirectories
-      my $plugname = basename($_);
-      $plugin_info{$plugname.'_lastsaved'} = ((stat($_))[9]); 
-      $plugin_info{$plugname.'_cycle'} = $plugin_cycle unless defined $plugin_info{$plugname.'_cycle'};
-      if ((time() > $plugin_info{$plugname.'_last'} + $plugin_info{$plugname.'_cycle'} and $plugin_info{$plugname.'_cycle'}) # check cyclic plugin
-          or $plugin_info{$plugname.'_lastsaved'} > $plugin_info{$plugname.'_last'}    # check changed plugin
-          or $runname eq $plugname # direct call
-          or !$plugin_initflag) {
-          LOGGER('DEBUG',"Running PLUGIN $plugname"); 
-          
-          open(FILE, $_);
-          my @lines = <FILE>;
-          close($_);
-          # if modified and once on init, reset error-counter, mem-stats
-          if (($plugin_info{$plugname.'_lastsaved'} > $plugin_info{$plugname.'_last'}) or !$plugin_initflag) {
-            $plugin_info{$plugname.'_timeout_err'}=0;
-            $plugin_info{$plugname.'_meminc'}=0;
-            $plugin_info{$plugname.'_memstart'}=0;
-            $plugin_info{$plugname.'_ticks'}=0;
-          }
-          if ($plugin_info{$plugname.'_timeout_err'}<$plugin_max_errors) {
-            $thr_eiblisten_cause = "TIMEOUT running PLUGIN ".$plugname;
-            $plugindb->sync(); # write out AFTER setting reason BEFORE err++
-            $plugin_info{$plugname.'_timeout_err'}++;
-            my @statinfo = get_stat_info($$);
-            my $before_mem = $statinfo[5];
-            my $before_ticks = $statinfo[6];
-            my $starttime = time();
-            $plugin_info{$plugname.'_result'} = eval("@lines");
-            $plugin_info{$plugname.'_last'} = time() unless ($runname eq $plugname); #only reset cycle on non-direct call
-            @statinfo = get_stat_info($$);
-            if (!$plugin_initflag) {
-                $plugin_info{$plugname.'_memstart'}= $statinfo[5] - $before_mem;
-            } else {
-                $plugin_info{$plugname.'_meminc'} += $statinfo[5] - $before_mem;
+        next if ($_ =~ /\~$/ or -d $_); # ignore backup-files and subdirectories
+        my $plugname = basename($_);
+        $plugin_info{$plugname.'_lastsaved'} = ((stat($_))[9]);
+        $plugin_info{$plugname.'_cycle'} = $plugin_cycle unless defined $plugin_info{$plugname.'_cycle'};
+        if ((time() > $plugin_info{$plugname.'_last'} + $plugin_info{$plugname.'_cycle'} and $plugin_info{$plugname.'_cycle'}) # check cyclic plugin
+        or $plugin_info{$plugname.'_lastsaved'} > $plugin_info{$plugname.'_last'}    # check changed plugin
+        or $runname eq $plugname # direct call
+        or !$plugin_initflag) {
+            LOGGER('DEBUG',"Running PLUGIN $plugname");
+            
+            open(FILE, $_);
+            my @lines = <FILE>;
+            close($_);
+            # if modified and once on init, reset error-counter, mem-stats
+            if (($plugin_info{$plugname.'_lastsaved'} > $plugin_info{$plugname.'_last'}) or !$plugin_initflag) {
+                $plugin_info{$plugname.'_timeout_err'}=0;
+                $plugin_info{$plugname.'_meminc'}=0;
+                $plugin_info{$plugname.'_memstart'}=0;
+                $plugin_info{$plugname.'_ticks'}=0;
             }
-            $plugin_info{$plugname.'_ticks'} += $statinfo[6] - $before_ticks;
-            $plugin_info{$plugname.'_timeout_err'}=0;
-            $thr_eiblisten_cause = "normally";
-            $plugin_info{$plugname.'_runtime'} = nearest(.3,time() - $starttime);
-            if ($plugin_info{$plugname.'_result'} or $@) {
-                plugin_log($plugname,"$plugin_info{$plugname.'_result'},$plugin_info{$plugname.'_runtime'}s,$@");
+            if ($plugin_info{$plugname.'_timeout_err'}<$plugin_max_errors) {
+                $thr_eiblisten_cause = "TIMEOUT running PLUGIN ".$plugname;
+                $plugindb->sync(); # write out AFTER setting reason BEFORE err++
+                $plugin_info{$plugname.'_timeout_err'}++;
+                my @statinfo = get_stat_info($$);
+                my $before_mem = $statinfo[5];
+                my $before_ticks = $statinfo[6];
+                my $starttime = time();
+                $plugin_info{$plugname.'_result'} = eval("@lines");
+                $plugin_info{$plugname.'_last'} = time() unless ($runname eq $plugname); #only reset cycle on non-direct call
+                @statinfo = get_stat_info($$);
+                if (!$plugin_initflag) {
+                    $plugin_info{$plugname.'_memstart'}= $statinfo[5] - $before_mem;
+                } else {
+                    $plugin_info{$plugname.'_meminc'} += $statinfo[5] - $before_mem;
+                }
+                $plugin_info{$plugname.'_ticks'} += $statinfo[6] - $before_ticks;
+                $plugin_info{$plugname.'_timeout_err'}=0;
+                $thr_eiblisten_cause = "normally";
+                $plugin_info{$plugname.'_runtime'} = nearest(.3,time() - $starttime);
+                if ($plugin_info{$plugname.'_result'} or $@) {
+                    plugin_log($plugname,"$plugin_info{$plugname.'_result'},$plugin_info{$plugname.'_runtime'}s,$@");
+                }
+                $plugindb->sync(); # write out AFTER setting reason
             }
-            $plugindb->sync(); # write out AFTER setting reason
-          }
-          if ($@) {
-               LOGGER('DEBUG',"ERROR in $plugname $@");
-               $plugin_info{$plugname.'_result'} = $@;
-          }
-	  
-    #possible this prevents a memleak
-    @lines = ();
-    undef @lines;
-    #maybe !?
-      }
+            if ($@) {
+                LOGGER('DEBUG',"ERROR in $plugname $@");
+                $plugin_info{$plugname.'_result'} = $@;
+            }
+            
+            #possible this prevents a memleak
+            @lines = ();
+            undef @lines;
+            #maybe !?
+        }
     }
     # check for orphaned/old values in tied hash here!
     $plugin_initflag = 1;
@@ -470,45 +491,45 @@ sub check_generic_plugins {#check Plugins
 
 
 sub check_global_rrd_update { # here eib_traffic and daemon-stats - also: CHECK for MEMLEAK !!!
-
-   if ($rrd_lastupdate + $rrd_interval < time()) {
-       # check/create rrd
-       if (!-d $rrd_dir) { mkdir($rrd_dir); }
-       
-       if (!-e $rrd_dir.'eib_traffic.rrd' && $eib_logging == 1) {
-          # Create RRD
-          my $heartbeat = $rrd_interval * 3;
-          RRDs::create($rrd_dir.'eib_traffic.rrd',
+    
+    if ($rrd_lastupdate + $rrd_interval < time()) {
+        # check/create rrd
+        if (!-d $rrd_dir) { mkdir($rrd_dir); }
+        
+        if (!-e $rrd_dir.'eib_traffic.rrd' && $eib_logging == 1) {
+            # Create RRD
+            my $heartbeat = $rrd_interval * 3;
+            RRDs::create($rrd_dir.'eib_traffic.rrd',
             '--step' => $rrd_interval,
-            'DS:eib_tps:COUNTER:'.$heartbeat.':0:50','DS:eib_bps:COUNTER:'.$heartbeat.':0:9830400', 
-            'RRA:AVERAGE:0.5:1:'.$rra1_row,'RRA:AVERAGE:0.5:5:'.$rra5_row,'RRA:AVERAGE:0.5:15:'.$rra15_row,'RRA:AVERAGE:0.5:180:'.$rra180_row, 
+            'DS:eib_tps:COUNTER:'.$heartbeat.':0:50','DS:eib_bps:COUNTER:'.$heartbeat.':0:9830400',
+            'RRA:AVERAGE:0.5:1:'.$rra1_row,'RRA:AVERAGE:0.5:5:'.$rra5_row,'RRA:AVERAGE:0.5:15:'.$rra15_row,'RRA:AVERAGE:0.5:180:'.$rra180_row,
             'RRA:MIN:0.5:1:'.$rra1_row,'RRA:MIN:0.5:5:'.$rra5_row,'RRA:MIN:0.5:15:'.$rra15_row,'RRA:MIN:0.5:180:'.$rra180_row,
             'RRA:MAX:0.5:1:'.$rra1_row,'RRA:MAX:0.5:5:'.$rra5_row,'RRA:MAX:0.5:15:'.$rra15_row,'RRA:MAX:0.5:180:'.$rra180_row);
-           if (RRDs::error) {
-              LOGGER('INFO',"Create RRDs failed:".RRDs::error);
-           } else {
-              LOGGER('INFO',"Created RRD eib-traffic");
-           }
-       }
-       
-       #Now do the updates
-       if ($eib_logging == 1){
-       RRDs::update($rrd_dir.'eib_traffic.rrd','N:'.$telegram_count.':'.$telegram_bytes);
-       }
-       if (RRDs::error) {
-          LOGGER('INFO',"Update of RRDs eib-traffic failed:".RRDs::error." -> deleted");
-          unlink($rrd_dir.'eib_traffic.rrd');
-       } else {
-          LOGGER('DEBUG',"Updated RRD eib-traffic");
-       }
+            if (RRDs::error) {
+                LOGGER('INFO',"Create RRDs failed:".RRDs::error);
+            } else {
+                LOGGER('INFO',"Created RRD eib-traffic");
+            }
+        }
+        
+        #Now do the updates
+        if ($eib_logging == 1){
+            RRDs::update($rrd_dir.'eib_traffic.rrd','N:'.$telegram_count.':'.$telegram_bytes);
+        }
+        if (RRDs::error) {
+            LOGGER('INFO',"Update of RRDs eib-traffic failed:".RRDs::error." -> deleted");
+            unlink($rrd_dir.'eib_traffic.rrd');
+        } else {
+            LOGGER('DEBUG',"Updated RRD eib-traffic");
+        }
         my @statinfo = get_stat_info($$);
         update_rrd($name."_mem","",$statinfo[5]);
         update_rrd($name."_stime","",$statinfo[0],"COUNTER");
         update_rrd($name."_utime","",$statinfo[1],"COUNTER");
         update_rrd($name."_cutime","",$statinfo[2],"COUNTER");
         update_rrd($name."_cstime","",$statinfo[3],"COUNTER");
-       $rrd_lastupdate = time();
-   }
+        $rrd_lastupdate = time();
+    }
 }
 
 sub trim($){# Perl trim function to remove whitespace from the start and end of the string
@@ -532,48 +553,48 @@ sub rtrim($){# Right trim function to remove trailing whitespace
 
 
 sub rstr{# right $len chars
-  my $s = shift;
-  my $len = shift;
-  # printf("DEBUG %s %i\n",$s,$len);
-  return substr($s, length($s) - $len, $len);
+    my $s = shift;
+    my $len = shift;
+    # printf("DEBUG %s %i\n",$s,$len);
+    return substr($s, length($s) - $len, $len);
 }
 
 sub get_stat_info { #reads info from deamon file
-  my $error = '';
-  my @ret;
-
-  ### open and read the main stat file
-  if( ! open(_INFO,"</proc/$_[0]/stat") ){
-    $error = "Couldn't open /proc/$_[0]/stat [$!]";
+    my $error = '';
+    my @ret;
+    
+    ### open and read the main stat file
+    if( ! open(_INFO,"</proc/$_[0]/stat") ){
+        $error = "Couldn't open /proc/$_[0]/stat [$!]";
+        return @ret;
+    }
+    my @info = split(/\s+/,<_INFO>);
+    close(_INFO);
+    ### get the important ones
+    # utime,stime,cutime,cstime,vsize,rss (in MB), cummulated *time for convinience
+    @ret = ($info[13],$info[14],$info[15],$info[16],$info[22]/1024,nearest(.1,$info[23] * 4/1024),$info[13]+$info[14]+$info[15]+$info[16]);
     return @ret;
-  }
-  my @info = split(/\s+/,<_INFO>);
-  close(_INFO);
-  ### get the important ones
-  # utime,stime,cutime,cstime,vsize,rss (in MB), cummulated *time for convinience
-  @ret = ($info[13],$info[14],$info[15],$info[16],$info[22]/1024,nearest(.1,$info[23] * 4/1024),$info[13]+$info[14]+$info[15]+$info[16]);
-  return @ret;
-  
-  ### these are all the props (skip some)
-  # pid(0) comm(1) state ppid pgrp session tty
-  # tpgid(7) flags minflt cminflt majflt cmajflt
-  # utime(13) stime cutime cstime counter
-  # priority(18) timeout itrealvalue starttime vsize rss
-  # rlim(24) startcode endcode startstack kstkesp kstkeip
-  # signal(30) blocked sigignore sigcatch wchan
-  ###
+    
+    ### these are all the props (skip some)
+    # pid(0) comm(1) state ppid pgrp session tty
+    # tpgid(7) flags minflt cminflt majflt cmajflt
+    # utime(13) stime cutime cstime counter
+    # priority(18) timeout itrealvalue starttime vsize rss
+    # rlim(24) startcode endcode startstack kstkesp kstkeip
+    # signal(30) blocked sigignore sigcatch wchan
+    ###
 }
 sub my_read_cfg{ # read config files
     my $cfgfile=shift;
     my $cfghash=shift;
     %{$cfghash}=();
-
+    
     open CONF, "<$cfgfile" || die "Could not open $cfgfile for reading";
     $/="\n";
     
     my $record={};
     my $key='';
-
+    
     while(<CONF>)
     {
         unless ($_ =~ /\#/){ #checks for uncommented
@@ -581,7 +602,7 @@ sub my_read_cfg{ # read config files
         if(/^\s*\[\s*(.+?)\s*\]\s*$/)
         {
             my $newkey=$1;
-
+            
             if(defined $key) # flush last record
             {
                 if(defined $record->{name} && $cfgfile=~/eibga/)
@@ -596,7 +617,7 @@ sub my_read_cfg{ # read config files
                     # end of specific part
                 }
                 $cfghash->{$key}=$record;
-            } 
+            }
             # start new record
             $record={};
             $key=$newkey;
@@ -612,42 +633,42 @@ sub my_read_cfg{ # read config files
             # empty line
         }
     }
-    }
-    close CONF; 
-    
-    if($key) # flush last record
+}
+close CONF;
+
+if($key) # flush last record
+{
+    if(defined $record->{name} && $cfgfile=~/eibga/)
     {
-        if(defined $record->{name} && $cfgfile=~/eibga/)
-        {
-            $record->{ga}=$key;
-            $record->{name}=~/^\s*(\S+)/;
-            $cfghash->{$record->{name}}=$record;
-            # specific to my GA scheme (Fry)
-            $record->{short}=$1;
-            $record->{short}="ZV_$1" if $record->{name}=~/^Zeitversand.*(Uhrzeit|Datum)/; # short versions of "Zeitversand"
-            $cfghash->{$record->{short}}=$record;
-            # end of specific part
-        }
-        $cfghash->{$key}=$record;
+        $record->{ga}=$key;
+        $record->{name}=~/^\s*(\S+)/;
+        $cfghash->{$record->{name}}=$record;
+        # specific to my GA scheme (Fry)
+        $record->{short}=$1;
+        $record->{short}="ZV_$1" if $record->{name}=~/^Zeitversand.*(Uhrzeit|Datum)/; # short versions of "Zeitversand"
+        $cfghash->{$record->{short}}=$record;
+        # end of specific part
     }
+    $cfghash->{$key}=$record;
+}
 }
 
 sub my_write_cfg{ # write config files
     my $cfgfile=shift;
     my $cfghash=shift;
-
+    
     open CONF, ">$cfgfile" || die "Could not open $cfgfile for writing";
     
     for my $s (keys %{$cfghash})
     {
-       next if $cfgfile=~/eibga/ && $s!~/^[\'\/0-9]+$/;
-       
-       print CONF "[$s]\n";
-
-       for my $k (keys %{$cfghash->{$s}})
-       {
-           print CONF "$k=$cfghash->{$s}{$k}\n";
-       }
+        next if $cfgfile=~/eibga/ && $s!~/^[\'\/0-9]+$/;
+        
+        print CONF "[$s]\n";
+        
+        for my $k (keys %{$cfghash->{$s}})
+        {
+            print CONF "$k=$cfghash->{$s}{$k}\n";
+        }
     }
     
     close CONF;
@@ -662,7 +683,7 @@ sub LOGGER($$){# LOG-sub to replace heavyweight Log4Perl/Syslog
     
     if ($level eq "DEBUG") {
         return unless $opts{d};
-    } 
+    }
     if ($opts{d}) {
         print STDERR getISODateStamp . " $level - $msg\n";
     } else {
@@ -674,19 +695,19 @@ sub LOGGER($$){# LOG-sub to replace heavyweight Log4Perl/Syslog
 sub decode_dpt9 {# encode DPT9.001/EIS 5
     my @data = @_;
     my $res;
-
+    
     unless ($#data == 2) {
         ($data[1],$data[2]) = split(' ',$data[0]);
         $data[1] = hex $data[1];
         $data[2] = hex $data[2];
-      unless (defined $data[2]) {
-        return;
-      }
+        unless (defined $data[2]) {
+            return;
+        }
     }
     my $sign = $data[1] & 0x80;
     my $exp = ($data[1] & 0x78) >> 3;
     my $mant = (($data[1] & 0x7) << 8) | $data[2];
-
+    
     $mant = -(~($mant - 1) & 0x7ff) if $sign != 0;
     $res = (1 << $exp) * 0.01 * $mant;
     return $res;
@@ -695,11 +716,11 @@ sub decode_dpt9 {# encode DPT9.001/EIS 5
 sub encode_dpt9 { # 2byte signed float
     my $state = shift;
     my $data;
-
+    
     my $sign = ($state <0 ? 0x8000 : 0);
     my $exp  = 0;
     my $mant = 0;
-
+    
     $mant = int($state * 100.0);
     while (abs($mant) > 2047) {
         $mant /= 2;
@@ -731,17 +752,17 @@ sub decode_dpt510 { #1byte unsigned UChar
     return hex(shift);
 }
 
-sub decode_dpt6 { #1byte signed 
+sub decode_dpt6 { #1byte signed
     my $val = hex(shift);
     return $val > 127 ? $val-256 : $val;
 }
 
-sub decode_dpt7 { #2byte unsigned 
+sub decode_dpt7 { #2byte unsigned
     my @val = split(" ",shift);
     return (hex($val[0])<<8) + hex($val[1]);
 }
 
-sub decode_dpt8 { #2byte signed 
+sub decode_dpt8 { #2byte signed
     my @val = split(" ",shift);
     my $val2 = (hex($val[0])<<8) + hex($val[1]);
     return $val2 > 32767 ? $val2-65536 : $val2;
@@ -775,12 +796,12 @@ sub decode_dpt11 { #3byte date
     return sprintf("%04i-%02i-%02i",$year,$mon,$mday);
 }
 
-sub decode_dpt12 { #4byte unsigned 
+sub decode_dpt12 { #4byte unsigned
     my @val = split(" ",shift);
     return (hex($val[0])<<24) + (hex($val[1])<<16) + (hex($val[2])<<8) + hex($val[3]);
 }
 
-sub decode_dpt13 { #4byte signed 
+sub decode_dpt13 { #4byte signed
     my @val = split(" ",shift);
     my $val2 = (hex($val[0])<<24) + (hex($val[1])<<16) + (hex($val[2])<<8) + hex($val[3]);
     return $val2 >  2147483647 ? $val2-4294967296 : $val2;
@@ -822,122 +843,122 @@ sub decode_dpt {
     my $dptid = $dpt || $eibgaconf{$dst}{'DPTSubId'} || 0;
     $data =~ s/\s+$//g;
     given ($dptid) {
-            when (/^10/)      { $value = decode_dpt10($data); }
-            when (/^11/)      { $value = decode_dpt11($data); }
-            when (/^12/)      { $value = decode_dpt12($data); }
-            when (/^13/)      { $value = decode_dpt13($data); }
-            when (/^14/)      { $value = decode_dpt14($data); }
-            when (/^16/)      { $value = decode_dpt16($data); }
-            when (/^17/)      { $value = decode_dpt510($data & 0x3F); }
-            when (/^20/)      { $value = decode_dpt510($data); }
-            when (/^\d\d/)    { return; } # other DPT XX 15 are unhandled
-            when (/^1/)       { $value = int($data); }
-            when (/^2/)       { $value = decode_dpt2($data); } 
-            when (/^3/)       { $value = decode_dpt3($data); } 
-            when (/^4/)       { $value = decode_dpt4($data); } 
-            when ([5,'5.001'])  { $value = decode_dpt5($data); }
-            when (['5.004','5.005','5.010']) { $value = decode_dpt510($data); }
-            when (/^6/) { $value = decode_dpt6($data); }
-            when (/^7/) { $value = decode_dpt7($data); }
-            when (/^8/) { $value = decode_dpt8($data); }
-            when (/^9/) { $value = decode_dpt9($data); }
-            default   { return; } # nothing
+        when (/^10/)      { $value = decode_dpt10($data); }
+        when (/^11/)      { $value = decode_dpt11($data); }
+        when (/^12/)      { $value = decode_dpt12($data); }
+        when (/^13/)      { $value = decode_dpt13($data); }
+        when (/^14/)      { $value = decode_dpt14($data); }
+        when (/^16/)      { $value = decode_dpt16($data); }
+        when (/^17/)      { $value = decode_dpt510($data & 0x3F); }
+        when (/^20/)      { $value = decode_dpt510($data); }
+        when (/^\d\d/)    { return; } # other DPT XX 15 are unhandled
+        when (/^1/)       { $value = int($data); }
+        when (/^2/)       { $value = decode_dpt2($data); }
+        when (/^3/)       { $value = decode_dpt3($data); }
+        when (/^4/)       { $value = decode_dpt4($data); }
+        when ([5,'5.001'])  { $value = decode_dpt5($data); }
+        when (['5.004','5.005','5.010']) { $value = decode_dpt510($data); }
+        when (/^6/) { $value = decode_dpt6($data); }
+        when (/^7/) { $value = decode_dpt7($data); }
+        when (/^8/) { $value = decode_dpt8($data); }
+        when (/^9/) { $value = decode_dpt9($data); }
+        default   { return; } # nothing
     }
     return $value;
 }
 
 sub knx_read {
-  my $dst = $_[0];
-  my $age = $_[1] || 0; # read hot unless defined
-  my $dpt = $_[2];
-  my $src=EIBConnection::EIBAddr();
-  my $buf=EIBConnection::EIBBuffer();
-  my $hexbytes;
-  my $leibcon = EIBConnection->EIBSocketURL($eib_url) or return("Error: $!");
-  my $res=$leibcon->EIB_Cache_Read_Sync(str2addr($dst), $src, $buf, $age);
-  if (!defined $res) { return; } # ("ReadError: $!");
-  $leibcon->EIBClose();
-  # $$src contains source PA
-  
-  my @data = unpack ("C" . bytes::length($$buf), $$buf);
-  if ($res == 2) { # 6bit only
-     return decode_dpt($dst,($data[1] & 0x3F),$dpt);
-  } else {
-     for (my $i=2; $i<= $res-1; $i++) {
-         $hexbytes = $hexbytes . sprintf("%02X ", ($data[$i]));
-     }
-     return decode_dpt($dst,$hexbytes,$dpt);
-  } 
+    my $dst = $_[0];
+    my $age = $_[1] || 0; # read hot unless defined
+    my $dpt = $_[2];
+    my $src=EIBConnection::EIBAddr();
+    my $buf=EIBConnection::EIBBuffer();
+    my $hexbytes;
+    my $leibcon = EIBConnection->EIBSocketURL($eib_url) or return("Error: $!");
+    my $res=$leibcon->EIB_Cache_Read_Sync(str2addr($dst), $src, $buf, $age);
+    if (!defined $res) { return; } # ("ReadError: $!");
+    $leibcon->EIBClose();
+    # $$src contains source PA
+    
+    my @data = unpack ("C" . bytes::length($$buf), $$buf);
+    if ($res == 2) { # 6bit only
+        return decode_dpt($dst,($data[1] & 0x3F),$dpt);
+    } else {
+        for (my $i=2; $i<= $res-1; $i++) {
+            $hexbytes = $hexbytes . sprintf("%02X ", ($data[$i]));
+        }
+        return decode_dpt($dst,$hexbytes,$dpt);
+    }
 }
 
 sub knx_write {
-if ($eib == 1){
-  my ($dst,$value,$dpt,$response,$dbgmsg) = @_;
-  my $bytes;
-  my $apci = ($response) ? 0x40 : 0x80; # 0x40=response, 0x80=write
-#     DPT 1 (1 bit) = EIS 1/7 (move=DPT 1.8, step=DPT 1.7)
-#     DPT 2 (1 bit controlled) = EIS 8
-#     DPT 3 (3 bit controlled) = EIS 2
-#     DPT 4 (Character) = EIS 13
-#     DPT 5 (8 bit unsigned value) = EIS 6 (DPT 5.1) oder EIS 14.001 (DPT 5.10)
-#     DPT 6 (8 bit signed value) = EIS 14.000
-#     DPT 7 (2 byte unsigned value) = EIS 10.000
-#     DPT 8 (2 byte signed value) = EIS 10.001
-#     DPT 9 (2 byte float value) = EIS 5
-#     DPT 10 (Time) = EIS 3
-#     DPT 11 (Date) = EIS 4
-#     DPT 12 (4 byte unsigned value) = EIS 11.000
-#     DPT 13 (4 byte signed value) = EIS 11.001
-#     DPT 14 (4 byte float value) = EIS 9
-#     DPT 15 (Entrance access) = EIS 12
-#     DPT 16 (Character string) = EIS 15
-  $dpt = $eibgaconf{$dst}{'DPTSubId'} unless $dpt; # read dpt from eibgaconf if existing
-  given ($dpt) {
-          when (/^10/) {
-            my %wd=(Mo=>1, Di=>2, Mi=>3, Do=>4, Fr=>5, Sa=>6, So=>7);
-            my $wdpat=join('|',keys %wd);
-            my ($w,$h,$m,$s);
-            return unless ($w,$h,$m,$s)=($value=~/^($wdpat)?\s*([0-2][0-9])\:([0-5][0-9])\:?([0-5][0-9])?\s*/si);
-            return unless defined $h && defined $m;
-            $w=$wd{$w} if defined $wd{$w};
-            $h+=($w<<5) if $w; 
-            $s=0 unless $s;
-            $bytes=pack("CCCCC",0,$apci,$h,$m,$s);
-          }
-          when (/^11/) {
-            my ($y,$m,$d);
-            return unless ($y,$m,$d)=($value=~/^([1-2][0-9][0-9][0-9])\-([0-1][0-9])\-([0-3][0-9])\s*/si);
-            return if $y<1990 || $y>=2090;
-            $y%=100;
-            $bytes=pack("CCCCC",0,$apci,$d,$m,$y);
-          }
-          when (/^12/)             { $bytes = pack ("CCL>", 0, $apci, $value); }  #EIS11.000/DPT12 (4 byte unsigned)
-          when (/^13/)             { $bytes = pack ("CCl>", 0, $apci, $value); }
-          when (/^14/)             { $bytes = pack ("CCf>", 0, $apci, $value); }
-          when (/^16/)             { $bytes = pack ("CCa14", 0, $apci, $value); }
-          when (/^17/)             { $bytes = pack ("CCC", 0, $apci, $value & 0x3F); }
-          when (/^20/)             { $bytes = pack ("CCC", 0, $apci, $value); }
-          when (/^\d\d/)           { return; } # other DPT XX 15 are unhandled
-          when (/^[1,2,3]/)        { $bytes = pack ("CC", 0, $apci | ($value & 0x3f)); } #send 6bit small
-          when (/^4/)              { $bytes = pack ("CCc", 0, $apci, ord($value)); } 
-          when ([5,5.001])         { $bytes = pack ("CCC", 0, $apci, encode_dpt5($value)); } #EIS 6/DPT5.001 1byte
-          when ([5.004,5.005,5.010]) { $bytes = pack ("CCC", 0, $apci, $value); }
-          when (/^5/)              { $bytes = pack ("CCC", 0, $apci, $value); }
-          when (/^6/)              { $bytes = pack ("CCc", 0, $apci, $value); }
-          when (/^7/)              { $bytes = pack ("CCS>", 0, $apci, $value); }
-          when (/^8/)              { $bytes = pack ("CCs>", 0, $apci, $value); } 
-          when (/^9/)              { $bytes = pack ("CCCC", 0, $apci, encode_dpt9($value)); } #EIS5/DPT9 2byte float 
-          default                  { LOGGER('WARN',"None or unsupported DPT: $dpt sent to $dst value $value"); return; }
-  }
-  plugin_log("knx_write","KNX write DPT $dpt: $value ($bytes) to $dst ($dbgmsg)") if ($knxdebug);
-  my $leibcon = EIBConnection->EIBSocketURL($eib_url) or return("Error opening con: $!");
-  if ($leibcon->EIBOpenT_Group(str2addr($dst),1) == -1) { return("Error opening group: $!"); } 
-  my $res=$leibcon->EIBSendAPDU($bytes);
-  $leibcon->EIBClose();
-  return $res;
-  }else{
-return;
-}}
+    if ($eib == 1){
+        my ($dst,$value,$dpt,$response,$dbgmsg) = @_;
+        my $bytes;
+        my $apci = ($response) ? 0x40 : 0x80; # 0x40=response, 0x80=write
+        #     DPT 1 (1 bit) = EIS 1/7 (move=DPT 1.8, step=DPT 1.7)
+        #     DPT 2 (1 bit controlled) = EIS 8
+        #     DPT 3 (3 bit controlled) = EIS 2
+        #     DPT 4 (Character) = EIS 13
+        #     DPT 5 (8 bit unsigned value) = EIS 6 (DPT 5.1) oder EIS 14.001 (DPT 5.10)
+        #     DPT 6 (8 bit signed value) = EIS 14.000
+        #     DPT 7 (2 byte unsigned value) = EIS 10.000
+        #     DPT 8 (2 byte signed value) = EIS 10.001
+        #     DPT 9 (2 byte float value) = EIS 5
+        #     DPT 10 (Time) = EIS 3
+        #     DPT 11 (Date) = EIS 4
+        #     DPT 12 (4 byte unsigned value) = EIS 11.000
+        #     DPT 13 (4 byte signed value) = EIS 11.001
+        #     DPT 14 (4 byte float value) = EIS 9
+        #     DPT 15 (Entrance access) = EIS 12
+        #     DPT 16 (Character string) = EIS 15
+        $dpt = $eibgaconf{$dst}{'DPTSubId'} unless $dpt; # read dpt from eibgaconf if existing
+        given ($dpt) {
+            when (/^10/) {
+                my %wd=(Mo=>1, Di=>2, Mi=>3, Do=>4, Fr=>5, Sa=>6, So=>7);
+                my $wdpat=join('|',keys %wd);
+                my ($w,$h,$m,$s);
+                return unless ($w,$h,$m,$s)=($value=~/^($wdpat)?\s*([0-2][0-9])\:([0-5][0-9])\:?([0-5][0-9])?\s*/si);
+                return unless defined $h && defined $m;
+                $w=$wd{$w} if defined $wd{$w};
+                $h+=($w<<5) if $w;
+                $s=0 unless $s;
+                $bytes=pack("CCCCC",0,$apci,$h,$m,$s);
+            }
+            when (/^11/) {
+                my ($y,$m,$d);
+                return unless ($y,$m,$d)=($value=~/^([1-2][0-9][0-9][0-9])\-([0-1][0-9])\-([0-3][0-9])\s*/si);
+                return if $y<1990 || $y>=2090;
+                $y%=100;
+                $bytes=pack("CCCCC",0,$apci,$d,$m,$y);
+            }
+            when (/^12/)             { $bytes = pack ("CCL>", 0, $apci, $value); }  #EIS11.000/DPT12 (4 byte unsigned)
+            when (/^13/)             { $bytes = pack ("CCl>", 0, $apci, $value); }
+            when (/^14/)             { $bytes = pack ("CCf>", 0, $apci, $value); }
+            when (/^16/)             { $bytes = pack ("CCa14", 0, $apci, $value); }
+            when (/^17/)             { $bytes = pack ("CCC", 0, $apci, $value & 0x3F); }
+            when (/^20/)             { $bytes = pack ("CCC", 0, $apci, $value); }
+            when (/^\d\d/)           { return; } # other DPT XX 15 are unhandled
+            when (/^[1,2,3]/)        { $bytes = pack ("CC", 0, $apci | ($value & 0x3f)); } #send 6bit small
+            when (/^4/)              { $bytes = pack ("CCc", 0, $apci, ord($value)); }
+            when ([5,5.001])         { $bytes = pack ("CCC", 0, $apci, encode_dpt5($value)); } #EIS 6/DPT5.001 1byte
+            when ([5.004,5.005,5.010]) { $bytes = pack ("CCC", 0, $apci, $value); }
+            when (/^5/)              { $bytes = pack ("CCC", 0, $apci, $value); }
+            when (/^6/)              { $bytes = pack ("CCc", 0, $apci, $value); }
+            when (/^7/)              { $bytes = pack ("CCS>", 0, $apci, $value); }
+            when (/^8/)              { $bytes = pack ("CCs>", 0, $apci, $value); }
+            when (/^9/)              { $bytes = pack ("CCCC", 0, $apci, encode_dpt9($value)); } #EIS5/DPT9 2byte float
+            default                  { LOGGER('WARN',"None or unsupported DPT: $dpt sent to $dst value $value"); return; }
+        }
+        plugin_log("knx_write","KNX write DPT $dpt: $value ($bytes) to $dst ($dbgmsg)") if ($knxdebug);
+        my $leibcon = EIBConnection->EIBSocketURL($eib_url) or return("Error opening con: $!");
+        if ($leibcon->EIBOpenT_Group(str2addr($dst),1) == -1) { return("Error opening group: $!"); }
+        my $res=$leibcon->EIBSendAPDU($bytes);
+        $leibcon->EIBClose();
+        return $res;
+    }else{
+        return;
+    }}
 
 # addr2str: Convert an integer to an EIB address string, in the form "1/2/3" or "1.2.3"
 sub addr2str {
@@ -967,61 +988,61 @@ sub str2addr {
 }
 
 sub update_rrd {
-  my ($key,$suffix,$value,$valtype,$stephours,$rrasteps) = @_;
-  return unless defined $value;
-  $valtype = "GAUGE" unless $valtype;
-  $stephours = 24 unless $stephours;
-  
-  if (!-d $rrd_dir) { mkdir($rrd_dir); }
+    my ($key,$suffix,$value,$valtype,$stephours,$rrasteps) = @_;
+    return unless defined $value;
+    $valtype = "GAUGE" unless $valtype;
+    $stephours = 24 unless $stephours;
+    
+    if (!-d $rrd_dir) { mkdir($rrd_dir); }
     if (!-e $rrd_dir . $key . $suffix .'.rrd') {
-      # Checkvalue-type for boundries?
-      # Create RRD
-  if ($valtype eq "GAUGE"){
-      my $heartbeat = $rrd_interval * 3;
-      $daemon_config{$key}{'rra_1_interval_rows'} = $rra1_row unless $daemon_config{$key}{'rra_1_interval_rows'};
-      $daemon_config{$key}{'rra_5_interval_rows'} = $rra5_row unless $daemon_config{$key}{'rra_5_interval_rows'};
-      $daemon_config{$key}{'rra_15_interval_rows'} = $rra15_row unless $daemon_config{$key}{'rra_15_interval_rows'};
-      $daemon_config{$key}{'rra_180_interval_rows'} = $rra180_row unless $daemon_config{$key}{'rra_180_interval_rows'};
-      RRDs::create($rrd_dir.$key.$suffix .'.rrd',
-        '--step' => $rrd_interval,
-        'DS:value:'.$valtype.':'.$heartbeat.':-55:255000', 
-        'RRA:AVERAGE:0.5:1:'.$daemon_config{$key}{'rra_1_interval_rows'},'RRA:AVERAGE:0.5:5:'.$daemon_config{$key}{'rra_5_interval_rows'},'RRA:AVERAGE:0.5:15:'.$daemon_config{$key}{'rra_15_interval_rows'},'RRA:AVERAGE:0.5:180:'.$daemon_config{$key}{'rra_180_interval_rows'}, 
-        'RRA:MIN:0.5:1:'.$daemon_config{$key}{'rra_1_interval_rows'},'RRA:MIN:0.5:5:'.$daemon_config{$key}{'rra_5_interval_rows'},'RRA:MIN:0.5:15:'.$daemon_config{$key}{'rra_15_interval_rows'},'RRA:MIN:0.5:180:'.$daemon_config{$key}{'rra_180_interval_rows'},
-        'RRA:MAX:0.5:1:'.$daemon_config{$key}{'rra_1_interval_rows'},'RRA:MAX:0.5:5:'.$daemon_config{$key}{'rra_5_interval_rows'},'RRA:MAX:0.5:15:'.$daemon_config{$key}{'rra_15_interval_rows'},'RRA:MAX:0.5:180:'.$daemon_config{$key}{'rra_180_interval_rows'});
-           if (RRDs::error) {
-              LOGGER('INFO',"Create RRDs failed for $key$suffix :".RRDs::error);
-           } else {
-              LOGGER('INFO',"Created RRD for $key$suffix");
-           }
-  }
-  elsif ($valtype eq "COUNTER"){
-    $rrasteps = 7 unless $rrasteps;
-    RRDs::create ($rrd_dir.$key.$suffix .'.rrd',
-        'DS:value:'.$valtype.':'.(($stephours*3600)+600).':0:10000000000',
-        'RRA:AVERAGE:0.5:1:1826', 'RRA:AVERAGE:0.5:'.$rrasteps.':1300',
-        'RRA:MIN:0.5:1:1826',     'RRA:MIN:0.5:'.$rrasteps.':1300',
-        'RRA:MAX:0.5:1:1826',     'RRA:MAX:0.5:'.$rrasteps.':1300',
-        '-s '.($stephours*3600));
+        # Checkvalue-type for boundries?
+        # Create RRD
+        if ($valtype eq "GAUGE"){
+            my $heartbeat = $rrd_interval * 3;
+            $daemon_config{$key}{'rra_1_interval_rows'} = $rra1_row unless $daemon_config{$key}{'rra_1_interval_rows'};
+            $daemon_config{$key}{'rra_5_interval_rows'} = $rra5_row unless $daemon_config{$key}{'rra_5_interval_rows'};
+            $daemon_config{$key}{'rra_15_interval_rows'} = $rra15_row unless $daemon_config{$key}{'rra_15_interval_rows'};
+            $daemon_config{$key}{'rra_180_interval_rows'} = $rra180_row unless $daemon_config{$key}{'rra_180_interval_rows'};
+            RRDs::create($rrd_dir.$key.$suffix .'.rrd',
+            '--step' => $rrd_interval,
+            'DS:value:'.$valtype.':'.$heartbeat.':-55:255000',
+            'RRA:AVERAGE:0.5:1:'.$daemon_config{$key}{'rra_1_interval_rows'},'RRA:AVERAGE:0.5:5:'.$daemon_config{$key}{'rra_5_interval_rows'},'RRA:AVERAGE:0.5:15:'.$daemon_config{$key}{'rra_15_interval_rows'},'RRA:AVERAGE:0.5:180:'.$daemon_config{$key}{'rra_180_interval_rows'},
+            'RRA:MIN:0.5:1:'.$daemon_config{$key}{'rra_1_interval_rows'},'RRA:MIN:0.5:5:'.$daemon_config{$key}{'rra_5_interval_rows'},'RRA:MIN:0.5:15:'.$daemon_config{$key}{'rra_15_interval_rows'},'RRA:MIN:0.5:180:'.$daemon_config{$key}{'rra_180_interval_rows'},
+            'RRA:MAX:0.5:1:'.$daemon_config{$key}{'rra_1_interval_rows'},'RRA:MAX:0.5:5:'.$daemon_config{$key}{'rra_5_interval_rows'},'RRA:MAX:0.5:15:'.$daemon_config{$key}{'rra_15_interval_rows'},'RRA:MAX:0.5:180:'.$daemon_config{$key}{'rra_180_interval_rows'});
             if (RRDs::error) {
-              LOGGER('INFO',"Create RRDs failed for $key$suffix :".RRDs::error);
-           } else {
-              LOGGER('INFO',"Created RRD for $key$suffix");
-           }
+                LOGGER('INFO',"Create RRDs failed for $key$suffix :".RRDs::error);
+            } else {
+                LOGGER('INFO',"Created RRD for $key$suffix");
+            }
+        }
+        elsif ($valtype eq "COUNTER"){
+            $rrasteps = 7 unless $rrasteps;
+            RRDs::create ($rrd_dir.$key.$suffix .'.rrd',
+            'DS:value:'.$valtype.':'.(($stephours*3600)+600).':0:10000000000',
+            'RRA:AVERAGE:0.5:1:1826', 'RRA:AVERAGE:0.5:'.$rrasteps.':1300',
+            'RRA:MIN:0.5:1:1826',     'RRA:MIN:0.5:'.$rrasteps.':1300',
+            'RRA:MAX:0.5:1:1826',     'RRA:MAX:0.5:'.$rrasteps.':1300',
+            '-s '.($stephours*3600));
+            if (RRDs::error) {
+                LOGGER('INFO',"Create RRDs failed for $key$suffix :".RRDs::error);
+            } else {
+                LOGGER('INFO',"Created RRD for $key$suffix");
+            }
+        }
     }
-  }
-  
+    
     # Update values
     $value = int($stephours*3600*$value) if ($valtype eq "COUNTER");
     RRDs::update($rrd_dir.$key.$suffix.'.rrd','N:'.$value);
     
     if (RRDs::error) {
         LOGGER('INFO',"Update of RRDs failed for $key$suffix/$value:".RRDs::error);
-        # FIXME: Check if error comes from update-value or from rrd-file! 
+        # FIXME: Check if error comes from update-value or from rrd-file!
         #rename ($rrd_dir.$key.$suffix.'.rrd',$rrd_dir.$key.$suffix.'.rrd.old');
-     } else {
+    } else {
         LOGGER('DEBUG',"Updated RRD for $key$suffix/$value");
-     }
-} 
+    }
+}
 
 
 sub decode_vbusmonitor{
@@ -1032,13 +1053,13 @@ sub decode_vbusmonitor{
     @data = unpack ("C" . bytes::length($bytes), $bytes);
     
     my $apci;
-
+    
     # For mapping between APCI symbols and values, not fully implemented!
-    my @apcicodes = qw (A_GroupValue_Read A_GroupValue_Response A_GroupValue_Write 
-        A_PhysicalAddress_Write A_PhysicalAddress_Read A_PhysicalAddress_Response
-        A_ADC_Read A_ADC_Response A_Memory_Read A_Memory_Response A_Memory_Write
-        A_UserMemory A_DeviceDescriptor_Read A_DeviceDescriptor_Response A_Restart
-        A_OTHER); # not fully implemented
+    my @apcicodes = qw (A_GroupValue_Read A_GroupValue_Response A_GroupValue_Write
+    A_PhysicalAddress_Write A_PhysicalAddress_Read A_PhysicalAddress_Response
+    A_ADC_Read A_ADC_Response A_Memory_Read A_Memory_Response A_Memory_Write
+    A_UserMemory A_DeviceDescriptor_Read A_DeviceDescriptor_Response A_Restart
+    A_OTHER); # not fully implemented
     my @tpducodes = qw(T_DATA_XXX_REQ T_DATA_CONNECTED_REQ T_DISCONNECT_REQ T_ACK);
     
     $msg{'repeated'} = (($type & 0x20) >> 5) ^ 0b01;
@@ -1052,24 +1073,24 @@ sub decode_vbusmonitor{
     # FIXME: this is crap!
     #$msg{'tpdu_type'} = $tpducodes[($data[0] & 0xC0)>>6];
     if (@data >= 1) {
-      if (($data[0] & 0xFC) == 0) { 
-          $msg{'tpdu_type'} = "T_DATA_XXX_REQ"; 
-          $msg{'apci'} = @apcicodes[(($data[0] & 0x03)<<2) | (($data[1] & 0xC0)>>6)]; }
-      if ($data[0] == 0x80) { $msg{'tpdu_type'} = "T_CONNECT_REQ"; }
-      if ($data[0] == 0x81) { $msg{'tpdu_type'} = "T_DISCONNECT_REQ"; }
-      if (($data[0] & 0xC3) == 0xC2) { $msg{'tpdu_type'} = "T_ACK"; }
-      if (($data[0] & 0xC3) == 0xC3) { $msg{'tpdu_type'} = "T_NACK"; }
-      if (($data[0] & 0xC0) == 0x40) { 
-          $msg{'tpdu_type'} = "T_DATA_CONNECTED_REQ"; 
-          $msg{'apci'} = @apcicodes[(($data[0] & 0x03)<<2) | (($data[1] & 0xC0)>>6)]; }
+        if (($data[0] & 0xFC) == 0) { 
+            $msg{'tpdu_type'} = "T_DATA_XXX_REQ"; 
+            $msg{'apci'} = @apcicodes[(($data[0] & 0x03)<<2) | (($data[1] & 0xC0)>>6)]; }
+        if ($data[0] == 0x80) { $msg{'tpdu_type'} = "T_CONNECT_REQ"; }
+        if ($data[0] == 0x81) { $msg{'tpdu_type'} = "T_DISCONNECT_REQ"; }
+        if (($data[0] & 0xC3) == 0xC2) { $msg{'tpdu_type'} = "T_ACK"; }
+        if (($data[0] & 0xC3) == 0xC3) { $msg{'tpdu_type'} = "T_NACK"; }
+        if (($data[0] & 0xC0) == 0x40) { 
+            $msg{'tpdu_type'} = "T_DATA_CONNECTED_REQ"; 
+            $msg{'apci'} = @apcicodes[(($data[0] & 0x03)<<2) | (($data[1] & 0xC0)>>6)]; }
     }
-
+    
     $msg{'sequence'} = ($data[0] & 0x3C)>>2;
     if ($msg{'tpdu_type'} eq "T_DATA_XXX_REQ" and $msg{'datalen'} == 1) { # 6bit only
         $msg{'data'} = sprintf("%02X", ($data[1] & 0x3F));
     } elsif ($msg{'tpdu_type'} eq "T_DATA_XXX_REQ" and $msg{'datalen'} > 1) {
         for (my $i=2; $i<= $msg{'datalen'}; $i++) {
-          $msg{'data'} = $msg{'data'} . sprintf("%02X ", ($data[$i]));
+            $msg{'data'} = $msg{'data'} . sprintf("%02X ", ($data[$i]));
         }
     } else {
         #LOGGER('DEBUG',"OTHER R:$msg{'repeated'} P:$msg{'class'} Hops:$msg{'rcount'} T:$msg{'tpdu_type'} Seq:$msg{'sequence'} A:$msg{'apci'} src: $msg{'src'} dst: $msg{'dst'} len: $msg{'datalen'} data: @data");
@@ -1079,7 +1100,7 @@ sub decode_vbusmonitor{
     $msg{'dst'} = addr2str($dst, $drl>>7);
     $msg{'value'} = decode_dpt($msg{'dst'},$msg{'data'});
     LOGGER('DEBUG',"R:$msg{'repeated'} P:$msg{'class'} Hops:$msg{'rcount'} T:$msg{'tpdu_type'} Seq:$msg{'sequence'} A:$msg{'apci'} src: $msg{'src'} dst: $msg{'dst'} len: $msg{'datalen'} data: $msg{'data'} ($msg{'value'})");
-
+    
     #$msg{'data'} = \@data;
     $msg{'buf'} = unpack ("H*", $buf);
     return %msg;
@@ -1087,40 +1108,40 @@ sub decode_vbusmonitor{
 
 
 sub init_udpsock {
-  if ($daemon_config{''}{'udp_ip'} and $daemon_config{''}{'udp_port'}) {
-     $udp_sock = IO::Socket::INET->new(Proto=>"udp",PeerPort=>$daemon_config{''}{'udp_port'},PeerAddr=>$daemon_config{''}{'udp_ip'}) or LOGGER('WARN',"Can't create UDP socket to send: $@)");
+    if ($daemon_config{''}{'udp_ip'} and $daemon_config{''}{'udp_port'}) {
+        $udp_sock = IO::Socket::INET->new(Proto=>"udp",PeerPort=>$daemon_config{''}{'udp_port'},PeerAddr=>$daemon_config{''}{'udp_ip'}) or LOGGER('WARN',"Can't create UDP socket to send: $@)");
     }
 }
 
 
 
 sub plugin_log ($$) {
-      my $name = shift;
-      my $msg = shift;
-      LOGGER('DEBUG',"Plugin LOG $name -> $msg");
-      open PLUGIN_LOG, ">>$plugin_logfile"or print "Can't write to file '$plugin_logfile' [$!]\n"; # writeout to log here
-      print PLUGIN_LOG getISODateStamp .",$name,$msg\n";
-      close PLUGIN_LOG;
+    my $name = shift;
+    my $msg = shift;
+    LOGGER('DEBUG',"Plugin LOG $name -> $msg");
+    open PLUGIN_LOG, ">>$plugin_logfile"or print "Can't write to file '$plugin_logfile' [$!]\n"; # writeout to log here
+    print PLUGIN_LOG getISODateStamp .",$name,$msg\n";
+    close PLUGIN_LOG;
 }
 
 =pod
-
-=head1 NAME
-
-WireGate Daemon
-
-=head1 SYNOPSIS
-
-daemon to handle gateway/communication-functions
-
-=head1 CREDITS
-
-Parts copyright by Martin Koegler from bcusdk/eibd (GPL)
-Parts copyright by various from misterhouse (GPL)
-
-=head1 HISTORY
-
-2008-12-09  Initial versions of wg-ow2eib.pl and wg-eiblis.pl
-see SVN
-
-=cut
+ 
+ =head1 NAME
+ 
+ WireGate Daemon
+ 
+ =head1 SYNOPSIS
+ 
+ daemon to handle gateway/communication-functions
+ 
+ =head1 CREDITS
+ 
+ Parts copyright by Martin Koegler from bcusdk/eibd (GPL)
+ Parts copyright by various from misterhouse (GPL)
+ 
+ =head1 HISTORY
+ 
+ 2008-12-09  Initial versions of wg-ow2eib.pl and wg-eiblis.pl
+ see SVN
+ 
+ =cut
