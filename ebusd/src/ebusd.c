@@ -360,16 +360,16 @@ daemonize(void)
 		log_print(L_INF, "%s created.", pidfile);
 	}
 
-    /* Cancel certain signals */
+	/* Cancel certain signals */
 	signal(SIGCHLD, SIG_DFL); /* A child process dies */
-    signal(SIGTSTP, SIG_IGN); /* Various TTY signals */
-    signal(SIGTTOU, SIG_IGN); /* Ignore TTY background writes */
-    signal(SIGTTIN, SIG_IGN); /* Ignore TTY background reads */
+	signal(SIGTSTP, SIG_IGN); /* Various TTY signals */
+	signal(SIGTTOU, SIG_IGN); /* Ignore TTY background writes */
+	signal(SIGTTIN, SIG_IGN); /* Ignore TTY background reads */
 
-    /* Trap signals that we expect to receive */
-    signal(SIGHUP, signal_handler);
-    signal(SIGINT, signal_handler);
-    signal(SIGTERM, signal_handler);
+	/* Trap signals that we expect to receive */
+	signal(SIGHUP, signal_handler);
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
 }
 
 void

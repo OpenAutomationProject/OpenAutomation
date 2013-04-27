@@ -171,7 +171,11 @@ main(int argc, char *argv[])
 	//~ char cmd[] = "cyc broad date_time day";
 	//~ char cmd[] = "cyc broad date_time";
 
-	
+	//~ 10 46 11 2e 03 00 02 11 02
+	//~ const unsigned char tmp[] = {'\x10','\x46','\x11','\x2e','\x03','\x00','\x02','\x11','\x02'};
+	//~ char cmd[] = "cyc broad 1";
+//~ 
+	//~ 
 	//~ const int tmplen = sizeof(tmp) / sizeof(unsigned char);
  	//~ char data[CMD_DATA_SIZE], tcpbuf[CMD_DATA_SIZE];
 	//~ memset(data, '\0', sizeof(data));

@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-04-27:
+* Improved csv files read in a way that ebus parts are not case sensitive.
+* Added eb_cmd_uppercase function.
+
 2013-04-17:
 * Changed error messages from daemon startup vom E_ERR to E_ALL.
 

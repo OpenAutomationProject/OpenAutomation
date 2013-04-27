@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-04-27:
+* Improved csv files read in a way that ebus parts are not case sensitive.
+
 2013-04-09:
 * Extended signal handler to fit with logrotate / logging facility.
 

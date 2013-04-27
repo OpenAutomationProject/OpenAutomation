@@ -106,6 +106,14 @@ struct element {
 
 
 /**
+ * @brief convert string to uppercase
+ * @param [out] *buf pointer to buffer array
+ */
+void eb_cmd_uppercase(char *buf);
+
+
+
+/**
  * @brief compare given type with type of given command id
  * @param [in] id is index in command array
  * @param [in] type for lookup

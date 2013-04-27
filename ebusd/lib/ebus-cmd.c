@@ -47,6 +47,12 @@ static int cyclen = 0;
 static struct commands *com = NULL;
 static int comlen = 0;
 
+void
+eb_cmd_uppercase(char *buf)
+{
+	while (*buf++ != '\0')
+		*buf = toupper((unsigned char) *buf);
+}
 
 
 int
@@ -695,11 +701,14 @@ eb_cmd_fill(const char *tok)
 	
 	/* s_zz */
 	tok = strtok(NULL, ";");
+
 	strncpy(com[comlen].s_zz, tok, strlen(tok));
+	eb_cmd_uppercase(com[comlen].s_zz);
 	
 	/* s_cmd */
 	tok = strtok(NULL, ";");
-		strncpy(com[comlen].s_cmd, tok, strlen(tok));
+	strncpy(com[comlen].s_cmd, tok, strlen(tok));
+	eb_cmd_uppercase(com[comlen].s_cmd);
 	
 	/* s_len */
 	tok = strtok(NULL, ";");
@@ -707,8 +716,10 @@ eb_cmd_fill(const char *tok)
 
 	/* s_msg */
 	tok = strtok(NULL, ";");
-	if (strncasecmp(tok, "-", 1) != 0)
+	if (strncasecmp(tok, "-", 1) != 0) {
 		strncpy(com[comlen].s_msg, tok, strlen(tok));
+		eb_cmd_uppercase(com[comlen].s_msg);
+	}
 	
 	/* d_elem */
 	tok = strtok(NULL, ";");
