@@ -101,7 +101,7 @@ namespace knxdmxd
     SetDMXChannel(const dmx_addr_t channel, const unsigned char value,
         const float fade_in = 1.e-4, const float fade_out = 1.e-4)
     {
-      int dmxuniverse = (int) (channel / 512), dmxchannel = channel % 512;
+      int dmxuniverse = (int) ((channel-1) / 512), dmxchannel = channel - 512*dmxuniverse;
       output[dmxuniverse]->Set(dmxchannel, value, fade_in, fade_out);
     }
 
