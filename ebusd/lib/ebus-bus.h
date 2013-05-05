@@ -157,6 +157,12 @@ int eb_raw_file_write(const unsigned char *buf,  int buflen);
 
 
 /**
+ * @brief Check if serial FD is vaild.
+ * @return 1 ok | 0 error
+ */
+int eb_serial_valid();
+
+/**
  * @brief Open serial device in raw mode. 1 Byte is then minimum input length.
  * @param [in] *dev serial device
  * @param [out] *fd file descriptor from opened serial device

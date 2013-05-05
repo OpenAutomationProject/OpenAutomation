@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-05-05:
+* Added function checks whether the FD is still a valid serial device.
+
 2013-04-27:
 * Improved csv files read in a way that ebus parts are not case sensitive.
 * Added eb_cmd_uppercase function.

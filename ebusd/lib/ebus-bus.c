@@ -180,6 +180,12 @@ eb_raw_file_write(const unsigned char *buf, int buflen)
 
 
 int
+eb_serial_valid()
+{
+    return fcntl(sfd, F_GETFD) != -1 || errno != EBADF;
+}
+
+int
 eb_serial_open(const char *dev, int *fd)
 {
 	int ret;
@@ -237,6 +243,9 @@ int
 eb_serial_send(const unsigned char *buf, int buflen)
 {
 	int ret, val;
+
+	if (eb_serial_valid() == NO)
+		return -1;
 	
 	/* write msg to ebus device */
 	val = write(sfd, buf, buflen);
@@ -244,7 +253,7 @@ eb_serial_send(const unsigned char *buf, int buflen)
 	
 	ret = tcflush(sfd, TCIOFLUSH);
 	err_ret_if(ret < 0, -1);
-	
+
 	return val;
 }
 
@@ -252,6 +261,9 @@ int
 eb_serial_recv(unsigned char *buf, int *buflen)
 {
 	int ret;
+
+	if (eb_serial_valid() == NO)
+		return -1;
 	
 	//tcflush(sfd, TCIOFLUSH);
 	/* read msg from ebus device */
