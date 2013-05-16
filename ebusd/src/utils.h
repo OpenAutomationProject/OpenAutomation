@@ -61,7 +61,7 @@ int cfg_file_read(const char *file, struct config *cfg, int len);
 int pid_file_open(const char *file, int *fd);
 int pid_file_close(const char *file, int fd);
 
-int sock_open(int *fd, int port);
+int sock_open(int *fd, int port, int localhost);
 int sock_close(int fd);
 int sock_client_accept(int listenfd, int *datafd);
 int sock_client_read(int fd, char *buf, int *buflen);

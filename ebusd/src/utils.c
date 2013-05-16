@@ -311,7 +311,7 @@ pid_file_close(const char *file, int fd)
 
 
 int
-sock_open(int *fd, int port)
+sock_open(int *fd, int port, int localhost)
 {
 	int ret, opt;
 	struct sockaddr_in sock;
@@ -327,7 +327,12 @@ sock_open(int *fd, int port)
 
 	memset((char *) &sock, 0, sizeof(sock));
 	sock.sin_family = AF_INET;
-	sock.sin_addr.s_addr = htonl(INADDR_ANY);
+
+	if (localhost == YES)
+		sock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	else
+		sock.sin_addr.s_addr = htonl(INADDR_ANY);
+
 	sock.sin_port = htons(port);
 
 	ret = bind(*fd, (struct sockaddr *) &sock, sizeof(sock));

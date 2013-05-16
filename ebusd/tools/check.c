@@ -91,7 +91,7 @@ int main() {
 					crc_calc[0] = tmp;
 					crc_calc[1] = hex;
 					crc = eb_calc_crc(crc_calc,2);
-					printf("\td2b: %8.3f\td2c: %10.4f"
+					printf("\td2b: %10.5f\td2c: %12.6f"
 						"\tcrc: %02x\n", d2b, d2c, crc);
 				}
 				else {

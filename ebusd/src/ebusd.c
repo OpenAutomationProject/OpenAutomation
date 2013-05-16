@@ -66,6 +66,7 @@ static int rawdump = UNSET;
 static char rawfile[CFG_LINELEN];
 static int showraw = UNSET;
 static int settings = UNSET;
+static int localhost = UNSET;
 static int get_retry = UNSET;
 static int skip_ack = UNSET;
 static int max_wait = UNSET;
@@ -74,7 +75,7 @@ static int print_size = UNSET;
 
 
 
-static char options[] = "a:c:C:d:e:fl:L:P:p:rR:sSvh";
+static char options[] = "a:c:C:d:e:fl:L:P:p:rR:sStvh";
 
 static struct option opts[] = {
 	{"address",    required_argument, NULL, 'a'},
@@ -91,6 +92,7 @@ static struct option opts[] = {
 	{"rawfile",    required_argument, NULL, 'R'},
 	{"showraw",    no_argument,       NULL, 's'},	
 	{"settings",   no_argument,       NULL, 'S'},
+	{"localhost",  no_argument,       NULL, 't'},
 	{"version",    no_argument,       NULL, 'v'},
 	{"help",       no_argument,       NULL, 'h'},
 	{NULL,         no_argument,       NULL,  0 },
@@ -112,6 +114,7 @@ static struct config cfg[] = {
 {"rawfile",    STR, &rawfile, "\traw file (" DAEMON_RAWFILE ")"},
 {"showraw",    BOL, &showraw, "\tprint raw data"},
 {"settings",   BOL, &settings, "\tprint daemon settings"},
+{"localhost",  BOL, &localhost, "allow only connection from localhost"},
 {"get_retry",  NUM, &get_retry, NULL},
 {"skip_ack",   NUM, &skip_ack, NULL},
 {"max_wait",   NUM, &max_wait, NULL},
@@ -205,7 +208,10 @@ cmdline(int *argc, char ***argv)
 			break;			
 		case 'S':
 			settings = YES;
-			break;						
+			break;
+		case 't':
+			localhost = YES;
+			break;	
 		case 'v':
 			fprintf(stdout, DAEMON_NAME " " DAEMON_VERSION "\n");
 			exit(EXIT_SUCCESS);
@@ -261,6 +267,9 @@ set_unset(void)
 
 	if (settings == UNSET)
 		settings = NO;
+
+	if (localhost == UNSET)
+		localhost = NO;		
 
 	if (get_retry == UNSET)
 		get_retry = EBUS_GET_RETRY;
@@ -468,7 +477,7 @@ main_loop(void)
 
 		//todo: handle signals instead of ignore ?
 
-		/* ignore signals*/
+		/* ignore signals */
 		if ((ret < 0) && (errno == EINTR)) {
 			/* log_print(L_NOT,
 				"get signal at select: %s", strerror(errno)); */
@@ -654,7 +663,7 @@ main(int argc, char *argv[])
 
 
 	/* open listing tcp socket */
-	if (sock_open(&socketfd, port) == -1) {
+	if (sock_open(&socketfd, port, localhost) == -1) {
 		log_print(L_ALL, "can't open port: %d", port);
 		cleanup(EXIT_FAILURE);
 	} else {
