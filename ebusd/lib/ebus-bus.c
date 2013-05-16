@@ -230,7 +230,8 @@ eb_serial_close(void)
 
 	/* activate old settings of serial port */
 	ret = tcsetattr(sfd, TCSANOW, &oldtio);
-	err_ret_if(ret < 0, -1);
+	/* Ignore this error otherwise USB port may stay unclosed */
+	/* err_ret_if(ret < 0, -1); */
 
 	/* Close file descriptor from serial device */
 	ret = close(sfd);
@@ -549,10 +550,11 @@ eb_bus_wait(void)
 		eb_diff_time(&tact, &tlast, &tdiff);
 
 		/* wait ~4200 usec */
-		usleep(max_wait - tdiff.tv_usec);
-
-		gettimeofday(&tact, NULL);
-		eb_diff_time(&tact, &tlast, &tdiff);
+		if (max_wait - tdiff.tv_usec > 0.0 &&
+		    max_wait - tdiff.tv_usec <= max_wait)
+			usleep(max_wait - tdiff.tv_usec);
+		else 
+			log_print(L_WAR, "usleep out of range - skipped");
 
 		/* receive 1 byte - must be QQ */
 		memset(buf, '\0', sizeof(buf));
