@@ -39,6 +39,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <dirent.h>
+#include <sys/ioctl.h>
 
 #include "log.h"
 #include "ebus-decode.h"
@@ -182,7 +183,12 @@ eb_raw_file_write(const unsigned char *buf, int buflen)
 int
 eb_serial_valid()
 {
-    return fcntl(sfd, F_GETFD) != -1 || errno != EBADF;
+	int serial;
+	
+	if (ioctl(sfd, TIOCMGET, &serial) < 0) 
+		return -1;
+	else
+		return 0;	
 }
 
 int
@@ -196,6 +202,10 @@ eb_serial_open(const char *dev, int *fd)
 
 	ret = fcntl(sfd, F_SETFL, 0);
 	err_ret_if(ret < 0, -1);
+
+	/* check if the usb device is working */
+	ret = eb_serial_valid();
+	err_ret_if(ret < 0, -2);
 
 	/* save current settings of serial port */
 	ret = tcgetattr(sfd, &oldtio);
@@ -245,8 +255,9 @@ eb_serial_send(const unsigned char *buf, int buflen)
 {
 	int ret, val;
 
-	if (eb_serial_valid() == NO)
-		return -1;
+	/* check if the usb device is working */
+	ret = eb_serial_valid();
+	err_ret_if(ret < 0, -2);
 	
 	/* write msg to ebus device */
 	val = write(sfd, buf, buflen);
@@ -263,10 +274,13 @@ eb_serial_recv(unsigned char *buf, int *buflen)
 {
 	int ret;
 
-	if (eb_serial_valid() == NO)
-		return -1;
-	
-	//tcflush(sfd, TCIOFLUSH);
+	/* check if the usb device is working */
+	ret = eb_serial_valid();
+	err_ret_if(ret < 0, -2);
+
+	/* flush deactivated - brings us an error */
+	/* tcflush(sfd, TCIOFLUSH); */
+
 	/* read msg from ebus device */
 	*buflen = read(sfd, buf, *buflen);
 	err_if(*buflen < 0);
@@ -278,7 +292,7 @@ eb_serial_recv(unsigned char *buf, int *buflen)
 
 	if (*buflen > SERIAL_BUFSIZE) {
 		log_print(L_WAR, "read data len > %d", SERIAL_BUFSIZE);
-		return -2;
+		return -3;
 	}
 
 	/* print bus */

@@ -158,7 +158,7 @@ int eb_raw_file_write(const unsigned char *buf,  int buflen);
 
 /**
  * @brief Check if serial FD is vaild.
- * @return 1 ok | 0 error
+ * @return 0 ok | -1 error
  */
 int eb_serial_valid();
 
@@ -172,7 +172,7 @@ int eb_serial_open(const char *dev, int *fd);
 
 /**
  * @brief close serial device and set settings to default.
- * @return 0 ok | -1 error
+ * @return 0 ok | -1 error | -2 bad file descriptor
  */
 int eb_serial_close(void);
 
@@ -180,7 +180,7 @@ int eb_serial_close(void);
  * @brief send bytes to serial device
  * @param [in] *buf pointer to a byte array
  * @param [in] buflen length of byte array
- * @return 0 ok | -1 error
+ * @return 0 ok | -1 error | -2 bad file descriptor
  */
 int eb_serial_send(const unsigned char *buf, int buflen);
 
@@ -188,7 +188,7 @@ int eb_serial_send(const unsigned char *buf, int buflen);
  * @brief receive bytes from serial device
  * @param [out] *buf pointer to a byte array received bytes
  * @param [out] *buflen length of received bytes
- * @return 0 ok | -1 error | -2 received data > BUFFER
+ * @return 0 ok | -1 error | -2 bad file descriptor | -3 received data > BUFFER
  */
 int eb_serial_recv(unsigned char *buf, int *buflen);
 
