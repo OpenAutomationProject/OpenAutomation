@@ -450,8 +450,10 @@ cleanup(int state)
 void
 main_loop(void)
 {
-	int maxfd;
+	int maxfd, sfd_closed;
 	fd_set listenfds;
+
+	sfd_closed = NO;
 
 	FD_ZERO(&listenfds);
 	FD_SET(serialfd, &listenfds);
@@ -473,15 +475,54 @@ main_loop(void)
 		/* set readfds to inital listenfds */
 		readfds = listenfds;
 
-		ret = select(maxfd + 1, &readfds, NULL, NULL, NULL);
+		/* check if the usb device is working */
+		if (eb_serial_valid() < 0) {
+				
+			if (serialfd > 0 && sfd_closed == NO) {
+				log_print(L_ERR, "serial device is invalid");
+				sfd_closed = YES;
 
-		/* todo: handle signals instead of ignore ? */
+				/* close listing tcp socket */
+				if (socketfd > 0) {
+					if (sock_close(socketfd) == -1)
+						log_print(L_ERR, "can't close port: %d", port);
+					else
+						log_print(L_INF, "port %d closed", port);
+				}
+				
+				/* close serial device */
+				if (eb_serial_close() == -1)
+					log_print(L_ERR, "can't close device: %s", device);
+				else
+					log_print(L_INF, "%s closed", device);
+
+			}
+
+			/* need sleep to prevent high cpu consumption */
+			sleep(1);
+
+			/* open serial device */
+			if (eb_serial_open(device, &serialfd) == 0) {
+				log_print(L_INF, "%s opened", device);
+				sfd_closed = NO;
+			}
+
+			/* open listing tcp socket */
+			if (sfd_closed == NO && sock_open(&socketfd, port, localhost) == 0)
+				log_print(L_INF, "port %d opened", port);
+
+			continue;
+		}
+
+		ret = select(maxfd + 1, &readfds, NULL, NULL, NULL);
 
 		/* ignore signals */
 		if ((ret < 0) && (errno == EINTR)) {
 			/* log_print(L_NOT,
 				"get signal at select: %s", strerror(errno)); */
 			continue;
+
+		/* on other errors */
 		} else if (ret < 0) {
 			err_if(1);
 			cleanup(EXIT_FAILURE);
@@ -513,7 +554,7 @@ main_loop(void)
 				/* send answer */
 				sock_client_write(clientfd, tcpbuf, tcpbuflen);
 			}
-				
+	
 		}
 
 		/* new incoming connection at TCP port arrived? */

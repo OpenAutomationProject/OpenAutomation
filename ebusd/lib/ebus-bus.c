@@ -184,7 +184,7 @@ int
 eb_serial_valid()
 {
 	int serial;
-	
+
 	if (ioctl(sfd, TIOCMGET, &serial) < 0) 
 		return -1;
 	else
@@ -198,7 +198,9 @@ eb_serial_open(const char *dev, int *fd)
 	struct termios newtio;
 
 	sfd = open(dev, O_RDWR | O_NOCTTY | O_NDELAY);
-	err_ret_if(sfd < 0, -1);
+	//~ err_ret_if(sfd < 0, -1);
+	if (sfd < 0)
+		return -1;
 
 	ret = fcntl(sfd, F_SETFL, 0);
 	err_ret_if(ret < 0, -1);
@@ -254,10 +256,6 @@ int
 eb_serial_send(const unsigned char *buf, int buflen)
 {
 	int ret, val;
-
-	/* check if the usb device is working */
-	ret = eb_serial_valid();
-	err_ret_if(ret < 0, -2);
 	
 	/* write msg to ebus device */
 	val = write(sfd, buf, buflen);
@@ -273,10 +271,6 @@ int
 eb_serial_recv(unsigned char *buf, int *buflen)
 {
 	int ret;
-
-	/* check if the usb device is working */
-	ret = eb_serial_valid();
-	err_ret_if(ret < 0, -2);
 
 	/* flush deactivated - brings us an error */
 	/* tcflush(sfd, TCIOFLUSH); */
