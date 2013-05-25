@@ -341,7 +341,18 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 		for (i = 0; i < msg[0]; i++)
 			sprintf(&buf[3 * i], "%02x ", msg[i + 1]);
 
-	}
+/* save for testing purpose
+	} else if (strncasecmp(com[id].elem[elem].d_type, "hex", 3) == 0) {
+		if (p1 > 0 && p2 > p1) {
+			for (i = 0; i <= p2 - p1; i++)
+				sprintf((char *) &buf[i * 3], "%02x ", &msg[p1 + i]);
+
+			buf[i * 3 - 1] = '\0';
+		} else {
+			goto on_error;
+		}
+*/
+	}	
 		
 	return 0;
 
@@ -405,7 +416,7 @@ eb_cmd_encode_value(int id, int elem, char *data, unsigned char *msg, char *buf)
 	char *c1, *c2, *c3;
 	char d_pos[CMD_SIZE_D_POS + 1];
 	unsigned char bcd, d1b, d1c, d2b[2], d2c[2];
-	int ret, i, p1, p2, p3;
+	int ret, i, j, p1, p2, p3;
 	float f;
 
 	memset(d_pos, '\0', sizeof(d_pos));
@@ -528,7 +539,18 @@ eb_cmd_encode_value(int id, int elem, char *data, unsigned char *msg, char *buf)
 			goto on_error;
 		}
 
-	}
+	} else if (strncasecmp(com[id].elem[elem].d_type, "hex", 3) == 0) {
+		for (i = 0, j = 0; data[i]; i++) {
+
+			if (isxdigit(data[i])) {
+				msg[j] = tolower(data[i]);
+				j++;
+			} else if (data[i] != ' ') {
+				goto on_error;
+			}
+		}
+		
+	}	
 		
 	return 0;
 

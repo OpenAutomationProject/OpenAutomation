@@ -366,7 +366,7 @@ sock_client_accept(int listenfd, int *datafd)
 	*datafd = accept(listenfd, (struct sockaddr *) &sock, &socklen);
 	err_ret_if(*datafd < 0, -1);
 
-	log_print(L_NET, "client [%d] from %s connected.",
+	log_print(L_DBG, "client [%d] from %s connected.",
 					*datafd, inet_ntoa(sock.sin_addr));
 
 	return 0;
@@ -380,7 +380,7 @@ sock_client_read(int fd, char *buf, int *buflen)
 	
 	if (strncasecmp("quit", buf , 4) == 0 || *buflen <= 0) {
 		/* close tcp connection */
-		log_print(L_NET, "client [%d] disconnected.", fd);
+		log_print(L_DBG, "client [%d] disconnected.", fd);
 		sock_close(fd);
 		return -1;
 	}

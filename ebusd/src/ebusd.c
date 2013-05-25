@@ -475,7 +475,7 @@ main_loop(void)
 
 		ret = select(maxfd + 1, &readfds, NULL, NULL, NULL);
 
-		//todo: handle signals instead of ignore ?
+		/* todo: handle signals instead of ignore ? */
 
 		/* ignore signals */
 		if ((ret < 0) && (errno == EINTR)) {

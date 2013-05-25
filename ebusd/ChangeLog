@@ -1,12 +1,19 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-05-25:
+* Modifed hex Dump (EBH) for active sent messages (thx Fry / KNX Forum)
+* Changed telnet connecting log level info from L_NET to L_DBG 
+
+2013-05-24:
+* Added hex type to eb_cmd_encode_value function (thx Fry / KNX Forum)
+
 2013-05-17:
-* Modified eb_serial_valid function and usage (thx Alexey Ozerov)
+* Modified eb_serial_valid function and usage (thx aloz77 / KNX Forum)
 
 2013-05-16:
-* Added ability to restrict tcp connection to localhost. (thx Alexey Ozerov)
-* Added skip of negative sleep time while waiting for QQ byte (thx Alexey Ozerov)
+* Added ability to restrict tcp connection to localhost. (thx aloz77 / KNX Forum)
+* Added skip of negative sleep time while waiting for QQ byte (thx aloz77 / KNX Forum)
 
 2013-05-05:
 * Added function checks whether the FD is still a valid serial device.

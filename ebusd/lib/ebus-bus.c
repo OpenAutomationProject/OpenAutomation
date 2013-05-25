@@ -720,10 +720,11 @@ eb_send_data_prepare(const unsigned char *buf, int buflen)
 }
 
 int
-eb_send_data(const unsigned char *buf, int buflen, int type)
+eb_send_data(const unsigned char *buf, int buflen, int type, unsigned char *bus, int *buslen)
 {
 	unsigned char tmp[SERIAL_BUFSIZE];
 	int tmplen, ret, val;
+	
 	ret = 0;
 
 	eb_send_data_prepare(buf, buflen);
@@ -732,6 +733,9 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	ret = eb_bus_wait();
 	if (ret != 0)
 		return -1;
+
+	memcpy(bus, send_data.msg_esc, send_data.len_esc);
+	*buslen = send_data.len_esc;
 	
 	/* send message to slave */
 	ret = eb_serial_send(&send_data.msg_esc[1], send_data.len_esc - 1);
@@ -753,7 +757,7 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 	tmplen = send_data.len_esc - 1;
 
 	ret = eb_send_data_get_ack(tmp, &tmplen);
-
+	
 	if (ret < 0 || ret > 1) {
 		/* free bus */
 		ret = eb_bus_free();
@@ -765,6 +769,12 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 
 	/* first answer from slave is NAK - send message again (inkl. QQ) */
 	if (ret == 1) {
+
+		memcpy(&bus[*buslen], &nak, 1);
+		*buslen += 1;
+
+		memcpy(&bus[*buslen], send_data.msg_esc, send_data.len_esc);
+		*buslen += send_data.len_esc;
 			
 		/* send message to slave */
 		ret = eb_serial_send(&send_data.msg_esc[0], send_data.len_esc);
@@ -779,6 +789,10 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		ret = eb_send_data_get_ack(tmp, &tmplen);		
 	
 		if (ret == 1) {
+
+			memcpy(&bus[*buslen], &nak, 1);
+			*buslen += 1;
+			
 			/* free bus */
 			ret = eb_bus_free();
 			if (ret < 0)
@@ -788,6 +802,9 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 		}
 		
 	}
+
+	memcpy(&bus[*buslen], &ack, 1);
+	*buslen += 1;
 
 	if (type == EBUS_MSG_MASTER_MASTER) {
 		val = ret;
@@ -807,12 +824,19 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 
 	eb_recv_data_prepare(tmp, tmplen);
 
+	memcpy(&bus[*buslen], recv_data.msg_esc, recv_data.len_esc);
+	*buslen += recv_data.len_esc;
+
 	/* check crc's from recv_data */
 	if (recv_data.crc_calc != recv_data.crc_recv) {
+
+		memcpy(&bus[*buslen], &nak, 1);
+		*buslen += 1;
+		
 		/* send message to slave */
 		ret = eb_serial_send(&nak, 1);
 		if (ret < 0)
-			return -1;
+			return -1;			
 
 		/* get data from bus (we got our sent message too) */
 		memset(tmp, '\0', sizeof(tmp));
@@ -836,16 +860,27 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 			return -1;
 
 		eb_recv_data_prepare(tmp, tmplen);
+
+		memcpy(&bus[*buslen], recv_data.msg_esc, recv_data.len_esc);
+		*buslen += recv_data.len_esc;
 		
 	}
 
 	if (recv_data.crc_calc != recv_data.crc_recv) {
+
+		memcpy(&bus[*buslen], &nak, 1);
+		*buslen += 1;
+		
 		ret = eb_serial_send(&nak, 1);		
 		if (ret < 0)
 			return -1;
 		
 		val = 1;
 	} else {
+
+		memcpy(&bus[*buslen], &ack, 1);
+		*buslen += 1;
+		
 		ret = eb_serial_send(&ack, 1);
 		if (ret < 0)
 			return -1;
@@ -866,9 +901,9 @@ eb_send_data(const unsigned char *buf, int buflen, int type)
 void
 eb_execute(int id, char *data, char *buf, int *buflen)
 {
-	unsigned char msg[SERIAL_BUFSIZE], hlp[CMD_DATA_SIZE];
+	unsigned char msg[SERIAL_BUFSIZE], hlp[CMD_DATA_SIZE], bus[TMP_BUFSIZE];
 	char tmp[TMP_BUFSIZE];
-	int ret, msglen, msgtype, retry, cycdata, pos, len, hlplen;
+	int ret, msglen, buslen, msgtype, retry, cycdata, pos, len;
 
 	memset(msg, '\0', sizeof(msg));
 	msglen = sizeof(msg);
@@ -883,7 +918,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 	} else {
 		/* prepare command - if prepare failed buflen > 0 */
 		eb_cmd_prepare(id, data, msg, &msglen, buf);
-		eb_print_hex(msg, msglen);
+		/* eb_print_hex(msg, msglen); */
 	}		
 
 	if (cycdata == NO && strlen(buf) == 0) {
@@ -891,8 +926,15 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 		while (ret < 0 && retry < send_retry) {
 			if (retry > 0)
 				log_print(L_NOT, "send retry: %d", retry);
-					
-			ret = eb_send_data(msg, msglen, msgtype);
+				
+			memset(bus, '\0', sizeof(bus));
+			buslen = 0;
+
+			ret = eb_send_data(msg, msglen, msgtype, bus, &buslen);
+			
+			if (buslen > 0)			
+				eb_print_hex(bus, buslen);
+	
 			retry++;
 		}
 	}
@@ -904,11 +946,10 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 			strcpy(buf, " broadcast done\n");
 
 		if (msgtype == EBUS_MSG_MASTER_MASTER) {
-			if (ret == 0) {
+			if (ret == 0)
 				strcpy(buf, " ACK\n");
-			} else {
+			else
 				strcpy(buf, " NAK\n");
-			}
 		}
 
 		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
@@ -916,7 +957,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 				memset(msg, '\0', sizeof(msg));
 				msglen = sizeof(msg);
 				eb_recv_data_get(msg, &msglen);
-				eb_print_hex(msg, msglen);
+				/* eb_print_hex(msg, msglen); */
 
 				/* decode */
 				if (eb_cmd_check_type(id, "set") == YES) {

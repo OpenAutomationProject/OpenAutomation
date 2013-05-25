@@ -150,10 +150,10 @@ cmdline(int *argc, char ***argv)
 int
 main(int argc, char *argv[])
 {
-	int i, j, k, end, ret, val, max_argc;
+	int i, j, k, end, ret, val, max_argc, buslen;
 	int in[SERIAL_BUFSIZE + 1];
 	char byte;
-	unsigned char msg[SERIAL_BUFSIZE + 1];
+	unsigned char msg[SERIAL_BUFSIZE + 1], bus[TMP_BUFSIZE];
 
 	progname = (const char *)strrchr(argv[0], '/');
 	progname = progname ? (progname + 1) : argv[0];
@@ -196,6 +196,7 @@ main(int argc, char *argv[])
 			if (!end && i > 0) {
 				
 				memset(msg, '\0', sizeof(msg));
+				memset(bus, '\0', sizeof(bus));
 
 				for (j = 0, k = 0; j < i; j += 2, k++)
 					msg[k] = (unsigned char)
@@ -203,11 +204,10 @@ main(int argc, char *argv[])
 		
 				ret = eb_serial_open(device, &serialfd);
 				if (ret < 0)
-					fprintf(stdout, "Error open %s.\n",
-									device);
+					fprintf(stdout, "Error open %s.\n", device);
 					
 				if (ret == 0) {
-					ret = eb_send_data(msg, k, type);
+					ret = eb_send_data(msg, k, type, bus, &buslen);
 					if (ret == 0) {
 						fprintf(stdout, "res:");
 						eb_print_result();
@@ -217,8 +217,7 @@ main(int argc, char *argv[])
 				
 				ret = eb_serial_close();
 				if (ret < 0)
-					fprintf(stdout, "Error close %s.\n",
-									device);
+					fprintf(stdout, "Error close %s.\n", device);
 
 			}
 
@@ -244,6 +243,7 @@ main(int argc, char *argv[])
 			}
 		}
 
+		memset(bus, '\0', sizeof(bus));
 		memset(msg, '\0', sizeof(msg));
 		for (j = 0, k = 0; j < i; j += 2, k++)
 			msg[k] = (unsigned char) (in[j]*16 + in[j+1]);
@@ -255,7 +255,7 @@ main(int argc, char *argv[])
 				fprintf(stdout, "Error open %s.\n", device);
 				
 			if (ret == 0) {
-				ret = eb_send_data(msg, k, type);
+				ret = eb_send_data(msg, k, type, bus, &buslen);
 				val = ret;
 				if (ret == 0) {
 					if (type == EBUS_MSG_MASTER_SLAVE)

@@ -286,9 +286,11 @@ void eb_send_data_prepare(const unsigned char *buf, int buflen);
  * @param [in] *buf pointer to a byte array
  * @param [in] buflen length of byte array
  * @param [in] type is the type of message to send
+ * @param [out] *bus pointer to answer array
+ * @param [out] *buslen point to answer length
  * @return 0 ok | 1 neg. ACK from Slave | -1 error
  */ 
-int eb_send_data(const unsigned char *buf, int buflen, int type);
+int eb_send_data(const unsigned char *buf, int buflen, int type, unsigned char *bus, int *buslen);
 
 
 
