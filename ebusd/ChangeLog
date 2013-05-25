@@ -6,6 +6,7 @@ ebus Daemon (ebusd) - ChangeLog
 * Changed telnet connecting log level info from L_NET to L_DBG.
 * Added ability to reopen temporary removed serial device. (thx aloz77 / KNX Forum)
   Attention: If the serial device is removed, network socket will be closed too.
+* Removed data output format for executed commands. (thx JuMi2006 / KNX Forum)
 
 2013-05-24:
 * Added hex type to eb_cmd_encode_value function. (thx Fry / KNX Forum)

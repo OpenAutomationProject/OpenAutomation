@@ -221,7 +221,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 			ret = eb_bcd_to_int(msg[p1], &i);
 
 			i *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%3d ", i);
+			sprintf(buf, "%d ", i);
 		} else {
 			goto on_error;
 		}
@@ -231,7 +231,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 			ret = eb_d1b_to_int(msg[p1], &i);
 
 			f = i * com[id].elem[elem].d_fac;
-			sprintf(buf, "%6.2f ", f);
+			sprintf(buf, "%f ", f);
 		} else {
 			goto on_error;
 		}
@@ -241,7 +241,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 			ret = eb_d1c_to_float(msg[p1], &f);
 
 			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%6.2f ", f);			
+			sprintf(buf, "%f ", f);			
 		} else {
 			goto on_error;
 		}
@@ -254,7 +254,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 				ret = eb_d2b_to_float(msg[p1], msg[p2], &f);
 				
 			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%8.3f ", f);		
+			sprintf(buf, "%f ", f);		
 		} else {
 			goto on_error;
 		}
@@ -267,7 +267,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 				ret = eb_d2c_to_float(msg[p1], msg[p2], &f);
 			
 			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%10.4f ", f);
+			sprintf(buf, "%f ", f);
 		} else {
 			goto on_error;
 		}
