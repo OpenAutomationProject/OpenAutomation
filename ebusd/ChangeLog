@@ -1,8 +1,11 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-05-27:
+* Added timeout to select at main_loop. (thx aloz77 / KNX Forum)
+
 2013-05-25:
-* Modifed hex Dump (EBH) for active sent messages. (thx Fry / KNX Forum)
+* Modified hex Dump (EBH) for active sent messages. (thx Fry / KNX Forum)
 * Changed telnet connecting log level info from L_NET to L_DBG.
 * Added ability to reopen temporary removed serial device. (thx aloz77 / KNX Forum)
   Attention: If the serial device is removed, network socket will be closed too.

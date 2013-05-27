@@ -452,6 +452,7 @@ main_loop(void)
 {
 	int maxfd, sfd_closed;
 	fd_set listenfds;
+	struct timeval timeout;
 
 	sfd_closed = NO;
 
@@ -471,6 +472,10 @@ main_loop(void)
 		fd_set readfds;
 		int readfd;
 		int ret;
+
+		/* set select timeout 10 secs */
+		timeout.tv_sec = 10;
+		timeout.tv_usec = 0;		
 
 		/* set readfds to inital listenfds */
 		readfds = listenfds;
@@ -514,10 +519,16 @@ main_loop(void)
 			continue;
 		}
 
-		ret = select(maxfd + 1, &readfds, NULL, NULL, NULL);
+		ret = select(maxfd + 1, &readfds, NULL, NULL, &timeout);
+
+		/* timeout after 10 secs means that ebus is probably
+		   disconnected or USB device is dead */
+		if (ret == 0) {
+			log_print(L_WAR, "select timeout (%d) reached", timeout.tv_sec);
+			continue;
 
 		/* ignore signals */
-		if ((ret < 0) && (errno == EINTR)) {
+		} else if ((ret < 0) && (errno == EINTR)) {
 			/* log_print(L_NOT,
 				"get signal at select: %s", strerror(errno)); */
 			continue;
