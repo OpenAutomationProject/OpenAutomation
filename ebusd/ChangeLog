@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-05-28:
+* Modified timeout statement, too force serial device reconnect. (thx aloz77 / KNX Forum)
+
 2013-05-27:
 * Added timeout to select at main_loop. (thx aloz77 / KNX Forum)
 

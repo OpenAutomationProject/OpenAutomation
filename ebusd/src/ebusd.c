@@ -450,11 +450,12 @@ cleanup(int state)
 void
 main_loop(void)
 {
-	int maxfd, sfd_closed;
+	int maxfd, sfd_closed, timeout_reached;
 	fd_set listenfds;
 	struct timeval timeout;
 
 	sfd_closed = NO;
+	timeout_reached = NO;
 
 	FD_ZERO(&listenfds);
 	FD_SET(serialfd, &listenfds);
@@ -481,7 +482,8 @@ main_loop(void)
 		readfds = listenfds;
 
 		/* check if the usb device is working */
-		if (eb_serial_valid() < 0) {
+		if (eb_serial_valid() < 0 || timeout_reached == YES) {
+			timeout_reached = NO;
 				
 			if (serialfd > 0 && sfd_closed == NO) {
 				log_print(L_ERR, "serial device is invalid");
@@ -525,6 +527,7 @@ main_loop(void)
 		   disconnected or USB device is dead */
 		if (ret == 0) {
 			log_print(L_WAR, "select timeout (%d) reached", timeout.tv_sec);
+			timeout_reached = YES;
 			continue;
 
 		/* ignore signals */
