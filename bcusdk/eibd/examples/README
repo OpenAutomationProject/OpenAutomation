@@ -1,6 +1,18 @@
 Additional eibd-clients for CV-Backend (eibread/write-cgi)
 
 Mini-Howto:
+
+Option 1)
+* Install gcc and libeibclient-dev (or Distribution-specific package containing libeibclient.a)
+* Checkout
+* Compile using:
+gcc -leibclient -c bcusdk-include/common.c
+gcc common.o -I./bcusdk-include -leibclient -o eibwrite-cgi eibwrite-cgi.c
+gcc common.o -I./bcusdk-include -leibclient -o eibread-cgi eibread-cgi.c
+* move eibread-cgi and eibwrite-cgi to cgi-dir to be used by web server serving CometVisu
+
+
+Option 2)
 * Checkout into bcusdk/eibd/examples
 
 * Adjust Makefile.am:
