@@ -532,8 +532,7 @@ main_loop(void)
 
 		/* ignore signals */
 		} else if ((ret < 0) && (errno == EINTR)) {
-			/* log_print(L_NOT,
-				"get signal at select: %s", strerror(errno)); */
+			/* log_print(L_NOT, "get signal at select: %s", strerror(errno)); */
 			continue;
 
 		/* on other errors */

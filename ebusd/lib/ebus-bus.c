@@ -935,7 +935,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 
 	/* handle answer for sent messages */
 	if (cycdata == NO && ret >= 0)  {
-		
+				
 		if (msgtype == EBUS_MSG_BROADCAST)
 			strcpy(buf, " broadcast done\n");
 
@@ -1040,15 +1040,16 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 {
 	unsigned char msg[CMD_DATA_SIZE], hlp[CMD_DATA_SIZE];
 	unsigned char crcm_recv, crcm_calc, acks, crcs_recv, crcs_calc, ackm;
-	int ret, msgtype, msglen, hlplen, mlen, slen, len;
+	int id, msgtype, msglen, hlplen, mlen, slen, len;
 
 	memset(msg, '\0', sizeof(msg));
 
 	/* search command definition */
-	ret = eb_cmd_search_com_cyc(&buf[1], buflen - 1);
-	if (ret >= 0) {
+	id = eb_cmd_search_com_cyc(&buf[1], buflen - 1);
+	
+	if (id >= 0) {
 
-		msgtype = eb_cmd_get_s_type(ret);
+		msgtype = eb_cmd_get_s_type(id);
 
 		/* unescape */
 		memcpy(msg, buf, buflen);
@@ -1131,11 +1132,11 @@ eb_cyc_data_process(const unsigned char *buf, int buflen)
 		}
 		
 		/* save data */
-		eb_cmd_set_cyc_buf(ret, msg, msglen);
+		eb_cmd_set_cyc_buf(id, msg, msglen);
 			
 	}
 
-	return ret;
+	return id;
 }
 
 int

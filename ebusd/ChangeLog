@@ -1,6 +1,10 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-08-26:
+* Modified hex decode routine. (To set start/end point of data bytes).
+* Some cosmetic changes.
+
 2013-05-28:
 * Modified timeout statement, too force serial device reconnect. (thx aloz77 / KNX Forum)
 

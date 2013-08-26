@@ -85,7 +85,6 @@ eb_cmd_set_cyc_buf(int id, const unsigned char *msg, int msglen)
 
 	memcpy(cyc[i].buf, msg, msglen);
 	cyc[i].buflen = msglen;
-		
 }
 
 void
@@ -157,7 +156,7 @@ int
 eb_cmd_search_com(char *buf, char *data)
 {
 	char *type, *class, *cmd, *tok;
-	int ret;
+	int id;
 
 	type = strtok(buf, " ");
 	class = strtok(NULL, " .");
@@ -170,8 +169,8 @@ eb_cmd_search_com(char *buf, char *data)
 		    strncasecmp(type, "cyc", 3) == 0) {
 			log_print(L_NOT, "search: %s %s.%s", type, class, cmd);
 			
-			ret = eb_cmd_search_com_id(type, class, cmd);
-			if (ret < 0)
+			id = eb_cmd_search_com_id(type, class, cmd);
+			if (id < 0)
 				return -1;
 			
 			tok = strtok(NULL, "\n\r");
@@ -182,7 +181,7 @@ eb_cmd_search_com(char *buf, char *data)
 				strncpy(data, tok, strlen(tok));			
 			
 			log_print(L_NOT, "  data: %s", data);
-			return ret;
+			return id;
 
 		}
 	}	
@@ -197,7 +196,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 {
 	char *c1, *c2, *c3;
 	char d_pos[CMD_SIZE_D_POS + 1];
-	int ret, i, p1, p2, p3;
+	int ret, i, j, p1, p2, p3;
 	float f;	
 
 	memset(d_pos, '\0', sizeof(d_pos));
@@ -337,22 +336,29 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 			goto on_error;
 		}
 		
-	} else if (strncasecmp(com[id].elem[elem].d_type, "hex", 3) == 0) {
-		for (i = 0; i < msg[0]; i++)
-			sprintf(&buf[3 * i], "%02x ", msg[i + 1]);
+	//~ } else if (strncasecmp(com[id].elem[elem].d_type, "hex", 3) == 0) {
+		//~ for (i = 0; i < msg[0]; i++)
+			//~ sprintf(&buf[3 * i], "%02x ", msg[i + 1]);
 
-/* save for testing purpose
 	} else if (strncasecmp(com[id].elem[elem].d_type, "hex", 3) == 0) {
-		if (p1 > 0 && p2 > p1) {
-			for (i = 0; i <= p2 - p1; i++)
-				sprintf((char *) &buf[i * 3], "%02x ", &msg[p1 + i]);
+		if (p1 > 0) {
+			if (p2 > msg[0])
+				p2 = msg[0];
 
+			if (p2 == 0 || p2 < p1)
+				p2 = p1;
+				
+			for (i = 0, j = p1 - 1; i <= p2 - p1; i++, j++)
+				sprintf(&buf[3 * i], "%02x ", msg[j + 1]);
+			
 			buf[i * 3 - 1] = '\0';
 		} else {
 			goto on_error;
 		}
-*/
-	}	
+			
+	}
+
+	log_print(L_DBG, "buf: %s", buf);	
 		
 	return 0;
 

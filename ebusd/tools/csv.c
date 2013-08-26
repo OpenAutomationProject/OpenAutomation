@@ -155,6 +155,13 @@ main(int argc, char *argv[])
 	                             //~ '\x05','\x0f','\x00','\xa9','\x01','\x00','\x00','\x86','\x00'};
 	//~ char cmd[] = "cyc mv brine_in";
 
+	//~ const unsigned char tmp[] = {'\xff','\x08','\xb5','\x11','\x01','\x01','\x2d','\x00','\x09','\x62',
+				     //~ '\xff','\x00','\x80','\x00','\x54','\x00','\x00','\xff','\x23','\x00'};
+
+	//~ char cmd[] = "cyc burner temps";
+	//~ char cmd[] = "cyc burner temps_raw";
+	
+
 	//~ Master Master
 	//~ 10 03 05 07 09 bb 06 2e 02 00 80 ff 6e ff 8f 00
 	//~ const unsigned char tmp[] = {'\x10','\x03','\x05','\x07','\x09','\xbb','\x06','\x1b','\x02','\x00',
@@ -174,23 +181,29 @@ main(int argc, char *argv[])
 	//~ 10 46 11 2e 03 00 02 11 02
 	//~ const unsigned char tmp[] = {'\x10','\x46','\x11','\x2e','\x03','\x00','\x02','\x11','\x02'};
 	//~ char cmd[] = "cyc broad 1";
-//~ 
-	//~ 
+
+//###############################################################
+	
 	//~ const int tmplen = sizeof(tmp) / sizeof(unsigned char);
  	//~ char data[CMD_DATA_SIZE], tcpbuf[CMD_DATA_SIZE];
 	//~ memset(data, '\0', sizeof(data));
 	//~ memset(tcpbuf, '\0', sizeof(tcpbuf));
 	//~ int id, tcpbuflen;
-	//~ 
+//~ 
+	//~ fprintf(stdout, "Test command >%s<\n", cmd);
 	//~ eb_print_hex(tmp, tmplen);
-	//~ eb_cyc_data_process(tmp, tmplen);
 	//~ 
-	//~ id = eb_cmd_search_com(cmd, data);
+	//~ eb_cyc_data_process(tmp, tmplen);
+//~ 
+	//~ id = eb_cmd_search_com_cyc(&tmp[1], tmplen - 1);
+	//~ 
 	//~ eb_execute(id, data, tcpbuf, &tcpbuflen);
 //~ 
 	//~ fprintf(stdout, "tcpbuf: %s tcpbuflen: %d\n", tcpbuf, tcpbuflen);
+//~ 
+	//~ eb_cmd_dir_free();
 
-	eb_cmd_dir_free();
+//###############################################################
 
 	return 0;
 }
