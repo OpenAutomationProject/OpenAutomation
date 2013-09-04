@@ -348,7 +348,7 @@ eb_print_hex(const unsigned char *buf, int buflen)
 void
 eb_recv_data_get(unsigned char *buf, int *buflen)
 {
-	strncpy((char *) buf, (char *) recv_data.msg, recv_data.len);	
+	memcpy(buf, recv_data.msg, recv_data.len);	
 	*buflen = recv_data.len;
 }
 

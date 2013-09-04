@@ -183,7 +183,7 @@ main(int argc, char *argv[])
 	//~ char cmd[] = "cyc broad 1";
 
 //###############################################################
-	
+
 	//~ const int tmplen = sizeof(tmp) / sizeof(unsigned char);
  	//~ char data[CMD_DATA_SIZE], tcpbuf[CMD_DATA_SIZE];
 	//~ memset(data, '\0', sizeof(data));
@@ -192,18 +192,18 @@ main(int argc, char *argv[])
 //~ 
 	//~ fprintf(stdout, "Test command >%s<\n", cmd);
 	//~ eb_print_hex(tmp, tmplen);
-	//~ 
+//~ 
 	//~ eb_cyc_data_process(tmp, tmplen);
 //~ 
 	//~ id = eb_cmd_search_com_cyc(&tmp[1], tmplen - 1);
-	//~ 
+//~ 
 	//~ eb_execute(id, data, tcpbuf, &tcpbuflen);
 //~ 
 	//~ fprintf(stdout, "tcpbuf: %s tcpbuflen: %d\n", tcpbuf, tcpbuflen);
-//~ 
-	//~ eb_cmd_dir_free();
-
+	
 //###############################################################
+
+	eb_cmd_dir_free();	
 
 	return 0;
 }

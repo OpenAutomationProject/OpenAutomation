@@ -1,8 +1,11 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-09-04:
+* Fixed eb_recv_data_get function. (Replaced strncpy with memcpy.)
+
 2013-08-26:
-* Modified hex decode routine. (To set start/end point of data bytes).
+* Modified hex decode routine. (To set start/end point of data bytes.)
 * Some cosmetic changes.
 
 2013-05-28:
