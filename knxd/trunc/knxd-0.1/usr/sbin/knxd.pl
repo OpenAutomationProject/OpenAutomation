@@ -134,6 +134,8 @@ my %plugin_subscribe_write;
 my %plugin_subscribe_read;
 my $plugin_initflag=0;
 my %plugin_socket_subscribe;
+my %plugin_cache=(); # non-persistent but faster memory for plugins
+my %plugin_code=(); # here, the plugins are stored as closures (unnamed subs)
 
 # global definitions
 
@@ -141,6 +143,8 @@ my $conv2bin = new Math::BaseCalc(digits => 'bin'); #Binary
 my $telegram_count = 0;
 my $telegram_bytes;
 my %msg;
+my $fh;
+
 my @socket;
 my $socksel;
 
@@ -255,11 +259,12 @@ sub eiblisten_thread { # MAIN SUB
         {
             if ($eib ==1){
                 $select->add($eibcon2->EIB_Poll_FD);
-                if ($select->can_read(.5)) { # EIB Packet processing
+                while ($select->can_read(.1)) { # EIB Packet processing - patched by Fry
                     if ($eibpoll=$eibcon2->EIB_Poll_Complete) {
                         my $msglen=$eibcon2->EIBGetBusmonitorPacket($eibbuf2);
                         if ($msglen>1) {
-                            my %msg = decode_vbusmonitor($$eibbuf2);
+                            %msg = decode_vbusmonitor($$eibbuf2);
+                            $fh=undef;
                             $retryinfo = 0;
                             # case ReadRequest for configured owsensor-value
                             # if ($msg{'apci'} eq "A_GroupValue_Read" and $ga_to_ow{$msg{'dst'}}) {
@@ -296,7 +301,7 @@ sub eiblisten_thread { # MAIN SUB
                                 for my $k ( keys %{$plugin_subscribe{ $msg{'dst'} }} ) {
                                     LOGGER('DEBUG',"Running Plugin $k subscribed to $msg{'dst'}");
                                     $thr_eiblisten_timeout = time(); # set timeout
-                                    check_generic_plugins($k,\%msg);
+                                    check_generic_plugins($k);
                                 }
                             }
                             # check subscribed plugin for READ
@@ -305,7 +310,7 @@ sub eiblisten_thread { # MAIN SUB
                                 for my $k ( keys %{$plugin_subscribe_read{ $msg{'dst'} }} ) {
                                     LOGGER('DEBUG',"Running Plugin $k subscribed to $msg{'dst'}");
                                     $thr_eiblisten_timeout = time(); # set timeout
-                                    check_generic_plugins($k,\%msg);
+                                    check_generic_plugins($k);
                                 }
                             }
                             # check subscribed plugin for WRITE
@@ -314,7 +319,7 @@ sub eiblisten_thread { # MAIN SUB
                                 for my $k ( keys %{$plugin_subscribe_write{ $msg{'dst'} }} ) {
                                     LOGGER('DEBUG',"Running Plugin $k subscribed to $msg{'dst'}");
                                     $thr_eiblisten_timeout = time(); # set timeout
-                                    check_generic_plugins($k,\%msg);
+                                    check_generic_plugins($k);
                                 }
                             }
                             
@@ -344,10 +349,11 @@ sub eiblisten_thread { # MAIN SUB
             # check plugins
             if (time()-$lastplugintime > 1) { # at most every 1secs for now
                 $thr_eiblisten_timeout = time(); # set timeout
-                &check_generic_plugins();
+                %msg=(); $fh=undef;
+                check_generic_plugins();
                 $lastplugintime = time();
                 # case update rrds
-                &check_global_rrd_update;
+                check_global_rrd_update();
                 #Cleanup %plugin_subscribe from deleted!!!
             }
             if ($rrd_syslastupdate + $rrd_interval < time()) {
@@ -373,11 +379,13 @@ sub eiblisten_thread { # MAIN SUB
             # Check if socket-handle is in select - or do this in plugin?
             if (my @sock_ready = $socksel->can_read(0.1)) {
                 # process sockets ready to read
-                foreach my $fh (@sock_ready) {
+                for my $fhi (@sock_ready) {
+	            $fh=$fhi; # important! different lexical scoping of $fh and $fhi!
                     if ($plugin_socket_subscribe{$fh}) {
                         LOGGER('DEBUG',"Call plugin $plugin_socket_subscribe{$fh} subscribed for $fh");
                         $thr_eiblisten_timeout = time(); # set timeout
-                        &check_generic_plugins($plugin_socket_subscribe{$fh},undef,$fh);
+                        %msg=();
+                        check_generic_plugins($plugin_socket_subscribe{$fh});
                     } else {
                         #else if - no plugin subscribed, remove select
                         $socksel->remove($fh);
@@ -411,39 +419,63 @@ sub getISODateStamp { # Timestamps for Logs
     return sprintf "%04d-%02d-%02d %02d:%02d:%02d.%03d", ($yearOffset+1900),($month+1),$dayOfMonth,$hour,$minute,$second,$msec/1000;
 }
 
+
 sub check_generic_plugins {#check Plugins
-    my $runname = $_[0];
-    my %msg;
-    my $fh;
+    my $runname = shift;
     my $plugin_max_errors = 5;
-    if (defined $_[1]) { %msg = %{$_[1]}; } else { %msg = (); }
-    if (defined $_[2]) { $fh = $_[2]; } else { $fh = undef; }
-    #%msg =() unless defined %msg;
-    #my %msg ;   # dummy definition - empty so plugins can determine if called by subscribed ga or cycle
     $thr_eiblisten_cause = "checking plugins";
-    
+
     my @plugins = <$plugin_path*>;
-    foreach (@plugins) {
-        next if ($_ =~ /\~$/ or -d $_); # ignore backup-files and subdirectories
-        my $plugname = basename($_);
-        $plugin_info{$plugname.'_lastsaved'} = ((stat($_))[9]);
-        $plugin_info{$plugname.'_cycle'} = $plugin_cycle unless defined $plugin_info{$plugname.'_cycle'};
-        if ((time() > $plugin_info{$plugname.'_last'} + $plugin_info{$plugname.'_cycle'} and $plugin_info{$plugname.'_cycle'}) # check cyclic plugin
-        or $plugin_info{$plugname.'_lastsaved'} > $plugin_info{$plugname.'_last'}    # check changed plugin
-        or $runname eq $plugname # direct call
-        or !$plugin_initflag) {
-            LOGGER('DEBUG',"Running PLUGIN $plugname");
-            
-            open(FILE, $_);
-            my @lines = <FILE>;
-            close($_);
-            # if modified and once on init, reset error-counter, mem-stats
-            if (($plugin_info{$plugname.'_lastsaved'} > $plugin_info{$plugname.'_last'}) or !$plugin_initflag) {
-                $plugin_info{$plugname.'_timeout_err'}=0;
-                $plugin_info{$plugname.'_meminc'}=0;
-                $plugin_info{$plugname.'_memstart'}=0;
-                $plugin_info{$plugname.'_ticks'}=0;
+    for my $plugfile (@plugins) 
+    {
+      my $plugname = basename($plugfile);
+      next if defined $runname && $plugname ne $runname;
+
+      $plugin_info{$plugname.'_lastsaved'} = ((stat($plugfile))[9]); 
+      $plugin_info{$plugname.'_cycle'} = $plugin_cycle unless defined $plugin_info{$plugname.'_cycle'};
+
+        # Parse, compile and cache plugins upon initialization or modification
+        if( $plugin_info{$plugname.'_lastsaved'} > $plugin_info{$plugname.'_last'} || !$plugin_initflag) 
+        {
+            # reset error counters
+            $plugin_info{$plugname.'_timeout_err'}=0;
+            $plugin_info{$plugname.'_meminc'}=0;
+            $plugin_info{$plugname.'_memstart'}=0;
+            $plugin_info{$plugname.'_ticks'}=0;
+
+            # parse and cache the code
+            open FILE, "<$plugfile";
+            my $source=join '', <FILE>;
+            close FILE;
+
+            if($source=~/COMPILE_PLUGIN/)
+            {
+                LOGGER('DEBUG',"Compiling PLUGIN $plugname");
+
+                my $stime=time();
+                eval "\$plugin_code{\$plugname}=sub {\n $source \n};\n";
+                
+                if ($@ || !$plugin_code{$plugname}) 
+                {
+                    LOGGER('DEBUG',"Compile-time ERROR in $plugname $@");
+                    $plugin_info{$plugname.'_result'} = 'Compile-time error: '.$@;
+                    delete $plugin_code{$plugname};
+                }
+                else
+                {
+                    plugin_log($plugname, sprintf("compiled in %.1fs",time()-$stime)); 	
+                }
             }
+        }
+        
+        # Execute plugins that are due, or on a direct call from a subscribed GA/socket (via plugin_subscribe)
+        if( $plugin_info{$plugname.'_lastsaved'} > $plugin_info{$plugname.'_last'}
+            || time() > $plugin_info{$plugname.'_last'} + $plugin_info{$plugname.'_cycle'} && $plugin_info{$plugname.'_cycle'} 
+            || $runname eq $plugname || !$plugin_initflag)
+        {
+            LOGGER('DEBUG',"Running PLUGIN $plugname");
+#           plugin_log($plugname, "RUNNING"); 
+
             if ($plugin_info{$plugname.'_timeout_err'}<$plugin_max_errors) {
                 $thr_eiblisten_cause = "TIMEOUT running PLUGIN ".$plugname;
                 $plugindb->sync(); # write out AFTER setting reason BEFORE err++
@@ -452,7 +484,32 @@ sub check_generic_plugins {#check Plugins
                 my $before_mem = $statinfo[5];
                 my $before_ticks = $statinfo[6];
                 my $starttime = time();
-                $plugin_info{$plugname.'_result'} = eval("@lines");
+                
+                if($plugin_code{$plugname})
+                {
+                    eval { $plugin_info{$plugname.'_result'} = $plugin_code{$plugname}->(); };
+                
+                    if ($@) 
+                    {
+                	LOGGER('DEBUG',"ERROR in $plugname $@");
+                	$plugin_info{$plugname.'_result'} = 'Run-time error: '.$@;
+                    }
+                }		    
+                else
+                {
+                    open FILE, "<$plugfile";
+                    my $source=join '', <FILE>;
+                    close FILE;
+                
+                    $plugin_info{$plugname.'_result'} = eval $source;
+                    
+                    if ($@) 
+                    {
+                	LOGGER('DEBUG',"ERROR in $plugname $@");
+                	$plugin_info{$plugname.'_result'} = $@;
+                    }
+                }
+
                 $plugin_info{$plugname.'_last'} = time() unless ($runname eq $plugname); #only reset cycle on non-direct call
                 @statinfo = get_stat_info($$);
                 if (!$plugin_initflag) {
@@ -474,10 +531,6 @@ sub check_generic_plugins {#check Plugins
                 $plugin_info{$plugname.'_result'} = $@;
             }
             
-            #possible this prevents a memleak
-            @lines = ();
-            undef @lines;
-            #maybe !?
         }
     }
     # check for orphaned/old values in tied hash here!
@@ -895,7 +948,9 @@ sub knx_write {
     if ($eib == 1){
         my ($dst,$value,$dpt,$response,$dbgmsg) = @_;
         my $bytes;
-        my $apci = ($response) ? 0x40 : 0x80; # 0x40=response, 0x80=write
+        my $apci = 0x80; # 0x40=response, 0x80=write, 0x00=non-blocking read
+        $apci = ($response==2 ? 0 : ($response==1 ? 0x40 : ($response==0 ? 0x80 : $response))) if defined $response;
+
         #     DPT 1 (1 bit) = EIS 1/7 (move=DPT 1.8, step=DPT 1.7)
         #     DPT 2 (1 bit controlled) = EIS 8
         #     DPT 3 (3 bit controlled) = EIS 2
@@ -915,7 +970,7 @@ sub knx_write {
         $dpt = $eibgaconf{$dst}{'DPTSubId'} unless $dpt; # read dpt from eibgaconf if existing
         given ($dpt) {
             when (/^10/) {
-                my %wd=(Mo=>1, Di=>2, Mi=>3, Do=>4, Fr=>5, Sa=>6, So=>7);
+                my %wd=(Mo=>1, Di=>2, Mi=>3, Do=>4, Fr=>5, Sa=>6, So=>7, Mon=>1, Tue=>2, Wed=>3, Thu=>4, Fri=>5, Sat=>6, Sun=>7);
                 my $wdpat=join('|',keys %wd);
                 my ($w,$h,$m,$s);
                 return unless ($w,$h,$m,$s)=($value=~/^($wdpat)?\s*([0-2][0-9])\:([0-5][0-9])\:?([0-5][0-9])?\s*/si);

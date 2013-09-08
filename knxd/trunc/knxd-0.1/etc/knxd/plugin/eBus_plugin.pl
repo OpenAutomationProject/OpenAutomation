@@ -1,16 +1,23 @@
+# COMPILE_PLUGIN
 #return;
 use warnings;
 use strict;
 use Net::Telnet ();
 
 ### READ PLUGIN-CONF
-my ($config,$ip,$port,$base_time,$debug);
-&readConf;
-#$debug = 1;
+our ($config,$ip,$port,$base_time,$debug,$send_change_only);
+my $confFile = '/etc/knxd/eBus_plugin.conf';
+my $return;
+unless ($return = do $confFile) {
+    plugin_log($plugname, "couldn't parse $confFile: $@") if $@;
+    plugin_log($plugname, "couldn't do $confFile: $!") unless defined $return;
+    plugin_log($plugname, "couldn't run $confFile") unless $return;
+    return;
+}
 
 $plugin_info{$plugname.'_cycle'} = 60;
 $plugin_info{$plugname.'_number'} = 0 unless (defined $plugin_info{$plugname.'_number'});
-my (@gets,@sets,$answer,$send_change_only);
+my (@gets,@sets,$answer);
 
 ### READ CONFIG
 ### FIXME! try to read config only once until changed
@@ -178,28 +185,3 @@ undef @sets;
 
 return 0;
 #return sprintf("%.2f",$plugin_info{$plugname.'_meminc'})." mb lost";
-
-### READ CONF ###
-sub readConf
-{
-    my $confFile = '/etc/knxd/eBus_plugin.conf';
-    if (! -f $confFile) {
-        plugin_log($plugname, "no conf file [$confFile] found."); 
-    } else {
-        #plugin_log($plugname, "reading conf file [$confFile]."); 
-        open(CONF, $confFile);
-        my @lines = <CONF>;
-        close($confFile);
-        my $result = eval("@lines");
-        #($result) and plugin_log($plugname, "conf file [$confFile] returned result[$result]");
-        if ($@) {
-            plugin_log($plugname, "ERR: conf file [$confFile] returned:");
-            my @parts = split(/\n/, $@);
-            plugin_log($plugname, "--> $_") foreach (@parts);
-        }
-    }
-    #possible this prevents a memleak - activated for WireGate 
-    @lines = (); 
-    undef @lines;
-    ####maybe !?
-}
