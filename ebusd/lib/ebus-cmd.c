@@ -280,7 +280,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 			
 			ret = eb_dat_to_str(dd, mm, yy, buf);
 			if (ret < 0)
-				sprintf(buf, " error %s ==> %02x %02x %02x ",
+				sprintf(buf, "error %s ==> %02x %02x %02x",
 				com[id].elem[elem].d_sub, msg[p1], msg[p2], msg[p3]);
 		} else {
 			goto on_error;
@@ -290,7 +290,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 		if (p1 > 0 && p2 > 0 && p3 > 0) {
 			ret = eb_dat_to_str(msg[p1], msg[p2], msg[p3], buf);
 			if (ret < 0)
-				sprintf(buf, " error %s ==> %02x %02x %02x ",
+				sprintf(buf, "error %s ==> %02x %02x %02x",
 				com[id].elem[elem].d_sub, msg[p1], msg[p2], msg[p3]);
 		} else {
 			goto on_error;
@@ -306,7 +306,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 			
 			ret = eb_tim_to_str(hh, mm, ss, buf);
 			if (ret < 0)
-				sprintf(buf, " error %s ==> %02x %02x %02x ",
+				sprintf(buf, "error %s ==> %02x %02x %02x",
 				com[id].elem[elem].d_sub, msg[p1], msg[p2], msg[p3]);
 		} else {
 			goto on_error;
@@ -316,7 +316,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 		if (p1 > 0 && p2 > 0 && p3 > 0) {
 			ret = eb_tim_to_str(msg[p1], msg[p2], msg[p3], buf);
 			if (ret < 0)
-				sprintf(buf, " error %s ==> %02x %02x %02x ",
+				sprintf(buf, "error %s ==> %02x %02x %02x",
 				com[id].elem[elem].d_sub, msg[p1], msg[p2], msg[p3]);
 		} else {
 			goto on_error;
@@ -515,7 +515,7 @@ eb_cmd_encode_value(int id, int elem, char *data, unsigned char *msg, char *buf)
 					
 			ret = eb_str_to_dat(dd, mm, yy, msg);
 			if (ret < 0)
-				sprintf(buf, " error ==> %d.%d.%d ", dd, mm, yy);
+				sprintf(buf, "error ==> %d.%d.%d", dd, mm, yy);
 			
 		} else {
 			goto on_error;
@@ -531,7 +531,7 @@ eb_cmd_encode_value(int id, int elem, char *data, unsigned char *msg, char *buf)
 					
 			ret = eb_str_to_tim(hh, mm, ss, msg);
 			if (ret < 0)
-				sprintf(buf, " error ==> %d:%d:%d ", hh, mm, ss);
+				sprintf(buf, "error ==> %d:%d:%d", hh, mm, ss);
 
 		} else {
 			goto on_error;

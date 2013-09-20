@@ -937,13 +937,13 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 	if (cycdata == NO && ret >= 0)  {
 				
 		if (msgtype == EBUS_MSG_BROADCAST)
-			strcpy(buf, " broadcast done\n");
+			strcpy(buf, "broadcast done\n");
 
 		if (msgtype == EBUS_MSG_MASTER_MASTER) {
 			if (ret == 0)
-				strcpy(buf, " ACK\n");
+				strcpy(buf, "ACK\n");
 			else
-				strcpy(buf, " NAK\n");
+				strcpy(buf, "NAK\n");
 		}
 
 		if (msgtype == EBUS_MSG_MASTER_SLAVE) {
@@ -955,7 +955,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 
 				/* decode */
 				if (eb_cmd_check_type(id, "set") == YES) {
-					strcpy(buf, " ACK\n");
+					strcpy(buf, "ACK\n");
 				} else {					
 					eb_cmd_decode(id, CMD_PART_SD, data, msg, buf);
 					if (strlen(buf) > 0)
@@ -963,7 +963,7 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 				}
 				
 			} else {
-				strcpy(buf, " NAK\n");
+				strcpy(buf, "NAK\n");
 			}
 		}
 
@@ -1023,10 +1023,10 @@ eb_execute(int id, char *data, char *buf, int *buflen)
 		if (strlen(buf) > 0)
 			strncat(buf, "\n", 1);
 		else
-			strcpy(buf, " error get cyc data\n");
+			strcpy(buf, "error get cyc data\n");
 			
 	} else {
-		strcpy(buf, " error send ebus msg\n");
+		strcpy(buf, "error send ebus msg\n");
 	}
 	
 	*buflen = strlen(buf);
