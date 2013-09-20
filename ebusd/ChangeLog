@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-09-20:
+* Removed unnecessary spaces located behind last return value. (thx JuMi2006 / KNX Forum)
+
 2013-09-04:
 * Fixed eb_recv_data_get function. (Replaced strncpy with memcpy.)
 

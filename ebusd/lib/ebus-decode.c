@@ -147,7 +147,7 @@ eb_day_to_str(unsigned char day, char *tgt)
 	
 	if (dd >= 0x00 && dd <= 0x06) {
 		eb_bcd_to_int(day, &dd);
-		sprintf(tgt, "%s ", days[day]);
+		sprintf(tgt, "%s", days[day]);
 	} else {
 		return -1;
 	}
@@ -163,7 +163,7 @@ eb_dat_to_str(unsigned char dd, unsigned char mm, unsigned char yy, char *tgt)
 	if (dd >= 0x00 && dd <= 0x1F &&
 	    mm >= 0x00 && mm <= 0x0C &&
 	    yy >= 0x00 && yy <= 0x63 )
-		sprintf(tgt, "%02d.%02d.%04d ", dd, mm, yy + 2000);
+		sprintf(tgt, "%02d.%02d.%04d", dd, mm, yy + 2000);
 	else
 		return -1;
 

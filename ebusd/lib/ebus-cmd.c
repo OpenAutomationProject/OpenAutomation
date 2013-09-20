@@ -213,14 +213,14 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 	log_print(L_DBG, "id: %d elem: %d p1: %d p2: %d p3: %d", id, elem, p1, p2, p3);	
 
 	if (strncasecmp(com[id].elem[elem].d_type, "asc", 3) == 0) {
-		sprintf(buf, "%s ", &msg[1]);
+		sprintf(buf, "%s", &msg[1]);
 
 	} else if (strncasecmp(com[id].elem[elem].d_type, "bcd", 3) == 0) {
 		if (p1 > 0) {
 			ret = eb_bcd_to_int(msg[p1], &i);
 
 			i *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%d ", i);
+			sprintf(buf, "%d", i);
 		} else {
 			goto on_error;
 		}
@@ -230,7 +230,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 			ret = eb_d1b_to_int(msg[p1], &i);
 
 			f = i * com[id].elem[elem].d_fac;
-			sprintf(buf, "%f ", f);
+			sprintf(buf, "%f", f);
 		} else {
 			goto on_error;
 		}
@@ -240,7 +240,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 			ret = eb_d1c_to_float(msg[p1], &f);
 
 			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%f ", f);			
+			sprintf(buf, "%f", f);			
 		} else {
 			goto on_error;
 		}
@@ -253,7 +253,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 				ret = eb_d2b_to_float(msg[p1], msg[p2], &f);
 				
 			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%f ", f);		
+			sprintf(buf, "%f", f);		
 		} else {
 			goto on_error;
 		}
@@ -266,7 +266,7 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 				ret = eb_d2c_to_float(msg[p1], msg[p2], &f);
 			
 			f *= com[id].elem[elem].d_fac;
-			sprintf(buf, "%f ", f);
+			sprintf(buf, "%f", f);
 		} else {
 			goto on_error;
 		}
@@ -408,6 +408,9 @@ eb_cmd_decode(int id, char *part, char *data, unsigned char *msg, char *buf)
 				strncat(buf, "\n", 1);
 				return -1;
 			}
+
+			if (i > 0)
+				strncat(buf, " ", 1);
 			
 			strncat(buf, hlp, strlen(hlp));			
 		}				
