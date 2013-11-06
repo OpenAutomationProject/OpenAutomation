@@ -160,6 +160,13 @@ main(int argc, char *argv[])
 
 	//~ char cmd[] = "cyc burner temps";
 	//~ char cmd[] = "cyc burner temps_raw";
+
+	// 31835
+	//~ const unsigned char tmp[] = {'\xff','\x08','\xb5','\x09','\x03','\x0d','\xbc','\x00','\x12',
+				     //~ '\x00','\x04','\x5b','\x7c','\x00','\x00','\x75','\x00'};
+//~ 
+//~ 
+	//~ char cmd[] = "cyc ms test";
 	
 
 	//~ Master Master
@@ -201,6 +208,13 @@ main(int argc, char *argv[])
 //~ 
 	//~ fprintf(stdout, "tcpbuf: %s tcpbuflen: %d\n", tcpbuf, tcpbuflen);
 	
+//###############################################################
+
+//~ unsigned long val;
+//~ eb_print_hex(&tmp[11], 4);
+//~ fprintf(stdout, "%d %d %d %d\n", tmp[11], (tmp[12] << 8), (tmp[13] << 16), (tmp[14] << 24));
+//~ fprintf(stdout, "%d\n", tmp[11] + (tmp[12] << 8) + (tmp[13] << 16) + (tmp[14] << 24));
+
 //###############################################################
 
 	eb_cmd_dir_free();	

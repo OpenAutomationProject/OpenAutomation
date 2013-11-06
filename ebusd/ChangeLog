@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - ChangeLog
 ===============================
 
+2013-11-06:
+* Specific vaillant data type "ulg" (unsigned long) added.
+
 2013-09-20:
 * Removed unnecessary spaces located behind last return value. (thx JuMi2006 / KNX Forum)
 * Removed more unneeded space characters. (thx JuMi2006 / KNX Forum)

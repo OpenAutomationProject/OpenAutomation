@@ -194,10 +194,11 @@ eb_cmd_search_com(char *buf, char *data)
 int
 eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 {
-	char *c1, *c2, *c3;
+	char *c1, *c2, *c3, *c4;
 	char d_pos[CMD_SIZE_D_POS + 1];
-	int ret, i, j, p1, p2, p3;
-	float f;	
+	int ret, i, j, p1, p2, p3, p4;
+	float f;
+	unsigned long l;	
 
 	memset(d_pos, '\0', sizeof(d_pos));
 	strncpy(d_pos, com[id].elem[elem].d_pos, strlen(com[id].elem[elem].d_pos));
@@ -205,12 +206,14 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 	c1 = strtok(d_pos, " ,\n");
 	c2 = strtok(NULL, " ,\n");
 	c3 = strtok(NULL, " ,\n");
+	c4 = strtok(NULL, " ,\n");
 
 	p1 = c1 ? atoi(c1) : 0;
 	p2 = c2 ? atoi(c2) : 0;
 	p3 = c3 ? atoi(c3) : 0;
+	p4 = c4 ? atoi(c4) : 0;
 
-	log_print(L_DBG, "id: %d elem: %d p1: %d p2: %d p3: %d", id, elem, p1, p2, p3);	
+	log_print(L_DBG, "id: %d elem: %d p1: %d p2: %d p3: %d p4: %d", id, elem, p1, p2, p3, p4);	
 
 	if (strncasecmp(com[id].elem[elem].d_type, "asc", 3) == 0) {
 		sprintf(buf, "%s", &msg[1]);
@@ -335,10 +338,6 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 		} else {
 			goto on_error;
 		}
-		
-	//~ } else if (strncasecmp(com[id].elem[elem].d_type, "hex", 3) == 0) {
-		//~ for (i = 0; i < msg[0]; i++)
-			//~ sprintf(&buf[3 * i], "%02x ", msg[i + 1]);
 
 	} else if (strncasecmp(com[id].elem[elem].d_type, "hex", 3) == 0) {
 		if (p1 > 0) {
@@ -355,6 +354,14 @@ eb_cmd_decode_value(int id, int elem, unsigned char *msg, char *buf)
 		} else {
 			goto on_error;
 		}
+
+	} else if (strncasecmp(com[id].elem[elem].d_type, "ulg", 3) == 0) {
+		if (p1 > 0 && p2 > 0 && p3 > 0 && p4 > 0) {
+			l = msg[p1] + (msg[p2] << 8) + (msg[p3] << 16) + (msg[p4] << 24);
+			sprintf(buf, "%lu", l);
+		} else {
+			goto on_error;
+		}	
 			
 	}
 

@@ -1,6 +1,9 @@
 ebus Daemon (ebusd) - NEWS
 ==========================
 
+2013-11-06:
+* Specific vaillant data type "ulg" (unsigned long) added.
+
 2013-05-25:
 * Added ability to reopen temporary removed serial device. (thx aloz77 / KNX Forum)
 

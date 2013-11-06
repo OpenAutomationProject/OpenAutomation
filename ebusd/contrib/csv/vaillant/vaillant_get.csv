@@ -64,7 +64,7 @@ get;amu;comp_max_in;Kompressor  - max. Rücklauftemperatur;3;08;B509;3;0D7300;1;
 #      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;brine_spreiz;Quelle – zul. Spreizung;3;08;B509;3;0D6E00;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;brine_frost;Quelle – Einfrierschutz;3;08;B509;3;0D7A01;1;-;sd;1;d1b;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
-get;amu;brine_pump_pre_time;Quelle – Vorlaufzeit Quellenpumpe;3;08;B509;3;0D7600;1;-;sd;?;hex;-;min;-;-;;;;;;;;;;;;;;;;;;;;;;;;
+get;amu;brine_pump_pre_time;Quelle – Vorlaufzeit Quellenpumpe;3;08;B509;3;0D7600;1;-;sd;1;d1c;1.000;min;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 #    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;offset_pump_min;Ausschaltzeit interne Heizkreispumpe (Minuten);3;08;B509;3;0D9901;1;-;sd;1;bcd;1.000;min;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;preset_pump_sek;Interne Heizkreispumpe Vorlaufzeit (Sekunden);3;08;B509;3;0DC801;1;-;sd;1;d1b;1.000;ss;-;-;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,7 +76,7 @@ get;amu;comp_starts;Kompressorstarts;3;08;B509;3;0DA900;1;-;sd;1,2;d2b;256.000;-
 get;amu;boiler_h_sum;Zusatzheizung gesamt;3;08;B509;3;0DA100;1;-;sd;1,2;d2b;256.000;h;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;boiler_h_heating;Zusatzheizung Heizen;3;08;B509;3;0DA200;1;-;sd;1,2;d2b;256.000;h;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;boiler_h_water;Zusatzheizung WW;3;08;B509;3;0DA300;1;-;sd;1,2;d2b;256.000;h;-;-;;;;;;;;;;;;;;;;;;;;;;;;
-get;amu;boiler_starts;Zusatzheizung Starts;3;08;B509;3;0DB300;1;-;sd;1,2;d2b;256.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
+get;amu;boiler_starts;Zusatzheizung Starts;3;08;B509;3;0DB100;1;-;sd;1,2;d2b;256.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 #        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;cooling_preset;Kühlungsvorlaufsollwert;3;08;B509;3;0D7401;1;-;sd;1;d1b;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;brine_pump_cooling_h;Solepumpenlaufzeit Kühlbetrieb;3;08;B509;3;0D7D01;1;-;sd;1;d1b;1.000;h;-;-;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,7 +94,7 @@ get;amu;high_eff_pump_perc_heating;Pumpensollwert in% beim Heizen;3;08;B509;3;0D
 #      ;;;;;;;;;;;sd;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 get;amu;bivalentmode;Bivalenzmodus;3;08;B509;3;0DE301;1;-;sd;1;bcd;1.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 # Messwerte;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-get;mv;yield_sum;Energieertrag;3;08;B509;3;0DBC00;1;-;sd;1,2;d2b;256.000;kWh;-;-;;;;;;;;;;;;;;;;;;;;;;;;
+get;mv;yield_sum;Energieertrag;3;08;B509;3;0DBC00;1;-;sd;1,2,3,4;ulg;1.000;kWh;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;mv;brine_in;Quellentemperatur;3;08;B509;3;0D0F00;2;temp;sd;1,2;d2c;1.000;°C;-;Temperatur;stat;sd;3;bcd;1.000;-;-;Status;;;;;;;;;;;;;;;;
 get;mv;brine_out;Austrittstemperatur;3;08;B509;3;0D0800;2;temp;sd;1,2;d2c;1.000;°C;-;Temperatur;stat;sd;3;bcd;1.000;-;-;Status;;;;;;;;;;;;;;;;
 get;mv;brine_press;Druck Wärmequelle;3;08;B509;3;0D1600;2;press;sd;1,2;d2b;0.256;bar;-;Druck;stat;sd;3;bcd;1.000;-;-;Status;;;;;;;;;;;;;;;;
@@ -146,7 +146,7 @@ get;cal;comp_out;Kalibrierung - Kompressor Austritt;3;08;B509;3;0DC700;1;-;sd;1,
 get;cal;buffer_in;Kalibrierung – Puffer RL;3;08;B509;3;0D3400;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;cal;buffer_out;Kalibrierung – Puffer VL;3;08;B509;3;0D3301;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 #WW-Kreis;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-get;hw;mode;WW – Betriebsmodus;3;25;B509;3;0D2B00;1;-;sd;1;bcd;1.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
+get;hw;mode;WW – Betriebsmodus;3;25;B509;3;0D3B00;1;-;sd;1;bcd;1.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;hw;temp;WW – Solltemperatur;3;25;B509;3;0D8200;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;hw;min_temp;WW – Min. Temperatur;3;25;B509;3;0D8300;1;-;sd;1,2;d2c;1.000;°C;-;-;;;;;;;;;;;;;;;;;;;;;;;;
 get;hw;legionella_protect;WW – Legionellenschutz;3;25;B509;3;0D4000;1;-;sd;1;bcd;1.000;-;-;-;;;;;;;;;;;;;;;;;;;;;;;;
