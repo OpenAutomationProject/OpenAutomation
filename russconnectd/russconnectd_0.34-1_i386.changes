@@ -1,0 +1,39 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.8
+Date: Mon, 13 Jan 2014 20:49:47 +0100
+Source: russconnectd
+Binary: russconnectd
+Architecture: source i386
+Version: 0.34-1
+Distribution: lenny
+Urgency: low
+Maintainer: Michael Markstaller <devel@wiregate.de>
+Changed-By: Michael Markstaller <michael@markstaller.de>
+Description: 
+ russconnectd - simple daemon to control Russsound amp from KNX
+Changes: 
+ russconnectd (0.34-1) lenny; urgency=low
+ .
+   * Fix standbylock
+Checksums-Sha1: 
+ ba2405b1b119afd797b8f5293266f324a38eb62f 805 russconnectd_0.34-1.dsc
+ ca896515389d5ee566f386441526d7ad9892f672 300143 russconnectd_0.34-1.tar.gz
+ ee285ed16e65b54e70ec0c043c803260a41b37d2 97682 russconnectd_0.34-1_i386.deb
+Checksums-Sha256: 
+ 5e56734e0dc76837ff799f461254a8eae282dfeab809a9dc8a2458cd0f930fee 805 russconnectd_0.34-1.dsc
+ 06af90e7a5a2f51040fea6f4ac390775bd107ccf9666021baae6224785433a6f 300143 russconnectd_0.34-1.tar.gz
+ 690de5d656fd5d8634099d929ed9f1c1b7f01c1d593a50ac70da00c0b29284f4 97682 russconnectd_0.34-1_i386.deb
+Files: 
+ 7a0e6fcaecbb426831a9fd21e63cd27f 805 unknown extra russconnectd_0.34-1.dsc
+ 946c6b10da33bfcd96fc00763408ce10 300143 unknown extra russconnectd_0.34-1.tar.gz
+ 2b00ed4b6acbf5e50c830cfb44f7b69d 97682 unknown extra russconnectd_0.34-1_i386.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAlLUTWoACgkQaWRHV2kMuAJjbgCgqFmRzL9B7aYGyDZ8s3M2JlAG
+FQwAn2fB0W8oMLAC0Tl7+H7u4Xr75x+8
+=ltV3
+-----END PGP SIGNATURE-----
