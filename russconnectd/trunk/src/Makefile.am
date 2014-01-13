@@ -10,6 +10,7 @@ AM_CPPFLAGS = \
 AM_CFLAGS =\
 	 -Wall\
 	 -g\
+	 -std=gnu99\
      -lpthread -leibclient
 
 bin_PROGRAMS = russconnectd

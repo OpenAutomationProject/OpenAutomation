@@ -149,7 +149,10 @@ char *russChecksum(char* buf, int len) {
 
 void *sendrussPolling(unsigned char zone) {
     syslog(LOG_DEBUG, "polling zone %d",zone);
+    /* useless/unfinished! if used we need to unlock the mutex afterwards but with current, UDP-based datagrams it's not nescessary 
+       as the bytes cannot get mixed up on output..
     pthread_mutex_trylock(&standbylock);
+    */
 
     //Send device reset-event to wakeup (at least) E5 *NOT* C3/C5! - untested and most likely useless
     if (keypadid == 0x71) {
@@ -195,6 +198,7 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
     //block here until something is received from russound (it's turned off)
     pthread_mutex_lock(&standbylock);
     pthread_mutex_unlock(&standbylock);
+    
     //8.1.1 Set State
     char buf_msg1[25] = { 0, 0, 0, 0x7F, 0, 0, keypadid, 0x05, 0x02, 0x02, 0, 0, 0xF1, 0x23, 0, 0, 0, 0, 0, 0x01, 0, 0xF7 };
     buf_msg1[1] = controller;
@@ -220,6 +224,13 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
             buf_msg1[1] = 0x7E;
             buf_msg1[13] = 0x22;
             buf_msg1[16] = val;
+            //FIXME: SetAllZonesPower(Off) doesn't work 100% reliable!
+            //FIXME: Send to all controllers, not only the first (though this worked fine for ages before!)
+            //Quirk: send to all zones as single command
+            for (int i=0;i<numzones;i++) { //call myself recursive.. maybe bad..
+                zones[i].inited = 0; //de-init state to force sending updates as we sometimes miss them here
+                sendrussFunc(zone/zones_per_controller,zone%zones_per_controller,0,val);
+            }
             break;
         case 0: //power
             buf_msg1[0] = 0xF0;
@@ -308,13 +319,18 @@ void *sendrussFunc(int controller, int zone, int func, int val) {
 
     if (buf_msg1[0])
         if (sendto(udpSocket, buf_msg1, 22, 0, (struct sockaddr *) &si_other, slen)==-1)
-            syslog(LOG_WARNING,"sendrussfunc sendto failed!");
+            syslog(LOG_WARNING,"sendrussfunc1 sendto failed!");
+
     if (buf_msg2[0])
         if (sendto(udpSocket, buf_msg2, 24, 0, (struct sockaddr *) &si_other, slen)==-1)
-            syslog(LOG_WARNING,"sendrussfunc sendto failed!");
+            syslog(LOG_WARNING,"sendrussfunc2 sendto failed!");
     usleep(50*1000); //FIXME: throttle a little (50ms)
-    if (buf_msg1[0] || buf_msg2[0])
+    if ((buf_msg1[0] || buf_msg2[0]) && func > -1)
         sendrussPolling (zone+(controller*zones_per_controller)); //fire update of states
+    else if  ((buf_msg1[0] || buf_msg2[0]) && func < 0)
+        for (int i=0;i<numzones;i++)
+            sendrussPolling (i); //fire update of ALL states
+
     return 0;
 }
 
@@ -613,7 +629,7 @@ void *updateZone(unsigned char num, unsigned char val, int func) {
 void *parseRussMsg(unsigned char* buf, int len) {
     int i;
     if ((len==34) && (buf[0]==0xF0) && (buf[9]==0x04)) { //zone-status 
-        syslog(LOG_DEBUG,"russ Controller:%d Zone:%d Status:%d src:%d vol:%d bass:%d treb:%d loud:%d bal:%d sys:%d shrsrc:%d party:%d,DnD:%d\n",
+        syslog(LOG_DEBUG,"msg34 russ Controller:%d Zone:%d Status:%d src:%d vol:%d bass:%d treb:%d loud:%d bal:%d sys:%d shrsrc:%d party:%d,DnD:%d\n",
                    buf[4],buf[12],buf[20],buf[21],buf[22],buf[23],buf[24],buf[25],buf[26],buf[27],buf[28],buf[29],buf[30]);
         //buf[12] = (buf[4]*zones_per_controller)+buf[12]; //controller + zonenumber
         int controller = buf[4];
@@ -642,24 +658,39 @@ void *parseRussMsg(unsigned char* buf, int len) {
     } else if ((len==24) && (buf[0]==0xF0) && (buf[9]==0x05) && (buf[13]==0x00)) { //zone turn-on volume
         //FIXME: this *might* be wrong and trigger also on other msgs, as it's written otherwise in the docs, the checked bytes are just a guess!
         //FIXME: this *is* wrong and could be made more readable, see above if
-        syslog(LOG_DEBUG,"russ Controller:%d Zone:%d TurnOnVolume:%d",
+        syslog(LOG_DEBUG,"msg24 russ Controller:%d Zone:%d TurnOnVolume:%d",
                buf[4],buf[12],buf[21]);
         buf[12] = (buf[4]*zones_per_controller)+buf[12]; //controller + zonenumber
         if (buf[21] != zones[buf[12]].onvolume || (sendOnStart && !zones[buf[12]].inited))
             updateZone(buf[12],buf[21],10);
-    } else if ((len==23) && (buf[0]==0xF0) && (buf[7]==0x05)) { //FIXME: C5 sends this periodically
-        printf(" not parsed yet, len: %d ",len);
-        for (i=0; i<len; i++)
-            printf("0x%02X ",buf[i]);
-        printf("\n");
     } else {
         //FIXME: just for debugging
-        //for (i=0; i<len; i++)
-        //    printf("%d:0x%02X ",i,buf[i]);
-        printf(" unknown len: %d ",len);
+        //Above is pretty weird & guessed somewhat.. after 0.33 we understand better..
+        printf("unknown len: %d ",len);
         for (i=0; i<len; i++)
             printf("0x%02X ",buf[i]);
         printf("\n");
+        for (i=0; i<len; i++)
+            printf("%d:0x%02X ",i,buf[i]);
+        printf("\n");
+        if (buf[0] == 0xF0) {
+            //target Special Controller IDs: 0x7F - Message should be processed by all keypads/display devices
+            //comes as 0/0/7F 17/18 byte
+            printf("RNET: Target C/Z/K %X/%X/%X, Source C/Z/K %X/%X/%X, Type: %X" , buf[1],buf[2],buf[3],buf[4],buf[5],buf[6], buf[7]);
+            switch (buf[7]) {
+                case 0: printf("(Set Data) "); break;
+                case 1: 
+                    printf("(Req Data) "); 
+                    //len17 - buf[8] 4=Volume? 
+                    break;
+                case 2: printf("(Handshake) "); break;
+                case 5: printf("(Event) "); break;
+                case 6: printf("(Display Msg) "); break;
+            }
+            for (i=8; i<len-2; i++)
+                printf("%d:0x%02X ",i,buf[i]);
+            printf("\n\n");
+        }
     }
     return 0;
 }

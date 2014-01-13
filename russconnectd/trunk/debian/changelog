@@ -1,4 +1,16 @@
-russconnectd (0.32-1) lenny; urgency=low
+russconnectd (0.34-1) lenny; urgency=low
+
+  * Fix standbylock
+
+ -- Michael Markstaller <michael@markstaller.de>  Mon, 13 Jan 2014 20:49:47 +0100
+
+russconnectd (0.33-1) lenny; urgency=low
+
+  * repeat SetAllZonesPower
+
+ -- Michael Markstaller <devel@wiregate.de>  Sat, 15 Jun 2013 11:44:04 +0200
+
+russconnectd (0.32-2) lenny; urgency=low
 
   * upstream version fixed multi-ctrl-bug, improved debugging
 

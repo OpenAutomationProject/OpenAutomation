@@ -1,3 +1,16 @@
+*** 0.34 - 2014-01-12
+- Remove (incomplete) standbylock-Mutex in sendRussPolling, thanks to Matthias@knxuf
+  This is useless until direct serial gets fully implemented.
+
+*** 0.33 - 2012-06-15
+- SetAllZonesPower repeat once as it's not 100% reliable (anymore?)
+
+*** 0.32 - 2012-02-18
+- C5 works
+- multiple-controllers fix
+- improved debugging
+- increase delay
+
 *** trunk - 2011-12-28
 - WiP - not yet done: C3-support - (maybe also needed for C5/E5) send Device restart event to start RNet-communication
 - Fix cfgmaker for CometVisu, adjust to new infotrigger
