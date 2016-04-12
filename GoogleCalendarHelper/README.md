@@ -28,7 +28,7 @@ Use the following syntax in your CometVisu configuration xml:
 </group>
 ```
 
-Where <URL> is your webserver (i.e. CometVisu) plus any subdirectories if you created any to the files copied above.
+Where `<URL>` is your web server (i.e. CometVisu on Wiregate) specified with IP (192.168.0.xxx) or name (wiregate123.local) plus any subdirectories if you created any to the files copied above.
 Do not use 127.0.0.1 / localhost as the client accessing the webpage will fetch the content, not the server itself.
 
 ## Further information
