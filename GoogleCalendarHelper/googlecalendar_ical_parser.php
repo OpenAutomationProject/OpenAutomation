@@ -140,7 +140,7 @@ $calDataTxt .= "</table></td></table>"; // Tabelle schließen
 
 echo "<html>
         <head>
-            <link href='http://fonts.googleapis.com/css?family=Dosis:500' rel='stylesheet' type='text/css'>
+            <link href='https://fonts.googleapis.com/css?family=Dosis:500' rel='stylesheet' type='text/css'>
             <meta name='language' content='de'>
             <meta http-equiv='content-type' content='text/html; charset=UTF-8'>
                 <style>
